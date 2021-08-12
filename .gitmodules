@@ -1,0 +1,6 @@
+[submodule "artwork"]
+	path = artwork
+	url = https://github.com/AsahiLinux/artwork.git
+[submodule "m1n1"]
+	path = m1n1
+	url = https://github.com/AsahiLinux/m1n1.git
