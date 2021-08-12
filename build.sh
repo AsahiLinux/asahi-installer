@@ -54,7 +54,7 @@ cd "$PACKAGE/Frameworks/Python.framework/Versions/Current"
 
 rm -rf include share
 cd lib
-rm -rf tdb* tk* Tk* libtk* *tcl*
+rm -rf -- tdb* tk* Tk* libtk* *tcl*
 cd python3.*
 rm -rf test ensurepip idlelib
 cd lib-dynload
