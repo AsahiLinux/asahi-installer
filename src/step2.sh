@@ -24,7 +24,7 @@ echo
 
 read
 
-bputil -nkcas -v "$VGID"
+bputil -nc -v "$VGID"
 kmutil configure-boot -c m1n1.macho -v "$system_dir"
 
 echo
