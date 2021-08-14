@@ -12,13 +12,12 @@ PYTHON_URI="https://www.python.org/ftp/python/$PYTHON_VER/$PYTHON_PKG"
 M1N1="$PWD/m1n1"
 ARTWORK="$PWD/artwork"
 SRC="$PWD/src"
-TMP="$PWD/tmp"
 DL="$PWD/dl"
 PACKAGE="$PWD/package"
 
 rm -rf "$PACKAGE"
 
-mkdir -p "$DL" "$TMP" "$PACKAGE"
+mkdir -p "$DL" "$PACKAGE"
 mkdir -p "$PACKAGE/bin"
 
 echo "Updating submodules..."
