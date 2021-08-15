@@ -16,8 +16,8 @@ DL="$PWD/dl"
 PACKAGE="$PWD/package"
 
 if [[ $OSTYPE == 'darwin'* ]]; then
-  export USE_CLANG=1
-  echo 'Running on macOS'
+    export USE_CLANG=1
+    echo 'Running on macOS'
     if ! [ -x "$(command -v dtc)" ]; then
     echo 'Error: dtc is not installed. (brew install dtc)' >&2
     exit 1
@@ -28,6 +28,10 @@ if [[ $OSTYPE == 'darwin'* ]]; then
     fi
     if ! [ -x "$(command -v llvm-objcopy)" ]; then
     echo 'Error: llvm-objcopy is not installed. (brew install llvm)' >&2
+    exit 1
+    fi
+    if ! [ -x "$(command -v 7z)" ]; then
+    echo 'Error: 7z is not installed. (brew install p7zip)' >&2
     exit 1
     fi
 fi
