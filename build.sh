@@ -15,6 +15,23 @@ SRC="$PWD/src"
 DL="$PWD/dl"
 PACKAGE="$PWD/package"
 
+if [[ $OSTYPE == 'darwin'* ]]; then
+  export USE_CLANG=1
+  echo 'Running on macOS'
+    if ! [ -x "$(command -v dtc)" ]; then
+    echo 'Error: dtc is not installed. (brew install dtc)' >&2
+    exit 1
+    fi
+    if ! [ -x "$(command -v convert)" ]; then
+    echo 'Error: convert is not installed. (brew install imagemagick)' >&2
+    exit 1
+    fi
+    if ! [ -x "$(command -v llvm-objcopy)" ]; then
+    echo 'Error: llvm-objcopy is not installed. (brew install llvm)' >&2
+    exit 1
+    fi
+fi
+
 rm -rf "$PACKAGE"
 
 mkdir -p "$DL" "$PACKAGE"
@@ -43,9 +60,8 @@ cp "$M1N1/build/m1n1.macho" "$PACKAGE"
 echo "Extracting Python framework..."
 
 mkdir -p "$PACKAGE/Frameworks/Python.framework"
-
-7z x -so "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | zcat | \
-    cpio -i -D "$PACKAGE/Frameworks/Python.framework"
+cd "$PACKAGE/Frameworks/Python.framework"
+7z x -so "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | zcat | cpio -i
 
 echo "Slimming down Python..."
 
@@ -58,10 +74,11 @@ cd python3.*
 rm -rf test ensurepip idlelib
 cd lib-dynload
 rm -f _test* _tkinter*
-    
+
 echo "Copying certificates..."
 
-certs="$(python -c 'import certifi; print(certifi.where())')"
+pip3 install certifi --user
+certs="$(python3 -c 'import certifi; print(certifi.where())')"
 cp "$certs" "$PACKAGE/Frameworks/Python.framework/Versions/Current/etc/openssl/cert.pem"
 
 echo "Packaging installer..."
