@@ -12,8 +12,10 @@ jobs:
         run: |
           apt update && apt install -y device-tree-compiler cpio imagemagick p7zip-full python3-pip
           pip3 install certifi --user
-      - name: Make Installer
-        run: make installer
+      - name: Build Installer
+        run: |
+          chmod +x build.sh
+          ./build.sh
       - name: Checksum Installer
         run: sha512sum installer.tar.gz > installer.sha512
       - name: Release
