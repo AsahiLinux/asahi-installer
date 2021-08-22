@@ -8,8 +8,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Build
-        run: echo ${{ github.sha }} > Release.txt
+      - name: Deps
+        run: |
+          apt update && apt install -y device-tree-compiler cpio imagemagick p7zip-full python3-pip
+          pip3 install certifi --user
       - name: Make Installer
         run: make installer
       - name: Checksum Installer
