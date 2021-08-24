@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import os, sys
+import os, sys, os.path
 from dataclasses import dataclass
 
 from urllib import request
@@ -113,5 +113,7 @@ if __name__ == "__main__":
     zf = zipfile.ZipFile(URLCache(url))
     for f in zf.infolist():
         print(f)
-    
-    print(zf.open("BuildManifest.plist").read().decode("ascii"))
+
+    for i in sys.argv[2:]:
+        os.makedirs(os.path.dirname(i), exist_ok=True)
+        open(i,"wb").write(zf.open(i).read())
