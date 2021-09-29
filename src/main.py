@@ -356,7 +356,8 @@ class InstallerMain:
                     continue
                 state = " "
                 if self.sysinfo.boot_vgid == os.vgid and self.sysinfo.boot_uuid == os.rec_vgid:
-                    self.cur_os = os
+                    if p.type == "APFS":
+                        self.cur_os = os
                     state = "R"
                 elif self.sysinfo.boot_uuid == os.vgid:
                     self.cur_os = os
