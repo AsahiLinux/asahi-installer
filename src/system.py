@@ -62,6 +62,7 @@ class SystemInfo:
 
         self.macos_ver, self.macos_build = self.get_version("/System/Library/CoreServices/SystemVersion.plist")
         self.sfr_ver, self.sfr_build = self.get_version("/System/Volumes/iSCPreboot/SFR/current/SystemVersion.plist")
+        self.fsfr_ver, self.fsfr_build = self.get_version("/System/Volumes/iSCPreboot/SFR/fallback/SystemVersion.plist")
 
         self.login_user = None
         consoleuser = subprocess.run(["scutil"],
@@ -87,8 +88,11 @@ class SystemInfo:
             self.default_boot = self.nvram["boot-volume"].split(":")[2]
 
     def get_version(self, name):
-        data = plistlib.load(open(name, "rb"))
-        return data["ProductVersion"], data["ProductBuildVersion"]
+        try:
+            data = plistlib.load(open(name, "rb"))
+            return data["ProductVersion"], data["ProductBuildVersion"]
+        except:
+            return None, None
 
     def show(self):
         print(f"System information:")
@@ -104,7 +108,11 @@ class SystemInfo:
         print(f"  Default boot VGID: {self.default_boot}")
         print(f"  Boot mode: {self.boot_mode}")
         print(f"  OS version: {self.macos_ver} ({self.macos_build})")
-        print(f"  SFR version: {self.sfr_ver} ({self.sfr_build})")
+        print(f"  System rOS version: {self.sfr_ver} ({self.sfr_build})")
+        if self.fsfr_ver:
+            print(f"  Fallback rOS version: {self.fsfr_ver} ({self.fsfr_build})")
+        else:
+            print(f"  No Fallback rOS")
         print(f"  Login user: {self.login_user}")
 
     def get_child(self, obj, name):
