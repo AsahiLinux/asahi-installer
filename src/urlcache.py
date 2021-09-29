@@ -115,5 +115,7 @@ if __name__ == "__main__":
         print(f)
 
     for i in sys.argv[2:]:
-        os.makedirs(os.path.dirname(i), exist_ok=True)
+        dn = os.path.dirname(i)
+        if dn:
+            os.makedirs(dn, exist_ok=True)
         open(i,"wb").write(zf.open(i).read())
