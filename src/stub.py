@@ -38,10 +38,10 @@ class Installer:
                 self.dutil.changeVolumeRole(default_vol[0]["DeviceIdentifier"], "D")
                 self.dutil.rename(default_vol[0]["DeviceIdentifier"], self.label + " - Data")
             else:
-                self.dutil.addVolume(ctref, label, role="D")
+                self.dutil.addVolume(ctref, self.label, role="D")
             self.dutil.refresh_part(self.part)
         else:
-            self.label = label.rstrip(" - Data")
+            self.label = self.label.rstrip(" - Data")
 
         for volume in self.part.container["Volumes"]:
             if volume["Roles"] == ["Data",]:
@@ -68,10 +68,13 @@ class Installer:
             self.part = part
 
         print("Checking volumes...")
-        self.osi = self.osinfo.collect_one(self.part)
-        
-        if self.osi is None:
+        os = self.osinfo.collect_part(self.part)
+
+        if len(os) != 1:
             raise Exception("Container is not ready for OS install")
+
+        self.osi = os[0]
+        
         if self.verbose:
             print()
 
@@ -230,7 +233,7 @@ class Installer:
         self.ucache.flush_progress()
 
         os.makedirs(os.path.join(pb_vgid, "var/db"), exist_ok=True)
-        admin_users = os.path.join(cur_os.os.preboot, cur_os.os.vgid, "var/db/AdminUserRecoveryInfo.plist")
+        admin_users = os.path.join(cur_os.preboot, cur_os.vgid, "var/db/AdminUserRecoveryInfo.plist")
         tg_admin_users = os.path.join(pb_vgid, "var/db/AdminUserRecoveryInfo.plist")
 
         if os.path.exists(tg_admin_users):

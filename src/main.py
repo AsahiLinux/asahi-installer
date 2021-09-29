@@ -83,7 +83,7 @@ class InstallerMain:
             print("paired recovery, or ensure the boot device is set correctly.")
             sys.exit(1)
 
-        print(f"Using OS '{self.cur_os.label}' ({self.cur_os.name}) for machine authentication.")
+        print(f"Using OS '{self.cur_os.label}' ({self.cur_os.sys_volume}) for machine authentication.")
 
     def action_install_into_container(self, avail_parts):
         self.check_cur_os()
@@ -327,7 +327,7 @@ class InstallerMain:
                     p.desc += f" [{p.label}]"
                 vols = p.container["Volumes"]
                 p.desc += f" ({ssize(p.size)}, {len(vols)} volume{'s' if len(vols) != 1 else ''})"
-                if p.os and p.os.version:
+                if p.os and any(os.version for os in p.os):
                     parts_system.append(p)
                 else:
                     if p.size >= STUB_SIZE * 0.95:
@@ -339,32 +339,36 @@ class InstallerMain:
         print(f"Partitions in system disk ({self.sysdsk}):")
 
         self.cur_os = None
-        self.is_sfr_recovery = True
+        self.is_sfr_recovery = self.sysinfo.boot_vgid in (osenum.UUID_SROS, osenum.UUID_FROS)
+        default_os = None
 
         for i, p in enumerate(self.parts):
             if p.desc is None:
                 continue
             print(f"  {i}: {p.desc}")
-            if p.os and p.os.version:
+            if not p.os:
+                continue
+            for os in p.os:
+                if not os.version:
+                    continue
                 state = " "
-                if self.sysinfo.boot_uuid == p.os.rec_vgid:
-                    self.cur_os = p
-                    self.is_sfr_recovery = False
+                if self.sysinfo.boot_vgid == os.vgid and self.sysinfo.boot_uuid == os.rec_vgid:
+                    self.cur_os = os
                     state = "R"
-                elif self.sysinfo.boot_uuid == p.os.vgid:
-                    self.cur_os = p
-                    self.is_sfr_recovery = False
+                elif self.sysinfo.boot_uuid == os.vgid:
+                    self.cur_os = os
                     state = "B"
-                elif self.sysinfo.boot_vgid == p.os.vgid:
-                    self.is_sfr_recovery = False
+                elif self.sysinfo.boot_vgid == os.vgid:
                     state = "?"
-                if self.sysinfo.default_boot == p.os.vgid:
-                    if self.cur_os is None:
-                        self.cur_os = p
+                if self.sysinfo.default_boot == os.vgid:
+                    default_os = os
                     state += "*"
                 else:
                     state += " "
-                print(f"    OS: [{state}] {p.os}")
+                print(f"    OS: [{state}] {os}")
+
+        if self.cur_os is None:
+            self.cur_os = default_os
 
         print()
         print("  [B ] = Booted OS, [R ] = Booted recovery, [? ] = Unknown")

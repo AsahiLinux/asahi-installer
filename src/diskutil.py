@@ -41,6 +41,8 @@ class DiskUtil:
         else:
             apfs = self.get("apfs", "list", "-plist")
         for ctnr in apfs["Containers"]:
+            vgs = self.get("apfs", "listVolumeGroups", ctnr["ContainerReference"], "-plist")
+            ctnr["VolumeGroups"] = vgs["Containers"][0]["VolumeGroups"]
             self.ctnr_by_ref[ctnr["ContainerReference"]] = ctnr
             self.ctnr_by_store[ctnr["DesignatedPhysicalStore"]] = ctnr
 

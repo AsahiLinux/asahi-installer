@@ -7,8 +7,11 @@ UUID_FROS = "C8858560-55AC-400F-BBB9-C9220A8DAC0D"
 
 @dataclass
 class OSInfo:
-    partition: str
+    partition: object
     vgid: str
+    label: str = None
+    sys_volume: str = None
+    data_volume: str = None
     stub: bool = False
     version: str = None
     m1n1_ver: str = None
@@ -20,25 +23,24 @@ class OSInfo:
     bp: object = None
 
     def __str__(self):
-        if self.rec_vgid and not self.vgid: # System Recovery
-            if self.rec_vgid == UUID_SROS:
-                return f"recoveryOS v{self.version} [Primary recoveryOS]"
-            else:
-                return f"recoveryOS v{self.version} [Fallback recoveryOS]"
-        if not self.stub:
+        if self.vgid == UUID_SROS:
+            return f"recoveryOS v{self.version} [Primary recoveryOS]"
+        elif self.vgid == UUID_FROS:
+            return f"recoveryOS v{self.version} [Fallback recoveryOS]"
+        elif not self.stub:
             if self.m1n1_ver is not None:
-                return f"macOS v{self.version} + m1n1 {self.m1n1_ver} [{self.vgid}]"
+                return f"[{self.label}] macOS v{self.version} + m1n1 {self.m1n1_ver} [{self.sys_volume}, {self.vgid}]"
             elif self.bp and self.bp.get("coih", None):
-                return f"macOS v{self.version} + unknown fuOS [{self.vgid}]"
+                return f"[{self.label}] macOS v{self.version} + unknown fuOS [{self.sys_volume}, {self.vgid}]"
             else:
-                return f"macOS v{self.version} [{self.vgid}]"
+                return f"[{self.label}] macOS v{self.version} [{self.sys_volume}, {self.vgid}]"
         elif self.bp and self.bp.get("coih", None):
             if self.m1n1_ver:
-                return f"m1n1 v{self.m1n1_ver} (macOS {self.version} stub) [{self.vgid}]"
+                return f"[{self.label}] m1n1 v{self.m1n1_ver} (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
             else:
-                return f"unknown fuOS (macOS {self.version} stub) [{self.vgid}]"
+                return f"[{self.label}] unknown fuOS (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
         else:
-            return f"broken stub (macOS {self.version} stub) [{self.vgid}]"
+            return f"[{self.label}] broken stub (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
 
 class OSEnum:
     def __init__(self, sysinfo, dutil, sysdsk):
@@ -48,42 +50,71 @@ class OSEnum:
     
     def collect(self, parts):
         for p in parts:
+            p.os = []
             if p.type == "Apple_APFS_Recovery":
                 self.collect_recovery(p)
-            self.collect_one(p)
+            else:
+                self.collect_part(p)
 
     def collect_recovery(self, part):
-        part.os = OSInfo(partition=part, vgid=None, rec_vgid=UUID_SROS,
-                         version=self.sysinfo.sfr_ver)
+        part.os.append(OSInfo(partition=part, vgid=UUID_SROS,
+                              version=self.sysinfo.sfr_ver))
+        if self.sysinfo.fsfr_ver:
+            part.os.append(OSInfo(partition=part, vgid=UUID_FROS,
+                                  version=self.sysinfo.fsfr_ver))
 
-    def collect_one(self, part):
+    def collect_part(self, part):
         if part.container is None:
             return
 
+        part.os = []
+
         ct = part.container
         by_role = {}
+        by_device = {}
 
         for volume in ct["Volumes"]:
             by_role.setdefault(tuple(volume["Roles"]), []).append(volume)
+            by_device[volume["DeviceIdentifier"]] = volume
 
-        for role in ("Preboot", "Recovery", "Data", "System"):
+        volumes = {}
+
+        for role in ("Preboot", "Recovery"):
             vols = by_role.get((role,), None)
             if not vols:
                 return
             elif len(vols) > 1:
                 return
+            volumes[role] = vols[0]
 
+        for vg in ct["VolumeGroups"]:
+            data = [i for i in vg["Volumes"] if i["Role"] == "Data"]
+            system = [i for i in vg["Volumes"] if i["Role"] == "System"]
+            if len(data) != 1 or len(system) != 1:
+                continue
+
+            volumes["Data"] = by_device[data[0]["DeviceIdentifier"]]
+            volumes["System"] = by_device[system[0]["DeviceIdentifier"]]
+            part.os.append(self.collect_os(part, volumes))
+
+        return part.os
+
+    def collect_os(self, part, volumes):
         mounts = {}
 
         for role in ("Preboot", "Recovery", "Data", "System"):
-            mounts[role] = self.dutil.mount(by_role[(role,)][0]["DeviceIdentifier"])
+            mounts[role] = self.dutil.mount(volumes[role]["DeviceIdentifier"])
 
-        vgid = by_role[("Data",)][0]["APFSVolumeUUID"]
-        rec_vgid = by_role[("Recovery",)][0]["APFSVolumeUUID"]
+        vgid = volumes["Data"]["APFSVolumeUUID"]
+        rec_vgid = volumes["Recovery"]["APFSVolumeUUID"]
 
         stub = not os.path.exists(os.path.join(mounts["System"], "Library"))
 
-        osi = OSInfo(partition=part, vgid=vgid, stub=stub,
+        sys_volume = volumes["System"]["DeviceIdentifier"]
+        label = volumes["System"]["Name"]
+
+        osi = OSInfo(partition=part, vgid=vgid, stub=stub, label=label,
+                     sys_volume=sys_volume,
                      system=mounts["System"],
                      data=mounts["Data"],
                      preboot=mounts["Preboot"],
@@ -96,8 +127,6 @@ class OSEnum:
             osi.version = sysver["ProductVersion"]
         except FileNotFoundError:
             pass
-
-        part.os = osi
 
         try:
             bps = self.bputil("-d", "-v", vgid)
