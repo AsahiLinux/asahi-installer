@@ -57,7 +57,17 @@ class OSEnum:
                 self.collect_part(p)
 
     def collect_recovery(self, part):
+        recs = []
+
+        for volume in part.container["Volumes"]:
+            if volume["Roles"] == ["Recovery"]:
+                recs.append(volume)
+
+        if len(recs) != 1:
+            return
+
         part.os.append(OSInfo(partition=part, vgid=UUID_SROS,
+                              rec_vgid=recs[0]["APFSVolumeUUID"],
                               version=self.sysinfo.sfr_ver))
         if self.sysinfo.fsfr_ver:
             part.os.append(OSInfo(partition=part, vgid=UUID_FROS,

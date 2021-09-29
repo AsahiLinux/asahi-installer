@@ -31,10 +31,14 @@ class SystemInfo:
         boot_vgid = chosen.get("associated-volume-group", None)
         if boot_vgid is None:
             boot_vgid = chosen.get("apfs-preboot-uuid", None)
-        if boot_vgid is None:
-            self.boot_vgid = self.boot_uuid
-        else:
+        if boot_vgid is not None:
             self.boot_vgid = self.get_str(boot_vgid)
+        else:
+            boot_path = chosen.get("boot-objects-path", None)
+            if boot_path:
+                self.boot_vgid = self.get_str(boot_path).split("/")[1]
+            else:
+                self.boot_vgid = self.boot_uuid
         self.product_name = self.get_str(product["product-name"])
         self.soc_name = self.get_str(product["product-soc-name"])
 
