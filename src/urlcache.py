@@ -13,7 +13,7 @@ class URLCache:
     CACHESIZE = 32
     BLOCKSIZE = 1 * 1024 * 1024
     READAHEAD = 10
-    
+
     def __init__(self, url):
         self.url = url
         self.size = self.get_size()
@@ -23,7 +23,7 @@ class URLCache:
 
     def seekable(self):
         return True
-        
+
     def get_size(self):
         req = request.Request(self.url, method="HEAD")
         fd = request.urlopen(req)
@@ -34,7 +34,7 @@ class URLCache:
         req = request.Request(self.url, method="GET")
         req.add_header("Range", f"bytes={off}-{off+size-1}")
         fd = request.urlopen(req)
-        
+
         if size <= self.BLOCKSIZE:
             sys.stdout.write(".")
         else:
@@ -59,10 +59,10 @@ class URLCache:
 
         size = min(off + size, self.size) - off
         data = self.get_partial(off, size)
-        
+
         off = 0
         blk2 = blk
-        
+
         while off < len(data):
             self.cache[blk2] = CacheBlock(idx=blk2, data=data[off:off + self.BLOCKSIZE])
             off += self.BLOCKSIZE
@@ -80,7 +80,7 @@ class URLCache:
 
     def tell(self):
         return self.p
-    
+
     def read(self, count=None):
         if count is None:
             count = self.size - self.p
@@ -91,15 +91,15 @@ class URLCache:
         d = []
         for blk in range(blk_start, blk_end + 1):
             d.append(self.get_block(blk).data)
-        
+
         trim = self.p - (blk_start * self.BLOCKSIZE)
         d[0] = d[0][trim:]
-        
+
         d = b"".join(d)[:count]
         assert len(d) == count
         self.p += count
         return d
-    
+
     def flush_progress(self):
         if self.blocks_read > 0:
             sys.stdout.write("\n")

@@ -8,19 +8,19 @@ class SystemInfo:
     def fetch(self):
         result = subprocess.run(["ioreg", "-alp", "IODeviceTree"],
                                 stdout=subprocess.PIPE, check=True)
-        
+
         self.ioreg = plistlib.loads(result.stdout)
-        
+
         for dt in self.ioreg["IORegistryEntryChildren"]:
             if dt.get("IOObjectClass", None) == "IOPlatformExpertDevice":
                 break
         else:
             raise Exception("Could not find IOPlatformExpertDevice")
-        
+
         self.dt = dt
         self.chosen = chosen = self.get_child(dt, "chosen")
         self.product = product = self.get_child(dt, "product")
-        
+
         sys_compat = self.get_list(dt["compatible"])
         self.device_class = sys_compat[0].lower()
         self.product_type = sys_compat[1]
@@ -79,9 +79,9 @@ class SystemInfo:
     def get_nvram_data(self):
         nvram_data = subprocess.run(["nvram", "-p"],
                                     stdout=subprocess.PIPE, check=True).stdout
-        
+
         self.nvram = {}
-        
+
         for line in nvram_data.rstrip(b"\n").split(b"\n"):
             line = line.decode("ascii")
             k, v = line.split("\t", 1)
@@ -125,7 +125,7 @@ class SystemInfo:
                 break
         else:
             raise Exception(f"Could not find {name}")
-        
+
         return child
 
     def get_list(self, val):
@@ -136,4 +136,4 @@ class SystemInfo:
 
     def get_int(self, val):
         return struct.unpack("<I", val)[0]
-        
+

@@ -26,7 +26,7 @@ IPSW_VERSIONS = [
          "11.5", # guess?
          "iBoot-6723.140.2",
          True,
-         "https://updates.cdn-apple.com/2021SummerFCS/fullrestores/071-78715/CFEE4AA0-C104-479B-BDE1-3BFA1DFE710C/UniversalMac_11.5.2_20G95_Restore.ipsw"), 
+         "https://updates.cdn-apple.com/2021SummerFCS/fullrestores/071-78715/CFEE4AA0-C104-479B-BDE1-3BFA1DFE710C/UniversalMac_11.5.2_20G95_Restore.ipsw"),
     IPSW("12.0 beta5",
          "12.0",
          "iBoot-7429.30.8.0.4",
@@ -49,7 +49,7 @@ class InstallerMain:
                 default += 1
 
         int_keys = all(isinstance(i, int) for i in options.keys())
-        
+
         for k, v in options.items():
             print(f"  {k}: {v}")
 
@@ -86,17 +86,17 @@ class InstallerMain:
         self.check_cur_os()
 
         containers = {str(i): p.desc for i,p in enumerate(self.parts) if p in avail_parts}
-        
+
         print()
         print("Choose a container to install into:")
         idx = self.choice("Target container", containers)
         self.part = self.parts[int(idx)]
-        
+
         print(f"Installing stub macOS into {self.part.name} ({self.part.label})")
 
         ipsw = self.choose_ipsw()
         self.ins = stub.Installer(self.sysinfo, self.dutil, self.osinfo, ipsw)
-        
+
         self.ins.prepare_volume(self.part)
         self.ins.check_volume()
         self.ins.install_files(self.cur_os)
@@ -106,12 +106,12 @@ class InstallerMain:
         self.check_cur_os()
 
         frees = {str(i): p.desc for i,p in enumerate(self.parts) if p in avail_free}
-        
+
         print()
         print("Choose a free area to install into:")
         idx = self.choice("Target area", frees)
         free_part = self.parts[int(idx)]
-        
+
         label = input("Enter a name for your OS (Linux): ") or "Linux"
         print()
 
@@ -148,14 +148,14 @@ class InstallerMain:
         self.ipsw = ipsw = avail[idx]
         print(f"Using macOS {ipsw.version}")
         print()
-        
+
         return ipsw
 
     def step2(self):
         is_1tr = self.sysinfo.boot_mode == "one true recoveryOS"
         is_recovery = "recoveryOS" in self.sysinfo.boot_mode
         bootpicker_works = split_ver(self.sysinfo.macos_ver) >= split_ver(self.ipsw.min_macos)
-        
+
         if is_1tr and self.is_sfr_recovery and self.ipsw.paired_sfr:
             self.startup_disk(recovery=True)
             subprocess.run([self.ins.step2_sh], check=True)
@@ -254,7 +254,7 @@ class InstallerMain:
             time.sleep(0.5)
             sd = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         cur_vol = self.sysinfo.default_boot
-        
+
         # This race is tight... I hate this.
         while self.sysinfo.default_boot == cur_vol:
             self.sysinfo.get_nvram_data()
@@ -289,7 +289,7 @@ class InstallerMain:
         self.sysinfo = system.SystemInfo()
         self.sysinfo.show()
         print()
-        
+
         if self.sysinfo.boot_mode == "macOS" and (
             (not self.sysinfo.login_user)
             or self.sysinfo.login_user == "unknown"):
@@ -298,7 +298,7 @@ class InstallerMain:
             print("Please make sure a user is logged into the local console.")
             print("You can use SSH as long as there is a local login session.")
             sys.exit(1)
-        
+
         print("Collecting partition information...")
         self.dutil = diskutil.DiskUtil()
         self.dutil.get_info()
@@ -306,7 +306,7 @@ class InstallerMain:
         print(f"  System disk: {self.sysdsk}")
         self.parts = self.dutil.get_partitions(self.sysdsk)
         print()
-    
+
         print("Collecting OS information...")
         self.osinfo = osenum.OSEnum(self.sysinfo, self.dutil, self.sysdsk)
         self.osinfo.collect(self.parts)
@@ -378,7 +378,7 @@ class InstallerMain:
         print("  [ *] = Default boot volume")
         print()
         actions = {}
-        
+
         if parts_free:
             actions["f"] = "Install Asahi Linux into free space"
         if parts_empty_apfs:

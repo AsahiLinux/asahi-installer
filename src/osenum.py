@@ -47,7 +47,7 @@ class OSEnum:
         self.sysinfo = sysinfo
         self.dutil = dutil
         self.sysdsk = sysdsk
-    
+
     def collect(self, parts):
         for p in parts:
             p.os = []

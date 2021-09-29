@@ -19,14 +19,14 @@ class Installer:
         self.part = part
 
         by_role = {}
-        
+
         ctref = self.part.container["ContainerReference"]
-        
+
         print("Preparing target volumes...")
 
         for volume in self.part.container["Volumes"]:
             by_role.setdefault(tuple(volume["Roles"]), []).append(volume)
-        
+
         for role in ("Preboot", "Recovery", "Data", "System"):
             vols = by_role.get(role, [])
             if len(vols) > 1:
@@ -74,7 +74,7 @@ class Installer:
             raise Exception("Container is not ready for OS install")
 
         self.osi = os[0]
-        
+
         if self.verbose:
             print()
 
@@ -143,7 +143,7 @@ class Installer:
         manifest = plistlib.load(ipsw.open("BuildManifest.plist"))
         bootcaches = plistlib.load(ipsw.open("usr/standalone/bootcaches.plist"))
         self.ucache.flush_progress()
-        
+
         for identity in manifest["BuildIdentities"]:
             if (identity["ApBoardID"] != hex(self.sysinfo.board_id) or
                 identity["ApChipID"] != hex(self.sysinfo.chip_id) or
@@ -202,9 +202,9 @@ class Installer:
 
         pb_vgid = os.path.join(self.osi.preboot, self.osi.vgid)
         os.makedirs(pb_vgid, exist_ok=True)
-        
+
         bless2 = bootcaches["bless2"]
-        
+
         restore_bundle = os.path.join(pb_vgid, bless2["RestoreBundlePath"])
         os.makedirs(restore_bundle, exist_ok=True)
         with open(os.path.join(restore_bundle, "BuildManifest.plist"), "wb") as fd:
@@ -212,7 +212,7 @@ class Installer:
         self.extract("SystemVersion.plist", restore_bundle)
         self.extract("RestoreVersion.plist", restore_bundle)
         self.extract("usr/standalone/bootcaches.plist", restore_bundle)
-        
+
         self.extract_tree("BootabilityBundle/Restore/Bootability",
                           os.path.join(restore_bundle, "Bootability"))
         self.extract_file("BootabilityBundle/Restore/Firmware/Bootability.dmg.trustcache",
@@ -229,7 +229,7 @@ class Installer:
                 continue
             self.extract(path, restore_bundle)
             copied.add(path)
-        
+
         self.ucache.flush_progress()
 
         os.makedirs(os.path.join(pb_vgid, "var/db"), exist_ok=True)
@@ -239,7 +239,7 @@ class Installer:
         if os.path.exists(tg_admin_users):
             self.chflags("noschg", tg_admin_users)
         shutil.copy(admin_users, tg_admin_users)
-        
+
         # Stop macOS <12.0 bootability stufff from clobbering this file
         self.chflags("schg", tg_admin_users)
 
@@ -256,7 +256,7 @@ class Installer:
 
         rec_vgid = os.path.join(self.osi.recovery, self.osi.vgid)
         os.makedirs(rec_vgid, exist_ok=True)
-        
+
         basesystem_path = os.path.join(rec_vgid, "usr/standalone/firmware")
         os.makedirs(basesystem_path, exist_ok=True)
 
