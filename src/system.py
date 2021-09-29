@@ -60,7 +60,8 @@ class SystemInfo:
             boot_mode = bputil_info.split(b"OS Type")[1].split(b"\n")[0]
             self.boot_mode = boot_mode.split(b": ")[1].decode("ascii")
 
-        self.macos_ver = subprocess.run(["sw_vers", "-productVersion"], capture_output=True).stdout.decode("ascii").strip()
+        self.macos_ver, self.macos_build = self.get_version("/System/Library/CoreServices/SystemVersion.plist")
+        self.sfr_ver, self.sfr_build = self.get_version("/System/Volumes/iSCPreboot/SFR/current/SystemVersion.plist")
 
         self.login_user = None
         consoleuser = subprocess.run(["scutil"],
@@ -85,6 +86,9 @@ class SystemInfo:
         if "boot-volume" in self.nvram:
             self.default_boot = self.nvram["boot-volume"].split(":")[2]
 
+    def get_version(self, name):
+        data = plistlib.load(open(name, "rb"))
+        return data["ProductVersion"], data["ProductBuildVersion"]
 
     def show(self):
         print(f"System information:")
@@ -99,7 +103,8 @@ class SystemInfo:
         print(f"  Boot VGID: {self.boot_vgid}")
         print(f"  Default boot VGID: {self.default_boot}")
         print(f"  Boot mode: {self.boot_mode}")
-        print(f"  OS version: {self.macos_ver}")
+        print(f"  OS version: {self.macos_ver} ({self.macos_build})")
+        print(f"  SFR version: {self.sfr_ver} ({self.sfr_build})")
         print(f"  Login user: {self.login_user}")
 
     def get_child(self, obj, name):
