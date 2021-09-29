@@ -2,6 +2,9 @@
 import os, os.path, plistlib, subprocess
 from dataclasses import dataclass
 
+UUID_SROS = "3D3287DE-280D-4619-AAAB-D97469CA9C71"
+UUID_FROS = "C8858560-55AC-400F-BBB9-C9220A8DAC0D"
+
 @dataclass
 class OSInfo:
     partition: str
@@ -17,6 +20,11 @@ class OSInfo:
     bp: object = None
 
     def __str__(self):
+        if self.rec_vgid and not self.vgid: # System Recovery
+            if self.rec_vgid == UUID_SROS:
+                return f"recoveryOS v{self.version} [Primary recoveryOS]"
+            else:
+                return f"recoveryOS v{self.version} [Fallback recoveryOS]"
         if not self.stub:
             if self.m1n1_ver is not None:
                 return f"macOS v{self.version} + m1n1 {self.m1n1_ver} [{self.vgid}]"
@@ -40,7 +48,13 @@ class OSEnum:
     
     def collect(self, parts):
         for p in parts:
+            if p.type == "Apple_APFS_Recovery":
+                self.collect_recovery(p)
             self.collect_one(p)
+
+    def collect_recovery(self, part):
+        part.os = OSInfo(partition=part, vgid=None, rec_vgid=UUID_SROS,
+                         version=self.sysinfo.sfr_ver)
 
     def collect_one(self, part):
         if part.container is None:

@@ -313,14 +313,16 @@ class InstallerMain:
         parts_system = []
 
         for i, p in enumerate(self.parts):
-            if p.type in ("Apple_APFS_ISC", "Apple_APFS_Recovery"):
+            if p.type in ("Apple_APFS_ISC",):
                 continue
             if p.free:
                 p.desc = f"(free space: {ssize(p.size)})"
                 if p.size > STUB_SIZE:
                     parts_free.append(p)
-            elif p.type == "Apple_APFS":
-                p.desc = f"APFS"
+            elif p.type.startswith("Apple_APFS"):
+                p.desc = "APFS"
+                if p.type == "Apple_APFS_Recovery":
+                    p.desc += " (System Recovery)"
                 if p.label is not None:
                     p.desc += f" [{p.label}]"
                 vols = p.container["Volumes"]
