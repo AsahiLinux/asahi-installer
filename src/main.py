@@ -242,11 +242,17 @@ class InstallerMain:
             args = ["/System/Applications/Utilities/Startup Disk.app/Contents/MacOS/Startup Disk"]
         else:
             os.system("killall -9 'System Preferences' 2>/dev/null")
+            time.sleep(0.5)
             args = ["sudo", "-u", self.sysinfo.login_user,
                     "open", "-b", "com.apple.systempreferences",
                     "/System/Library/PreferencePanes/StartupDisk.prefPane"]
 
         sd = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if not recovery:
+            # Sometimes this doesn't open the right PrefPane and we need to do it twice (?!)
+            sd.wait()
+            time.sleep(0.5)
+            sd = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         cur_vol = self.sysinfo.default_boot
         
         # This race is tight... I hate this.
