@@ -242,6 +242,7 @@ class InstallerMain:
             args = ["/System/Applications/Utilities/Startup Disk.app/Contents/MacOS/Startup Disk"]
         else:
             os.system("killall -9 'System Preferences' 2>/dev/null")
+            os.system("killall -9 storagekitd 2>/dev/null")
             time.sleep(0.5)
             args = ["sudo", "-u", self.sysinfo.login_user,
                     "open", "-b", "com.apple.systempreferences",
