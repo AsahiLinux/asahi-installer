@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: MIT
-import os, os.path, shlex, subprocess, sys, time
+import os, os.path, shlex, subprocess, sys, time, termios
 from dataclasses import dataclass
 
 import system, osenum, stub, diskutil
@@ -179,6 +179,12 @@ class InstallerMain:
     def step2_ros_indirect(self):
         self.startup_disk_recovery()
 
+    def flush_input(self):
+        try:
+            termios.tcflush(sys.stdin, termios.TCIOFLUSH)
+        except:
+            pass
+
     def step2_indirect(self):
         print( "The system will now shut down.")
         print( "To complete the installation, perform the following steps:")
@@ -194,6 +200,8 @@ class InstallerMain:
         print()
         print(f"/Volumes/{shlex.quote(self.part.label)}/step2.sh")
         print()
+        time.sleep(2)
+        self.flush_input()
         print( "Press enter to shut down the system.")
         input()
         os.system("shutdown -h now")
