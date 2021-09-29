@@ -172,9 +172,12 @@ class Installer:
         self.ucache.flush_progress()
 
         # Make the icon work
-        subprocess.run(["xattr", "-wx", "com.apple.FinderInfo",
-                        "0000000000000000040000000000000000000000000000000000000000000000",
-                        self.osi.system], check=True)
+        try:
+            subprocess.run(["xattr", "-wx", "com.apple.FinderInfo",
+                           "0000000000000000040000000000000000000000000000000000000000000000",
+                           self.osi.system], check=True)
+        except:
+            print("Failed to apply extended attributes, logo will not work.")
 
         shutil.copy("m1n1.macho", os.path.join(self.osi.system))
         step2_sh = open("step2.sh").read().replace("##VGID##", self.osi.vgid)
