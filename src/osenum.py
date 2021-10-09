@@ -112,8 +112,14 @@ class OSEnum:
     def collect_os(self, part, volumes):
         mounts = {}
 
-        for role in ("Preboot", "Recovery", "Data", "System"):
+        for role in ("Preboot", "Recovery", "System"):
             mounts[role] = self.dutil.mount(volumes[role]["DeviceIdentifier"])
+
+        # Data will fail to mount for FileVault-enabled OSes; ignore that.
+        try:
+            mounts["Data"] = self.dutil.mount(volumes["Data"]["DeviceIdentifier"])
+        except:
+            mounts["Data"] = None
 
         vgid = volumes["Data"]["APFSVolumeUUID"]
         rec_vgid = volumes["Recovery"]["APFSVolumeUUID"]
