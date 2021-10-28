@@ -37,6 +37,11 @@ IPSW_VERSIONS = [
          "iBoot-7429.40.84.181.1",
          False,
          "https://updates.cdn-apple.com/2021SummerSeed/fullrestores/002-03830/B8D1658D-A579-4479-BBB1-7CDEAF328303/UniversalMac_12.0_21A5534d_Restore.ipsw"),
+    IPSW("12.0.1",
+         "12.0",
+         "iBoot-7429.41.5",
+         False,
+         "https://updates.cdn-apple.com/2021FCSFall/fullrestores/002-23780/D3417F21-41BD-4DDF-9135-FA5A129AF6AF/UniversalMac_12.0.1_21A559_Restore.ipsw"),
 ]
 
 class InstallerMain:
