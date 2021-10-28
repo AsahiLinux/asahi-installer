@@ -145,8 +145,8 @@ class Installer:
         self.ucache.flush_progress()
 
         for identity in manifest["BuildIdentities"]:
-            if (identity["ApBoardID"] != hex(self.sysinfo.board_id) or
-                identity["ApChipID"] != hex(self.sysinfo.chip_id) or
+            if (identity["ApBoardID"] != f'0x{self.sysinfo.board_id:02X}' or
+                identity["ApChipID"] != f'0x{self.sysinfo.chip_id:04X}' or
                 identity["Info"]["DeviceClass"] != self.sysinfo.device_class or
                 identity["Info"]["RestoreBehavior"] != "Erase" or
                 identity["Info"]["Variant"] != "macOS Customer"):
