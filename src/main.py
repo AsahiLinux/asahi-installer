@@ -16,6 +16,24 @@ class IPSW:
     paired_sfr: bool
     url: str
 
+CHIP_MIN_VER = {
+    0x8103: "11.0",     # T8103, M1
+    0x6000: "12.0",     # T6000, M1 Pro
+    0x6001: "12.0",     # T6001, M1 Max
+}
+
+DEVICE_MIN_VER = {
+    "j274ap": "11.0",   # Mac mini (M1, 2020)
+    "j293ap": "11.0",   # MacBook Pro (13-inch, M1, 2020)
+    "j313ap": "11.0",   # MacBook Air (M1, 2020)
+    "j456ap": "11.3",   # iMac (24-inch, M1, 2021)
+    "j457ap": "11.3",   # iMac (24-inch, M1, 2021)
+    "j314cap": "12.0",  # MacBook Pro (14-inch, 2021)
+    "j314sap": "12.0",  # MacBook Pro (14-inch, 2021)
+    "j316cap": "12.0",  # MacBook Pro (16-inch, 2021)
+    "j316sap": "12.0",  # MacBook Pro (16-inch, 2021)
+}
+
 IPSW_VERSIONS = [
     IPSW("11.4",
          "11.4",
@@ -27,12 +45,12 @@ IPSW_VERSIONS = [
          "iBoot-6723.140.2",
          True,
          "https://updates.cdn-apple.com/2021SummerFCS/fullrestores/071-78715/CFEE4AA0-C104-479B-BDE1-3BFA1DFE710C/UniversalMac_11.5.2_20G95_Restore.ipsw"),
-    IPSW("12.0 beta5",
+    IPSW("12.0 beta 5",
          "12.0",
          "iBoot-7429.30.8.0.4",
          False,
          "https://updates.cdn-apple.com/2021SummerSeed/fullrestores/071-80097/9F639C04-F128-4EC9-93D3-2AAE04F8A314/UniversalMac_12.0_21A5304g_Restore.ipsw"),
-    IPSW("12.0 beta8",
+    IPSW("12.0 beta 8",
          "12.0",
          "iBoot-7429.40.84.181.1",
          False,
@@ -137,9 +155,12 @@ class InstallerMain:
     def choose_ipsw(self):
         sys_iboot = split_ver(self.sysinfo.sys_firmware)
         sys_macos = split_ver(self.sysinfo.macos_ver)
+        chip_min = split_ver(CHIP_MIN_VER.get(self.sysinfo.chip_id, "0"))
+        device_min = split_ver(DEVICE_MIN_VER.get(self.sysinfo.device_class, "0"))
         avail = [ipsw for ipsw in IPSW_VERSIONS
                  if split_ver(ipsw.min_iboot) <= sys_iboot
-                 and split_ver(ipsw.min_macos) <= sys_macos]
+                 and split_ver(ipsw.min_macos) <= sys_macos
+                 and split_ver(ipsw.version) >= max(chip_min, device_min)]
 
         if not avail:
             print("Your OS is too old.")
