@@ -28,10 +28,10 @@ DEVICE_MIN_VER = {
     "j313ap": "11.0",   # MacBook Air (M1, 2020)
     "j456ap": "11.3",   # iMac (24-inch, M1, 2021)
     "j457ap": "11.3",   # iMac (24-inch, M1, 2021)
-    "j314cap": "12.0",  # MacBook Pro (14-inch, 2021)
-    "j314sap": "12.0",  # MacBook Pro (14-inch, 2021)
-    "j316cap": "12.0",  # MacBook Pro (16-inch, 2021)
-    "j316sap": "12.0",  # MacBook Pro (16-inch, 2021)
+    "j314cap": "12.0",  # MacBook Pro (14-inch, M1 Max, 2021)
+    "j314sap": "12.0",  # MacBook Pro (14-inch, M1 Pro, 2021)
+    "j316cap": "12.0",  # MacBook Pro (16-inch, M1 Max, 2021)
+    "j316sap": "12.0",  # MacBook Pro (16-inch, M1 Pro, 2021)
 }
 
 IPSW_VERSIONS = [
