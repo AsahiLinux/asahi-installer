@@ -12,4 +12,4 @@ This isn't even remotely ready for the end user yet.
 
 WARNING: This tool is in development and should be used only for testing purposes. It may be useful to understand how the final result will be.
 
-Run this command from the mac terminal (works also in 1TR): `curl -L https://mrcn.st/alxsh | sh`
+Run this command from the mac terminal (works also in 1TR): `/bin/sh -c "$(curl -fsSL https://mrcn.st/alxsh)"`
