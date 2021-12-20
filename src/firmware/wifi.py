@@ -71,6 +71,10 @@ class WiFiFWCollection(object):
                     node = node.leaves.setdefault(k, FWNode())
                 with open(path, "rb") as fd:
                     data = fd.read()
+
+                if name.endswith(".txt"):
+                    data = self.process_nvram(data)
+
                 node.this = FWFile(relpath, data)
 
     def prune(self, node=None, depth=0):
@@ -112,6 +116,24 @@ class WiFiFWCollection(object):
             filename = f"brcm/brcmfmac{chip}{rev}-pcie.apple{rest}.{ext}"
 
             yield filename, fwfile
+
+    def process_nvram(self, data):
+        data = data.decode("ascii")
+        keys = {}
+        lines = []
+        for line in data.split("\n"):
+            if not line:
+                continue
+            key, value = line.split("=", 1)
+            keys[key] = value
+            # Clean up spurious whitespace that Linux does not like
+            lines.append(f"{key.strip()}={value}\n")
+
+        # Add a default MAC address if missing
+        if "macaddr" not in keys:
+            lines.append("macaddr=00:10:18:10:00:00\n")
+
+        return "".join(lines).encode("ascii")
 
     def print(self):
         self.root.print()
