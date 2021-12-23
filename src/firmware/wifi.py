@@ -129,10 +129,6 @@ class WiFiFWCollection(object):
             # Clean up spurious whitespace that Linux does not like
             lines.append(f"{key.strip()}={value}\n")
 
-        # Add a default MAC address if missing
-        if "macaddr" not in keys:
-            lines.append("macaddr=00:10:18:10:00:00\n")
-
         return "".join(lines).encode("ascii")
 
     def print(self):
