@@ -141,7 +141,7 @@ if __name__ == "__main__":
         from . import FWPackage
 
         pkg = FWPackage(sys.argv[2])
-        pkg.add_files(col.files())
+        pkg.add_files(sorted(col.files()))
         pkg.close()
 
         for i in pkg.manifest:
