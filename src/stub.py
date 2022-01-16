@@ -1,12 +1,14 @@
 # SPDX-License-Identifier: MIT
 import os, plistlib, shutil, sys, stat, subprocess, urlcache, zipfile
 import osenum
+from util import split_ver
 
 class Installer:
     def __init__(self, sysinfo, dutil, osinfo, ipsw_info):
         self.dutil = dutil
         self.sysinfo = sysinfo
         self.osinfo = osinfo
+        self.install_version = ipsw_info.version.split(maxsplit=1)[0]
         self.verbose = "-v" in sys.argv
 
         print("Downloading OS package info...")
@@ -182,7 +184,10 @@ class Installer:
         except:
             print("Failed to apply extended attributes, logo will not work.")
 
-        shutil.copy("m1n1.macho", os.path.join(self.osi.system))
+        if split_ver(self.install_version) < (12, 1):
+            shutil.copy("m1n1.macho", os.path.join(self.osi.system))
+        else:
+            shutil.copy("m1n1.bin", os.path.join(self.osi.system))
         step2_sh = open("step2.sh").read().replace("##VGID##", self.osi.vgid)
         step2_sh_dst = os.path.join(self.osi.system, "step2.sh")
         with open(step2_sh_dst, "w") as fd:
