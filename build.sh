@@ -38,7 +38,7 @@ echo "Copying files..."
 
 cp -r "$SRC"/* "$PACKAGE/"
 cp "$ARTWORK/logos/icns/AsahiLinux_logomark.icns" "$PACKAGE/logo.icns"
-cp "$M1N1/build/m1n1.macho" "$PACKAGE"
+cp "$M1N1/build/m1n1.macho" "$M1N1/build/m1n1.bin" "$PACKAGE"
 
 echo "Extracting Python framework..."
 

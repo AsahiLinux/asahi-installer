@@ -25,7 +25,12 @@ echo
 read
 
 bputil -nc -v "$VGID"
-kmutil configure-boot -c m1n1.macho -v "$system_dir"
+
+if [ -f m1n1.macho ]; then
+    kmutil configure-boot -c m1n1.macho -v "$system_dir"
+else
+    kmutil configure-boot -c m1n1.bin --raw --entry-point 2048 --lowest-virtual-address 0 -v "$system_dir"
+fi
 
 echo
 echo "Installation complete! Press enter to reboot."
