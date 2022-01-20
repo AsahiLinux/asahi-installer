@@ -258,7 +258,7 @@ class InstallerMain:
         print()
 
     def startup_disk(self, recovery=False):
-        print(f"When the Startup Disk screen appears, choose '{self.part.label}'.")
+        print(f"When the Startup Disk screen appears, choose '{self.part.label}', then click Restart.")
         print( "You will have to authenticate yourself.")
         print()
         print( "Press enter to continue.")
