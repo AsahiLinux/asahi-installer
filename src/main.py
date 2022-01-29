@@ -35,16 +35,6 @@ DEVICE_MIN_VER = {
 }
 
 IPSW_VERSIONS = [
-    IPSW("11.4",
-         "11.4",
-         "iBoot-6723.120.36",
-         True,
-         "http://updates-http.cdn-apple.com/2021SpringFCS/fullrestores/071-00710/AB478B0E-D78C-4DFE-9BDA-5497969A5272/UniversalMac_11.4_20F71_Restore.ipsw"),
-    IPSW("11.5.2",
-         "11.5", # guess?
-         "iBoot-6723.140.2",
-         True,
-         "https://updates.cdn-apple.com/2021SummerFCS/fullrestores/071-78715/CFEE4AA0-C104-479B-BDE1-3BFA1DFE710C/UniversalMac_11.5.2_20G95_Restore.ipsw"),
     IPSW("12.0 beta 5",
          "12.0",
          "iBoot-7429.30.8.0.4",
