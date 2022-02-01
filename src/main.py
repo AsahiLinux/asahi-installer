@@ -182,16 +182,35 @@ class InstallerMain:
 
         return ipsw
 
+    def set_reduced_security(self):
+        print( "We are about to prepare your new stub OS for booting in")
+        print( "Reduced Security mode. Please enter your macOS credentials")
+        print( "when prompted.")
+        print()
+        print( "Press enter to continue.")
+        input()
+
+        while True:
+            try:
+                subprocess.run(["bputil", "-g", "-v", self.ins.osi.vgid], check=True)
+                break
+            except subprocess.CalledProcessError:
+                print("Failed to run bputil. Press enter to try again.")
+                input()
+
+        print()
+
     def step2(self):
         is_1tr = self.sysinfo.boot_mode == "one true recoveryOS"
         is_recovery = "recoveryOS" in self.sysinfo.boot_mode
         bootpicker_works = split_ver(self.sysinfo.macos_ver) >= split_ver(self.ipsw.min_macos)
 
         if is_1tr and self.is_sfr_recovery and self.ipsw.paired_sfr:
-            self.startup_disk(recovery=True)
             subprocess.run([self.ins.step2_sh], check=True)
+            self.startup_disk(recovery=True, volume_blessed=True, reboot=True)
         elif is_recovery:
-            self.startup_disk(recovery=True)
+            self.set_reduced_security()
+            self.startup_disk(recovery=True, volume_blessed=True)
             self.step2_indirect()
         elif bootpicker_works:
             self.startup_disk()
@@ -262,9 +281,10 @@ class InstallerMain:
         print(f"/Volumes/{shlex.quote(self.part.label)}/step2.sh")
         print()
 
-    def startup_disk(self, recovery=False):
+    def startup_disk(self, recovery=False, volume_blessed=False, reboot=False):
         print(f"When the Startup Disk screen appears, choose '{self.part.label}', then click Restart.")
-        print( "You will have to authenticate yourself.")
+        if not volume_blessed:
+            print( "You will have to authenticate yourself.")
         print()
         print( "Press enter to continue.")
         input()
@@ -288,16 +308,17 @@ class InstallerMain:
         cur_vol = self.sysinfo.default_boot
 
         # This race is tight... I hate this.
-        while self.sysinfo.default_boot == cur_vol:
-            self.sysinfo.get_nvram_data()
+        if not reboot:
+            while self.sysinfo.default_boot == cur_vol:
+                self.sysinfo.get_nvram_data()
 
-        if recovery:
-            sd.kill()
-        else:
-            os.system("killall -9 StartupDiskPrefPaneService 'System Preferences' 2>/dev/null")
-            sd.wait()
+            if recovery:
+                sd.kill()
+            else:
+                os.system("killall -9 StartupDiskPrefPaneService 'System Preferences' 2>/dev/null")
+                sd.wait()
 
-        print()
+            print()
 
     def main(self):
         print()
