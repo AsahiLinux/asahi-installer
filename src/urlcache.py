@@ -58,7 +58,16 @@ class URLCache:
             size += self.BLOCKSIZE
 
         size = min(off + size, self.size) - off
-        data = self.get_partial(off, size)
+        for retry in range(6):
+            try:
+                data = self.get_partial(off, size)
+            except Exception as e:
+                if retry == 5:
+                    print(f"Exceeded maximum retries downloading data.")
+                    sys.exit(1)
+                print(f"Error downloading data ({e}), retrying... ({retry + 1}/5)")
+            else:
+                break
 
         off = 0
         blk2 = blk
