@@ -61,7 +61,7 @@ rm -f _test* _tkinter*
     
 echo "Copying certificates..."
 
-certs="$(python -c 'import certifi; print(certifi.where())')"
+certs="$(python3 -c 'import certifi; print(certifi.where())')"
 cp "$certs" "$PACKAGE/Frameworks/Python.framework/Versions/Current/etc/openssl/cert.pem"
 
 echo "Packaging installer..."
