@@ -105,11 +105,12 @@ class OSEnum:
 
             volumes["Data"] = by_device[data[0]["DeviceIdentifier"]]
             volumes["System"] = by_device[system[0]["DeviceIdentifier"]]
-            part.os.append(self.collect_os(part, volumes))
+            vgid = vg["APFSVolumeGroupUUID"]
+            part.os.append(self.collect_os(part, volumes, vgid))
 
         return part.os
 
-    def collect_os(self, part, volumes):
+    def collect_os(self, part, volumes, vgid):
         mounts = {}
 
         for role in ("Preboot", "Recovery", "System"):
@@ -121,7 +122,6 @@ class OSEnum:
         except:
             mounts["Data"] = None
 
-        vgid = volumes["Data"]["APFSVolumeUUID"]
         rec_vgid = volumes["Recovery"]["APFSVolumeUUID"]
 
         stub = not os.path.exists(os.path.join(mounts["System"], "Library"))
