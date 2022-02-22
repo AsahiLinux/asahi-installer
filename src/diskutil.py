@@ -100,21 +100,24 @@ class DiskUtil:
         parts = []
         total_size = dsk["Size"]
         p = 0
-        prev_name = dskname
         for dskpart in dsk["Partitions"]:
-            part = self.get_partition_info(dskpart["DeviceIdentifier"])
+            parts.append(self.get_partition_info(dskpart["DeviceIdentifier"]))
+        parts.sort(key=lambda i: i.offset)
+
+        prev_name = dskname
+        parts2 = []
+        for part in parts:
             if (part.offset - p) > self.FREE_THRESHOLD:
-                parts.append(Partition(name=prev_name, free=True, type=None,
+                parts2.append(Partition(name=prev_name, free=True, type=None,
                                         offset=p, size=(part.offset - p)))
-            parts.append(part)
+            parts2.append(part)
             prev_name = part.name
             p = part.offset + part.size
 
         if (total_size - p) > self.FREE_THRESHOLD:
-            parts.append(Partition(name=prev_name, free=True, type=None,
-                                   offset=p, size=(total_size - p)))
-
-        return parts
+            parts2.append(Partition(name=prev_name, free=True, type=None,
+                                    offset=p, size=(total_size - p)))
+        return parts2
 
     def refresh_part(self, part):
         self.get_apfs_list(part.container["ContainerReference"])
