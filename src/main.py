@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import system, osenum, stub, diskutil
 from util import *
 
-STUB_SIZE = 2500 * 1000 * 1000
+STUB_SIZE = align_up(2500 * 1000 * 1000)
 
 @dataclass
 class IPSW:
@@ -354,7 +354,7 @@ class InstallerMain:
                 continue
             if p.free:
                 p.desc = f"(free space: {ssize(p.size)})"
-                if p.size > STUB_SIZE:
+                if p.size >= STUB_SIZE:
                     parts_free.append(p)
             elif p.type.startswith("Apple_APFS"):
                 p.desc = "APFS"

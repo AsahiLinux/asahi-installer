@@ -23,3 +23,11 @@ def split_ver(s):
         parts2[-3] -= 1
         parts2[-2] = 99
     return tuple(parts2)
+
+def align_up(v, a=16384):
+    return (v + a - 1) & ~(a - 1)
+
+align = align_up
+
+def align_down(v, a=16384):
+    return v & ~(a - 1)
