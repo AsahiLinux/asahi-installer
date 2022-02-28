@@ -32,8 +32,8 @@ class FWPackage(object):
         ti = tarfile.TarInfo(name)
         fd = None
         if data.sha in self.hashes:
-            ti.type = tarfile.SYMTYPE
-            ti.linkname = os.path.relpath(self.hashes[data.sha], os.path.dirname(name))
+            ti.type = tarfile.LNKTYPE
+            ti.linkname = self.hashes[data.sha]
             self.manifest.append(f"LINK {name} {ti.linkname}")
         else:
             ti.type = tarfile.REGTYPE
