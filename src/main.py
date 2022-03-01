@@ -105,7 +105,7 @@ class InstallerMain:
         idx = self.choice("Target container", containers)
         self.part = self.parts[int(idx)]
 
-        ipsw = self.choose_ipsw()
+        ipsw = self.choose_ipsw(template.get("supported_fw", None))
         self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo, ipsw)
         self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
         self.osins.load_package()
@@ -131,7 +131,7 @@ class InstallerMain:
         self.osins.name = label
         print()
 
-        ipsw = self.choose_ipsw()
+        ipsw = self.choose_ipsw(template.get("supported_fw", None))
         self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo, ipsw)
 
         print(f"Creating new stub macOS named {label}")
@@ -159,27 +159,32 @@ class InstallerMain:
 
         self.step2()
 
-    def choose_ipsw(self):
+    def choose_ipsw(self, supported_fw=None):
         sys_iboot = split_ver(self.sysinfo.sys_firmware)
         sys_macos = split_ver(self.sysinfo.macos_ver)
         chip_min = split_ver(CHIP_MIN_VER.get(self.sysinfo.chip_id, "0"))
         device_min = split_ver(DEVICE_MIN_VER.get(self.sysinfo.device_class, "0"))
-        avail = [ipsw for ipsw in IPSW_VERSIONS
+        minver = [ipsw for ipsw in IPSW_VERSIONS
+                 if split_ver(ipsw.version) >= max(chip_min, device_min)
+                 and (supported_fw is None or ipsw.version in supported_fw)]
+        avail = [ipsw for ipsw in minver
                  if split_ver(ipsw.min_iboot) <= sys_iboot
-                 and split_ver(ipsw.min_macos) <= sys_macos
-                 and split_ver(ipsw.version) >= max(chip_min, device_min)]
+                 and split_ver(ipsw.min_macos) <= sys_macos]
 
         if not avail:
-            print("Your OS is too old.")
-            print(f"You need to be running at least {IPSW_VERSIONS[0].version}.")
+            print("Your system firmware is too old.")
+            print(f"Please upgrade to macOS {minver[0].version} or newer.")
             sys.exit(1)
 
-        print("Choose the macOS version to use for boot firmware:")
-        print("(If unsure, just press enter)")
-        idx = self.choice("Version", [i.version for i in avail], len(avail)-1)
+        if len(avail) > 1:
+            print("Choose the macOS version to use for boot firmware:")
+            print("(If unsure, just press enter)")
+            idx = self.choice("Version", [i.version for i in avail], len(avail)-1)
+        else:
+            idx = 0
 
         self.ipsw = ipsw = avail[idx]
-        print(f"Using macOS {ipsw.version}")
+        print(f"Using macOS {ipsw.version} for OS firmware")
         print()
 
         return ipsw
