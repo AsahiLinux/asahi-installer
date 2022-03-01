@@ -449,6 +449,16 @@ class InstallerMain:
             sys.exit(0)
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                        datefmt='%m-%d %H:%M',
+                        filename='installer.log',
+                        filemode='w')
+
+    console = logging.StreamHandler()
+    console.setLevel(logging.WARNING)
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    console.setFormatter(formatter)
+    logging.getLogger('').addHandler(console)
     logging.info("Startup")
     InstallerMain().main()
