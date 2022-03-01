@@ -40,7 +40,7 @@ class OSInfo:
             else:
                 return f"[{self.label}] unknown fuOS (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
         else:
-            return f"[{self.label}] broken stub (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
+            return f"[{self.label}] incomplete install (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
 
 class OSEnum:
     def __init__(self, sysinfo, dutil, sysdsk):
@@ -137,12 +137,13 @@ class OSEnum:
                      recovery=mounts["Recovery"],
                      rec_vgid=rec_vgid)
 
-        try:
-            sysver = plistlib.load(open(os.path.join(mounts["System"],
-                "System/Library/CoreServices/SystemVersion.plist"), "rb"))
-            osi.version = sysver["ProductVersion"]
-        except FileNotFoundError:
-            pass
+        for name in ("SystemVersion.plist", "SystemVersion-disabled.plist"):
+            try:
+                sysver = plistlib.load(open(os.path.join(mounts["System"],
+                    "System/Library/CoreServices", name), "rb"))
+                osi.version = sysver["ProductVersion"]
+            except FileNotFoundError:
+                continue
 
         try:
             bps = self.bputil("-d", "-v", vgid)
