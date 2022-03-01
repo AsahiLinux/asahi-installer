@@ -35,7 +35,7 @@ echo
 if [ "$USER" != "root" ]; then
     echo "The installer needs to run as root."
     echo "Please enter your sudo password if prompted."
-    exec sudo ./install.sh "$@"
+    exec sudo -E ./install.sh "$@"
 else
     exec ./install.sh "$@"
 fi
