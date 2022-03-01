@@ -195,6 +195,7 @@ class InstallerMain:
         return self.data["os_list"][idx]
 
     def set_reduced_security(self):
+        print()
         print( "We are about to prepare your new stub OS for booting in")
         print( "Reduced Security mode. Please enter your macOS credentials")
         print( "when prompted.")
@@ -271,6 +272,7 @@ class InstallerMain:
         os.system("shutdown -h now")
 
     def startup_disk(self, recovery=False, volume_blessed=False, reboot=False):
+        print()
         print(f"When the Startup Disk screen appears, choose '{self.part.label}', then click Restart.")
         if not volume_blessed:
             print( "You will have to authenticate yourself.")
