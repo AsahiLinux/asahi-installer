@@ -468,4 +468,9 @@ if __name__ == "__main__":
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
     logging.info("Startup")
+
+    logging.info("Environment:")
+    for var in ("INSTALLER_BASE", "INSTALLER_DATA", "REPO_BASE", "IPSW_BASE"):
+        logging.info(f"  {var}={os.environ.get(var, None)}")
+
     InstallerMain().main()
