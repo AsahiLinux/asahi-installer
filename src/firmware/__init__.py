@@ -21,6 +21,7 @@ class FWFile(object):
 
 class FWPackage(object):
     def __init__(self, target):
+        self.path = target
         self.tarfile = tarfile.open(target, mode="w")
         self.hashes = {}
         self.manifest = []
@@ -48,6 +49,11 @@ class FWPackage(object):
     def add_files(self, it):
         for name, data in it:
             self.add_file(name, data)
+
+    def save_manifest(self, filename):
+        with open(filename, "w") as fd:
+            for i in self.manifest:
+                fd.write(i + "\n")
 
     def __del__(self):
         self.tarfile.close()
