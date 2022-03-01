@@ -1,0 +1,52 @@
+{
+    "os_list": [
+        {
+            "name": "Asahi Linux reference distro (Arch Linux ARM)",
+            "default_os_name": "Asahi Linux",
+            "boot_object": "m1n1-uboot.bin",
+            "package": "asahi-base.zip",
+            "supported_fw": ["12.1"],
+            "partitions": [
+                {
+                    "name": "EFI",
+                    "type": "EFI",
+                    "size": "512MB",
+                    "format": "fat",
+                    "volume_id": "0x2abf9f91",
+                    "copy_firmware": true,
+                    "copy_installer_data": true,
+                    "source": "esp"
+                },
+                {
+                    "name": "Root",
+                    "type": "Linux",
+                    "size": "5GB",
+                    "expand": true,
+                    "image": "root.img"
+                }
+            ]
+        },
+        {
+            "name": "UEFI environment only (m1n1 + U-Boot + ESP)",
+            "default_os_name": "UEFI boot",
+            "boot_object": "m1n1-uboot.bin",
+            "partitions": [
+                {
+                    "name": "EFI",
+                    "type": "EFI",
+                    "size": "512MB",
+                    "format": "fat",
+                    "copy_firmware": true,
+                    "copy_installer_data": true
+                }
+            ]
+        },
+        {
+            "name": "Tethered boot (m1n1, for development)",
+            "default_os_name": "m1n1 proxy",
+            "expert": true,
+            "boot_object": "m1n1.bin",
+            "partitions": []
+        }
+    ]
+}

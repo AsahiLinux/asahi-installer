@@ -1,20 +1,32 @@
 # SPDX-License-Identifier: MIT
 import os, os.path, plistlib, shutil, sys, stat, subprocess, urlcache, zipfile, logging
-import osenum
-from util import split_ver
+import osenum, firmware.wifi
+from util import *
 
-class Installer:
+class StubInstaller(PackageInstaller):
     def __init__(self, sysinfo, dutil, osinfo, ipsw_info):
+        super().__init__()
         self.dutil = dutil
         self.sysinfo = sysinfo
         self.osinfo = osinfo
         self.install_version = ipsw_info.version.split(maxsplit=1)[0]
-        self.verbose = "-v" in sys.argv
+        self.ucache = None
 
-        print("Downloading OS package info...")
-        self.ucache = urlcache.URLCache(ipsw_info.url)
-        self.ipsw = zipfile.ZipFile(self.ucache)
-        self.ucache.flush_progress()
+        base = os.environ.get("IPSW_BASE", None)
+        url = ipsw_info.url
+        if base:
+            url = base + "/" + os.path.split(url)[-1]
+
+        logging.info(f"IPSW URL: {url}")
+        if url.startswith("http"):
+            print("Downloading macOS OS package info...")
+            self.ucache = urlcache.URLCache(url)
+            self.pkg = zipfile.ZipFile(self.ucache)
+        else:
+            print("Loading macOS OS package info...")
+            self.pkg = zipfile.ZipFile(open(url, "rb"))
+        self.flush_progress()
+        logging.info(f"OS package opened")
         print()
 
     def prepare_volume(self, part):
@@ -29,7 +41,9 @@ class Installer:
         logging.info("Preparing target volumes")
 
         for volume in self.part.container["Volumes"]:
-            by_role.setdefault(tuple(volume["Roles"]), []).append(volume)
+            roles = tuple(volume["Roles"])
+            logging.info(f" {volume['DeviceIdentifier']} roles: {roles}")
+            by_role.setdefault(roles, []).append(volume)
 
         for role in ("Preboot", "Recovery", "Data", "System"):
             vols = by_role.get(role, [])
@@ -79,61 +93,6 @@ class Installer:
 
         self.osi = os[0]
 
-        if self.verbose:
-            print()
-
-    def extract(self, src, dest):
-        if self.verbose:
-            print(f"  {src} -> {dest}/")
-        self.ipsw.extract(src, dest)
-        if self.verbose:
-            self.ucache.flush_progress()
-
-    def extract_file(self, src, dest, verbose=True, optional=True):
-        try:
-            with self.ipsw.open(src) as sfd, \
-                open(dest, "wb") as dfd:
-                if self.verbose and verbose:
-                    print(f"  {src} -> {dest}")
-                shutil.copyfileobj(sfd, dfd)
-        except KeyError:
-            if not optional:
-                raise
-        if self.verbose and verbose:
-            self.ucache.flush_progress()
-
-    def extract_tree(self, src, dest):
-        if src[-1] != "/":
-            src += "/"
-        if self.verbose:
-            print(f"  {src}* -> {dest}")
-
-        infolist = self.ipsw.infolist()
-        if self.verbose:
-            self.ucache.flush_progress()
-
-        for info in infolist:
-            name = info.filename
-            if not name.startswith(src):
-                continue
-            subpath = name[len(src):]
-            assert subpath[0:1] != "/"
-
-            destpath = os.path.join(dest, subpath)
-
-            if info.is_dir():
-                os.makedirs(destpath, exist_ok=True)
-            elif stat.S_ISLNK(info.external_attr >> 16):
-                link = self.ipsw.open(info.filename).read()
-                if os.path.lexists(destpath):
-                    os.unlink(destpath)
-                os.symlink(link, destpath)
-            else:
-                self.extract_file(name, destpath, verbose=False)
-
-            if self.verbose:
-                self.ucache.flush_progress()
-
     def chflags(self, flags, path):
         logging.info(f"chflags {flags} {path}")
         subprocess.run(["chflags", flags, path], check=True)
@@ -144,14 +103,14 @@ class Installer:
         logging.info(f"OS info: {self.osi}")
 
         print("Beginning stub OS install...")
-        ipsw = self.ipsw
+        ipsw = self.pkg
 
         logging.info("Parsing metadata...")
 
         sysver = plistlib.load(ipsw.open("SystemVersion.plist"))
         manifest = plistlib.load(ipsw.open("BuildManifest.plist"))
         bootcaches = plistlib.load(ipsw.open("usr/standalone/bootcaches.plist"))
-        self.ucache.flush_progress()
+        self.flush_progress()
 
         for identity in manifest["BuildIdentities"]:
             if (identity["ApBoardID"] != f'0x{self.sysinfo.board_id:02X}' or
@@ -177,10 +136,8 @@ class Installer:
         cs = os.path.join(self.osi.system, "System/Library/CoreServices")
         os.makedirs(cs, exist_ok=True)
         sysver["ProductUserVisibleVersion"] += " (stub)"
-        with open(os.path.join(cs, "SystemVersion.plist"), "wb") as fd:
-            plistlib.dump(sysver, fd)
         self.extract("PlatformSupport.plist", cs)
-        self.ucache.flush_progress()
+        self.flush_progress()
 
         # Make the icon work
         try:
@@ -191,19 +148,6 @@ class Installer:
         except:
             print("Failed to apply extended attributes, logo will not work.")
 
-        if split_ver(self.install_version) < (12, 1):
-            shutil.copy("m1n1.macho", os.path.join(self.osi.system))
-        else:
-            shutil.copy("m1n1.bin", os.path.join(self.osi.system))
-        step2_sh = open("step2.sh").read().replace("##VGID##", self.osi.vgid)
-        step2_sh_dst = os.path.join(self.osi.system, "step2.sh")
-        with open(step2_sh_dst, "w") as fd:
-            fd.write(step2_sh)
-        os.chmod(step2_sh_dst, 0o755)
-        self.step2_sh = step2_sh_dst
-
-        if self.verbose:
-            print()
         print("Setting up Data volume...")
         logging.info("Setting up Data volume")
 
@@ -242,7 +186,7 @@ class Installer:
             self.extract(path, restore_bundle)
             copied.add(path)
 
-        self.ucache.flush_progress()
+        self.flush_progress()
 
         os.makedirs(os.path.join(pb_vgid, "var/db"), exist_ok=True)
         admin_users = os.path.join(cur_os.preboot, cur_os.vgid, "var/db/AdminUserRecoveryInfo.plist")
@@ -274,8 +218,49 @@ class Installer:
         logging.info("Extracting arm64eBaseSystem.dmg")
         self.extract_file(identity["Manifest"]["BaseSystem"]["Info"]["Path"],
                           os.path.join(basesystem_path, "arm64eBaseSystem.dmg"))
-        self.ucache.flush_progress()
+        self.flush_progress()
+
+        self.systemversion_path = os.path.join(cs, "SystemVersion.plist")
+
+        print("Wrapping up...")
+
+        logging.info("Writing SystemVersion.plist")
+        with open(self.systemversion_path, "wb") as fd:
+            plistlib.dump(sysver, fd)
+
+        logging.info("Copying Finish Installation.app")
+        shutil.copytree("step2/Finish Installation.app",
+                        os.path.join(self.osi.system, "Finish Installation.app"))
+
+        logging.info("Writing step2.sh")
+        step2_sh = open("step2/step2.sh").read().replace("##VGID##", self.osi.vgid)
+        resources = os.path.join(self.osi.system, "Finish Installation.app/Contents/Resources")
+        step2_sh_dst = os.path.join(resources, "step2.sh")
+        with open(step2_sh_dst, "w") as fd:
+            fd.write(step2_sh)
+        os.chmod(step2_sh_dst, 0o755)
+        self.step2_sh = step2_sh_dst
+        self.boot_obj_path = os.path.join(resources, "boot.bin")
+
+        logging.info("Copying .IAPhysicalMedia")
+        shutil.copy("step2/IAPhysicalMedia.plist",
+                    os.path.join(self.osi.system, ".IAPhysicalMedia"))
 
         print("Stub OS installation complete.")
         logging.info("Stub OS installed")
         print()
+
+    def collect_firmware(self, pkg):
+        print("Collecting firmware...")
+        logging.info("StubInstaller.collect_firmware()")
+
+        img = os.path.join(self.osi.recovery, self.osi.vgid,
+                           "usr/standalone/firmware/arm64eBaseSystem.dmg")
+        logging.info("Attaching recovery ramdisk")
+        subprocess.run(["hdiutil", "attach", "-quiet", "-readonly", "-mountpoint", "recovery", img],
+                       check=True)
+        logging.info("Collecting WiFi firmware")
+        col = firmware.wifi.WiFiFWCollection("recovery/usr/share/firmware/wifi/")
+        pkg.add_files(sorted(col.files()))
+        logging.info("Detaching recovery ramdisk")
+        subprocess.run(["hdiutil", "detach", "recovery"])

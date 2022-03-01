@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: MIT
-import os, os.path, shlex, subprocess, sys, time, termios
+import os, os.path, shlex, subprocess, sys, time, termios, json
 from dataclasses import dataclass
 
-import system, osenum, stub, diskutil
+import system, osenum, stub, diskutil, osinstall, firmware
 from util import *
 
-STUB_SIZE = align_up(2500 * 1000 * 1000)
+STUB_SIZE = align_up(2500 * 1000 * 1000, 1024 * 1024)
 
 @dataclass
 class IPSW:
@@ -48,6 +48,9 @@ IPSW_VERSIONS = [
 ]
 
 class InstallerMain:
+    def __init__(self):
+        self.data = json.load(open("installer_data.json"))
+
     def choice(self, prompt, options, default=None):
         is_array = False
         if isinstance(options, list):
@@ -93,6 +96,8 @@ class InstallerMain:
     def action_install_into_container(self, avail_parts):
         self.check_cur_os()
 
+        template = self.choose_os()
+
         containers = {str(i): p.desc for i,p in enumerate(self.parts) if p in avail_parts}
 
         print()
@@ -100,18 +105,20 @@ class InstallerMain:
         idx = self.choice("Target container", containers)
         self.part = self.parts[int(idx)]
 
-        print(f"Installing stub macOS into {self.part.name} ({self.part.label})")
-
         ipsw = self.choose_ipsw()
-        self.ins = stub.Installer(self.sysinfo, self.dutil, self.osinfo, ipsw)
+        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo, ipsw)
+        self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
+        self.osins.load_package()
 
-        self.ins.prepare_volume(self.part)
-        self.ins.check_volume()
-        self.ins.install_files(self.cur_os)
-        self.step2()
+        self.do_install()
 
     def action_install_into_free(self, avail_free):
         self.check_cur_os()
+
+        template = self.choose_os()
+
+        self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
+        self.osins.load_package()
 
         frees = {str(i): p.desc for i,p in enumerate(self.parts) if p in avail_free}
 
@@ -120,21 +127,36 @@ class InstallerMain:
         idx = self.choice("Target area", frees)
         free_part = self.parts[int(idx)]
 
-        label = input("Enter a name for your OS (Linux): ") or "Linux"
+        label = input(f"Enter a name for your OS ({self.osins.name}): ") or self.osins.name
+        self.osins.name = label
         print()
 
         ipsw = self.choose_ipsw()
-        self.ins = stub.Installer(self.sysinfo, self.dutil, self.osinfo, ipsw)
+        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo, ipsw)
 
         print(f"Creating new stub macOS named {label}")
-        self.part = self.dutil.addPartition(free_part.name, "apfs", label, "2.5G")
+        self.part = self.dutil.addPartition(free_part.name, "apfs", label, STUB_SIZE)
 
-        print()
+        self.do_install()
+
+    def do_install(self):
         print(f"Installing stub macOS into {self.part.name} ({self.part.label})")
 
         self.ins.prepare_volume(self.part)
         self.ins.check_volume()
         self.ins.install_files(self.cur_os)
+
+        self.osins.partition_disk(self.part.name)
+
+        pkg = None
+        if self.osins.needs_firmware:
+            pkg = firmware.FWPackage("firmware.tar")
+            self.ins.collect_firmware(pkg)
+            pkg.close()
+            self.osins.firmware_package = pkg
+
+        self.osins.install(self.ins.boot_obj_path)
+
         self.step2()
 
     def choose_ipsw(self):
@@ -161,6 +183,11 @@ class InstallerMain:
         print()
 
         return ipsw
+
+    def choose_os(self):
+        print("Choose an OS to install:")
+        idx = self.choice("OS", [i["name"] for i in self.data["os_list"]])
+        return self.data["os_list"][idx]
 
     def set_reduced_security(self):
         print( "We are about to prepare your new stub OS for booting in")
@@ -197,7 +224,6 @@ class InstallerMain:
             self.step2_indirect()
         else:
             assert False # should never happen, we don't give users the option
-            self.step2_old_macos()
 
     def step2_1tr_direct(self):
         self.startup_disk_recovery()
@@ -213,6 +239,11 @@ class InstallerMain:
             pass
 
     def step2_indirect(self):
+        # Hide the new volume until step2 is done
+        os.rename(self.ins.systemversion_path,
+                  self.ins.systemversion_path.replace("SystemVersion.plist",
+                                                      "SystemVersion-disabled.plist"))
+
         print( "The system will now shut down.")
         print( "To complete the installation, perform the following steps:")
         print()
@@ -222,45 +253,17 @@ class InstallerMain:
         print( "     and that you press and hold down the button once, not multiple times.")
         print( "     This is required to put the machine into the right mode.")
         print( "3. Release it once 'Entering startup options' is displayed.")
-        print( "4. Choose Options.")
+        print(f"4. Choose {self.part.label}.")
         print( "5. You will briefly see a 'macOS Recovery' dialog.")
         print( "   * If you are asked to 'Select a volume to recover',")
         print( "     then choose your normal macOS volume and click Next.")
-        print( "6. Click on the Utilities menu and select Terminal.")
-        print( "7. Type the following command and follow the prompts:")
-        print()
-        print(f"/Volumes/{shlex.quote(self.part.label)}/step2.sh")
+        print( "6. Once the 'Asahi Linux installer' screen appears, follow the prompts.")
         print()
         time.sleep(2)
         self.flush_input()
         print( "Press enter to shut down the system.")
         input()
         os.system("shutdown -h now")
-
-    def step2_old_macos(self):
-        print( "To complete the installation, perform the following steps:")
-        print()
-        print( "1. Go to System Settings -> Startup Disk.")
-        print(f"2. Choose '{self.part.label}' and authenticate yourself.")
-        print( "   * The system will reboot into the Boot Recovery Assistant.")
-        print( "3. Authenticate yourself again.")
-        print( "   * The system will go into a reboot loop.")
-        print( "4. Press and hold down the power button to shut the system down.")
-        print( "   * If you end up in the Startup Options screen, choose Shut Down.")
-        print( "     Do not skip ahead to step 5. It won't work.")
-        print( "   * If you end up in Recovery mode, select Shut Down from the Apple menu.")
-        print( "     Do not skip ahead to step 6. It won't work.")
-        print( "5. Press and hold down the power button to power on the system.")
-        print( "   * It is important that the system be fully powered off before this step,")
-        print( "     and that you press and hold down the button once, not multiple times.")
-        print( "     This is required to put the machine into the right mode.")
-        print( "6. Release it once 'Entering startup options' is displayed.")
-        print( "7. Choose Options.")
-        print( "8. Click on the Utilities menu and select Terminal.")
-        print( "9. Type the following command and follow the prompts:")
-        print()
-        print(f"/Volumes/{shlex.quote(self.part.label)}/step2.sh")
-        print()
 
     def startup_disk(self, recovery=False, volume_blessed=False, reboot=False):
         print(f"When the Startup Disk screen appears, choose '{self.part.label}', then click Restart.")
@@ -415,13 +418,13 @@ class InstallerMain:
         actions = {}
 
         if parts_free:
-            actions["f"] = "Install Asahi Linux into free space"
+            actions["f"] = "Install an OS into free space"
         if parts_empty_apfs:
-            actions["a"] = "Install a macOS stub and m1n1 into an existing APFS container"
+            actions["a"] = "Install an OS into an existing APFS container"
         if parts_system and False:
-            actions["r"] = "Resize an existing OS and install Asahi Linux"
+            actions["r"] = "Resize an existing OS and install a new OS"
             if self.sysinfo.boot_mode == "one true recoveryOS":
-                actions["m"] = "Install m1n1 into an existing OS container"
+                actions["m"] = "Upgrade bootloader of an existing OS"
 
         if not actions:
             print("No actions available on this system.")

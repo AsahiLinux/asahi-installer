@@ -6,7 +6,9 @@ set -e
 export LANG=C
 export LC_ALL=C
 
-BASE=http://localhost:5000
+export INSTALLER_BASE=http://localhost:5000
+export INSTALLER_DATA=http://localhost:5000/data/installer_data.json
+export REPO_BASE=https://de.mirror.asahilinux.org
 PKG=installer.tar.gz
 
 #TMP="$(mktemp -d)"
@@ -20,7 +22,8 @@ cd "$TMP"
 
 echo "  Downloading..."
 
-curl -s -L -O "$BASE/$PKG"
+curl -s -L -O "$INSTALLER_BASE/$PKG"
+curl -s -L -O "$INSTALLER_DATA"
 
 echo "  Extracting..."
 

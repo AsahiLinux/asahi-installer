@@ -8,9 +8,13 @@ VGID="##VGID##"
 self="$0"
 cd "${self%%step2.sh}"
 
-system_dir="$(pwd)"
+system_dir="$(cd ../../../; pwd)"
+os_name="${system_dir##*/}"
 
-echo "Asahi Linux installer (step 2)"
+# clear
+printf '\033[2J\033[H'
+
+echo "Asahi Linux installer (second step)"
 echo
 echo "VGID: $VGID"
 echo "System volume: $system_dir"
@@ -19,9 +23,9 @@ echo
 if ! bputil -d -v "$VGID" | grep -q 'one true recoveryOS'; then
     echo "Your system did not boot in One True RecoveryOS (1TR) mode."
     echo
-    echo "To perform step 2 of the installation, the system must be in"
-    echo "this special mode. Perhaps you forgot to hold down the power"
-    echo "button, or momentarily released it at some point?"
+    echo "To finish the installation, the system must be in this special"
+    echo "mode. Perhaps you forgot to hold down the power button, or"
+    echo "momentarily released it at some point?"
     echo
     echo "Note that tapping and then pressing the power button again will"
     echo "allow you to see the boot picker screen, but you will not be"
@@ -31,7 +35,7 @@ if ! bputil -d -v "$VGID" | grep -q 'one true recoveryOS'; then
     echo "Your system will now shut down. Once the screen goes blank,"
     echo "please wait 10 seconds, then press the power button and do not"
     echo "release it until you see the 'Entering startup options...'"
-    echo "message, then try running this script from recoveryOS again."
+    echo "message, then select '$os_name' again."
     echo
     echo "Press enter to shut down your system."
     read
@@ -53,10 +57,18 @@ bputil -nc -v "$VGID"
 echo
 echo
 
-if [ -f m1n1.macho ]; then
-    kmutil configure-boot -c m1n1.macho -v "$system_dir"
-else
-    kmutil configure-boot -c m1n1.bin --raw --entry-point 2048 --lowest-virtual-address 0 -v "$system_dir"
+kmutil configure-boot -c boot.bin --raw --entry-point 2048 --lowest-virtual-address 0 -v "$system_dir"
+
+echo
+echo "Wrapping up..."
+echo
+
+mount -u -w "$system_dir"
+
+mv "$system_dir/.IAPhysicalMedia" "$system_dir/IAPhysicalMedia-disabled.plist"
+
+if [ -e "$system_dir/System/Library/CoreServices/SystemVersion-disabled.plist" ]; then
+    mv -f "$system_dir/System/Library/CoreServices/SystemVersion"{-disabled,}".plist"
 fi
 
 echo
