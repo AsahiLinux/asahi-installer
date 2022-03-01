@@ -144,18 +144,23 @@ class DiskUtil:
         self.action("quiet", "apfs", "addVolume", container, "apfs", name, *args, verbose=True)
 
     def addPartition(self, after, fs, label, size):
+        size = str(size)
         self.action("quiet", "addPartition", after, fs, label, size, verbose=True)
-        disk = after.rsplit("s", 1)[0]
-        self.get_list()
-        for i, p in enumerate(self.disk_parts[disk]["Partitions"]):
-            if after == p["DeviceIdentifier"]:
-                break
-        else:
-            raise Exception("Could not find new partition")
 
-        new = self.disk_parts[disk]["Partitions"][i + 1]
-        return self.get_partition_info(new["DeviceIdentifier"],
-                                       refresh_apfs=(fs == "apfs"))
+        disk = after.rsplit("s", 1)[0]
+
+        self.get_list()
+        parts = self.get_partitions(disk)
+
+        for i, part in enumerate(parts):
+            logging.info(f"Checking #{i} {part.name}...")
+            if part.name == after:
+                logging.info(f"Found previous partition {part.name}...")
+                new_part = self.get_partition_info(parts[i + 1].name, refresh_apfs=(fs == "apfs"))
+                logging.info(f"New partition: {new_part!r}")
+                return new_part
+
+        raise Exception("Could not find new partition")
 
     def changeVolumeRole(self, volume, role):
         self.action("quiet", "apfs", "changeVolumeRole", volume, role, verbose=True)
