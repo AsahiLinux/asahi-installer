@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import tarfile, io, os
+import tarfile, io, os, logging
 from hashlib import sha256
 
 class FWFile(object):
@@ -42,6 +42,7 @@ class FWPackage(object):
             self.hashes[data.sha] = name
             self.manifest.append(f"FILE {name} SHA256 {data.sha}")
 
+        logging.info(f"+ {self.manifest[-1]}")
         self.tarfile.addfile(ti, fd)
 
     def add_files(self, it):

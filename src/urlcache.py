@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import os, sys, os.path, time
+import os, sys, os.path, time, logging
 from dataclasses import dataclass
 
 from urllib import request
@@ -45,7 +45,8 @@ class URLCache:
         return fd.read()
 
     def get_block(self, blk):
-        #print("get_block", blk)
+        logging.debug(f"get_block {blk}")
+
         if blk in self.cache:
             return self.cache[blk]
 
@@ -61,11 +62,12 @@ class URLCache:
         retries = 5
         for retry in range(retries + 1):
             try:
+                logging.debug(f"get_partial {off} {size}")
                 data = self.get_partial(off, size)
             except Exception as e:
                 if retry == retries:
                     print(f"Exceeded maximum retries downloading data.")
-                    sys.exit(1)
+                    raise
                 print(f"Error downloading data ({e}), retrying... ({retry + 1}/{retries})")
                 time.sleep(1)
             else:

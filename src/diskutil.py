@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import plistlib, subprocess, sys
+import plistlib, subprocess, sys, logging
 from dataclasses import dataclass
 
 @dataclass
@@ -21,21 +21,23 @@ class DiskUtil:
         self.verbose = "-v" in sys.argv
     
     def action(self, *args, verbose=False):
-        if verbose and self.verbose:
-            print(" + diskutil " + " ".join(args))
+        logging.info(f"run: diskutil {args!r}")
         subprocess.run(["diskutil"] + list(args), check=True, capture_output=(not self.verbose))
 
     def get(self, *args):
+        logging.info(f"get: diskutil {args!r}")
         result = subprocess.run(["diskutil"] + list(args),
                                 stdout=subprocess.PIPE, check=True)
         return plistlib.loads(result.stdout)
 
     def get_list(self):
+        logging.info(f"DiskUtil.get_list()")
         self.list = self.get("list", "-plist")
         self.disk_list = self.list["WholeDisks"]
         self.disk_parts = {dsk["DeviceIdentifier"]: dsk for dsk in self.list["AllDisksAndPartitions"]}
 
     def get_apfs_list(self, dev=None):
+        logging.info(f"DiskUtil.get_apfs_list()")
         if dev:
             apfs = self.get("apfs", "list", dev, "-plist")
         else:
@@ -47,11 +49,13 @@ class DiskUtil:
             self.ctnr_by_store[ctnr["DesignatedPhysicalStore"]] = ctnr
 
     def get_disk_info(self):
+        logging.info(f"DiskUtil.get_disk_info()")
         self.disks = {}
         for i in self.disk_list:
             self.disks[i] = self.get("info", "-plist", i)
 
     def get_info(self):
+        logging.info(f"DiskUtil.get_info()")
         self.get_list()
         self.ctnr_by_ref = {}
         self.ctnr_by_store = {}
@@ -59,6 +63,7 @@ class DiskUtil:
         self.get_disk_info()
 
     def find_system_disk(self):
+        logging.info(f"DiskUtil.find_system_disk()")
         for name, dsk in self.disks.items():
             try:
                 if dsk["VirtualOrPhysical"] == "Virtual":
@@ -67,12 +72,14 @@ class DiskUtil:
                     continue
                 parts = self.disk_parts[name]["Partitions"]
                 if parts[0]["Content"] == "Apple_APFS_ISC":
+                    logging.info(f"System disk: {name}")
                     return name
             except (KeyError, IndexError):
                 continue
         raise Exception("Could not find system disk")
 
     def get_partition_info(self, dev, refresh_apfs=False):
+        logging.info(f"DiskUtil.get_partition_info({dev=!r}, {refresh_apfs=!r})")
         partinfo = self.get("info", "-plist", dev)
         off = partinfo["PartitionMapPartitionOffset"]
         part = Partition(name=partinfo["DeviceIdentifier"], free=False,
@@ -96,6 +103,7 @@ class DiskUtil:
         return part
 
     def get_partitions(self, dskname):
+        logging.info(f"DiskUtil.get_partitions({dskname!r})")
         dsk = self.disk_parts[dskname]
         parts = []
         total_size = dsk["Size"]
@@ -120,6 +128,7 @@ class DiskUtil:
         return parts2
 
     def refresh_part(self, part):
+        logging.info(f"DiskUtil.refresh_part({part.name=!r})")
         self.get_apfs_list(part.container["ContainerReference"])
         part.container = self.ctnr_by_store[part.name]
 

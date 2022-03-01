@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import os, plistlib, shutil, sys, stat, subprocess, urlcache, zipfile
+import os, os.path, plistlib, shutil, sys, stat, subprocess, urlcache, zipfile, logging
 import osenum
 from util import split_ver
 
@@ -18,6 +18,7 @@ class Installer:
         print()
 
     def prepare_volume(self, part):
+        logging.info(f"StubInstaller.prepare_volume({part.name=!r})")
         self.part = part
 
         by_role = {}
@@ -25,6 +26,7 @@ class Installer:
         ctref = self.part.container["ContainerReference"]
 
         print("Preparing target volumes...")
+        logging.info("Preparing target volumes")
 
         for volume in self.part.container["Volumes"]:
             by_role.setdefault(tuple(volume["Roles"]), []).append(volume)
@@ -62,12 +64,12 @@ class Installer:
             self.dutil.addVolume(ctref, "Recovery", role="R")
 
         self.dutil.refresh_part(self.part)
-        if self.verbose:
-            print()
 
     def check_volume(self, part=None):
         if part:
             self.part = part
+
+        logging.info(f"StubInstaller.check_volume({self.part.name=!r})")
 
         print("Checking volumes...")
         os = self.osinfo.collect_part(self.part)
@@ -133,14 +135,19 @@ class Installer:
                 self.ucache.flush_progress()
 
     def chflags(self, flags, path):
+        logging.info(f"chflags {flags} {path}")
         subprocess.run(["chflags", flags, path], check=True)
 
     def install_files(self, cur_os):
+        logging.info("StubInstaller.install_files()")
+        logging.info(f"VGID: {self.osi.vgid}")
+        logging.info(f"OS info: {self.osi}")
+
         print("Beginning stub OS install...")
         ipsw = self.ipsw
 
-        if self.verbose:
-            print("Parsing metadata...")
+        logging.info("Parsing metadata...")
+
         sysver = plistlib.load(ipsw.open("SystemVersion.plist"))
         manifest = plistlib.load(ipsw.open("BuildManifest.plist"))
         bootcaches = plistlib.load(ipsw.open("usr/standalone/bootcaches.plist"))
@@ -157,13 +164,12 @@ class Installer:
         else:
             raise Exception("Failed to locate a usable build identity for this device")
 
-        if self.verbose:
-            print(f'Using OS build {identity["Info"]["BuildNumber"]} for {self.sysinfo.device_class}')
-            print()
+        logging.info(f'Using OS build {identity["Info"]["BuildNumber"]} for {self.sysinfo.device_class}')
 
         manifest["BuildIdentities"] = [identity]
 
         print("Setting up System volume...")
+        logging.info("Setting up System volume")
 
         self.extract("usr/standalone/bootcaches.plist", self.osi.system)
         shutil.copy("logo.icns", os.path.join(self.osi.system, ".VolumeIcon.icns"))
@@ -178,6 +184,7 @@ class Installer:
 
         # Make the icon work
         try:
+            logging.info(f"xattr -wx com.apple.FinderInfo .... {self.osi.system}")
             subprocess.run(["xattr", "-wx", "com.apple.FinderInfo",
                            "0000000000000000040000000000000000000000000000000000000000000000",
                            self.osi.system], check=True)
@@ -198,12 +205,12 @@ class Installer:
         if self.verbose:
             print()
         print("Setting up Data volume...")
+        logging.info("Setting up Data volume")
 
         os.makedirs(os.path.join(self.osi.data, "private/var/db/dslocal"), exist_ok=True)
 
-        if self.verbose:
-            print()
         print("Setting up Preboot volume...")
+        logging.info("Setting up Preboot volume")
 
         pb_vgid = os.path.join(self.osi.preboot, self.osi.vgid)
         os.makedirs(pb_vgid, exist_ok=True)
@@ -255,9 +262,8 @@ class Installer:
             os.unlink(sys_restore_bundle)
         os.symlink(restore_bundle, sys_restore_bundle)
 
-        if self.verbose:
-            print()
         print("Setting up Recovery volume...")
+        logging.info("Setting up Recovery volume")
 
         rec_vgid = os.path.join(self.osi.recovery, self.osi.vgid)
         os.makedirs(rec_vgid, exist_ok=True)
@@ -265,11 +271,11 @@ class Installer:
         basesystem_path = os.path.join(rec_vgid, "usr/standalone/firmware")
         os.makedirs(basesystem_path, exist_ok=True)
 
+        logging.info("Extracting arm64eBaseSystem.dmg")
         self.extract_file(identity["Manifest"]["BaseSystem"]["Info"]["Path"],
                           os.path.join(basesystem_path, "arm64eBaseSystem.dmg"))
         self.ucache.flush_progress()
 
-        if self.verbose:
-            print()
         print("Stub OS installation complete.")
+        logging.info("Stub OS installed")
         print()

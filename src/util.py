@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import re
+import re, logging
 
 def ssize(v):
     suffixes = ["B", "KB", "MB", "GB", "TB"]

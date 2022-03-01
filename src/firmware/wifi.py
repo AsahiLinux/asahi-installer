@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import sys, os, os.path, pprint, statistics
+import sys, os, os.path, pprint, statistics, logging
 
 from . import FWFile
 
