@@ -65,7 +65,9 @@ echo
 
 mount -u -w "$system_dir"
 
-mv "$system_dir/.IAPhysicalMedia" "$system_dir/IAPhysicalMedia-disabled.plist"
+if [ -e "$system_dir/.IAPhysicalMedia" ]; then
+    mv "$system_dir/.IAPhysicalMedia" "$system_dir/IAPhysicalMedia-disabled.plist"
+fi
 
 if [ -e "$system_dir/System/Library/CoreServices/SystemVersion-disabled.plist" ]; then
     mv -f "$system_dir/System/Library/CoreServices/SystemVersion"{-disabled,}".plist"
