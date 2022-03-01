@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import os, os.path, plistlib, subprocess
+import os, os.path, plistlib, subprocess, logging
 from dataclasses import dataclass
 
 UUID_SROS = "3D3287DE-280D-4619-AAAB-D97469CA9C71"
@@ -49,6 +49,7 @@ class OSEnum:
         self.sysdsk = sysdsk
 
     def collect(self, parts):
+        logging.info("OSEnum.collect()")
         for p in parts:
             p.os = []
             if p.type == "Apple_APFS_Recovery":
@@ -57,6 +58,7 @@ class OSEnum:
                 self.collect_part(p)
 
     def collect_recovery(self, part):
+        logging.info(f"OSEnum.collect_recovery(part={part.name})")
         recs = []
 
         for volume in part.container["Volumes"]:
@@ -66,14 +68,19 @@ class OSEnum:
         if len(recs) != 1:
             return
 
-        part.os.append(OSInfo(partition=part, vgid=UUID_SROS,
-                              rec_vgid=recs[0]["APFSVolumeUUID"],
-                              version=self.sysinfo.sfr_ver))
+        os = OSInfo(partition=part, vgid=UUID_SROS,
+                    rec_vgid=recs[0]["APFSVolumeUUID"],
+                    version=self.sysinfo.sfr_ver)
+        logging.info(f" Found SROS: {os}")
+        part.os.append(os)
         if self.sysinfo.fsfr_ver:
-            part.os.append(OSInfo(partition=part, vgid=UUID_FROS,
-                                  version=self.sysinfo.fsfr_ver))
+            os = OSInfo(partition=part, vgid=UUID_FROS,
+                        version=self.sysinfo.fsfr_ver)
+            logging.info(f" Found FROS: {os}")
+            part.os.append(os)
 
     def collect_part(self, part):
+        logging.info(f"OSEnum.collect_part(part={part.name})")
         if part.container is None:
             return
 
@@ -92,8 +99,10 @@ class OSEnum:
         for role in ("Preboot", "Recovery"):
             vols = by_role.get((role,), None)
             if not vols:
+                logging.info(f" No {role} volume")
                 return
             elif len(vols) > 1:
+                logging.info(f"  Multiple {role} volumes ({vols})")
                 return
             volumes[role] = vols[0]
 
@@ -101,16 +110,20 @@ class OSEnum:
             data = [i for i in vg["Volumes"] if i["Role"] == "Data"]
             system = [i for i in vg["Volumes"] if i["Role"] == "System"]
             if len(data) != 1 or len(system) != 1:
+                logging.info(f"  Weird VG: {vg['Volumes']}")
                 continue
 
             volumes["Data"] = by_device[data[0]["DeviceIdentifier"]]
             volumes["System"] = by_device[system[0]["DeviceIdentifier"]]
             vgid = vg["APFSVolumeGroupUUID"]
-            part.os.append(self.collect_os(part, volumes, vgid))
+            os = self.collect_os(part, volumes, vgid)
+            logging.info(f" Found {os}")
+            part.os.append(os)
 
         return part.os
 
     def collect_os(self, part, volumes, vgid):
+        logging.info(f"OSEnum.collect_os(part={part.name}, vgid={vgid})")
         mounts = {}
 
         for role in ("Preboot", "Recovery", "System"):
@@ -148,6 +161,7 @@ class OSEnum:
         try:
             bps = self.bputil("-d", "-v", vgid)
         except subprocess.CalledProcessError:
+            logging.info(f"  bputil failed")
             return osi
 
         osi.bp = {}
@@ -158,6 +172,7 @@ class OSEnum:
                 if val == "absent":
                     val = None
                 osi.bp[k] = val
+                logging.info(f"  BootPolicy[{k}] = {val}")
 
         if coih := osi.bp.get("coih", None):
             fuos_path = os.path.join(mounts["Preboot"], vgid, "boot",
@@ -167,6 +182,7 @@ class OSEnum:
             fuos = open(fuos_path, "rb").read()
             if b"##m1n1_ver##" in fuos:
                 osi.m1n1_ver = fuos.split(b"##m1n1_ver##")[1].split(b"\0")[0].decode("ascii")
+                logging.info(f"  m1n1 version found: {osi.m1n1_ver}")
 
         return osi
 

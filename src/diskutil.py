@@ -21,11 +21,11 @@ class DiskUtil:
         self.verbose = "-v" in sys.argv
     
     def action(self, *args, verbose=False):
-        logging.info(f"run: diskutil {args!r}")
+        logging.debug(f"run: diskutil {args!r}")
         subprocess.run(["diskutil"] + list(args), check=True, capture_output=(not self.verbose))
 
     def get(self, *args):
-        logging.info(f"get: diskutil {args!r}")
+        logging.debug(f"get: diskutil {args!r}")
         result = subprocess.run(["diskutil"] + list(args),
                                 stdout=subprocess.PIPE, check=True)
         return plistlib.loads(result.stdout)
