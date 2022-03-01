@@ -33,7 +33,7 @@ wget -Nc "$PYTHON_URI"
 
 echo "Building m1n1..."
 
-make -C "$M1N1" -j4
+make -C "$M1N1" RELEASE=1 -j4
 
 echo "Building u-boot..."
 
