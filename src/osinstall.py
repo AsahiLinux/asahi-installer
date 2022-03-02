@@ -111,7 +111,7 @@ class OSInstaller(PackageInstaller):
             if part.get("copy_firmware", False):
                 mountpoint = self.dutil.mount(info.name)
                 print(f"  Copying firmware into {info.name} partition...")
-                base = os.path.join(mountpoint, "vendor-fw")
+                base = os.path.join(mountpoint, "vendorfw")
                 logging.info(f"Firmware -> {base}")
                 os.makedirs(base, exist_ok=True)
                 shutil.copy(self.firmware_package.path, os.path.join(base, "firmware.tar"))
