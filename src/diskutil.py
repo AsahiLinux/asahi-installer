@@ -99,6 +99,11 @@ class DiskUtil:
                 else:
                     continue
                 break
+
+        if part.container is None:
+           part.container = {}
+           part.container["Volumes"] = []
+           logging.info(f"{part.name} doesn't have any Volumes")
         
         return part
 
