@@ -1,6 +1,6 @@
 #!/bin/sh
 
-diskutil list | grep Apple_APFS | grep '2\.5 GB' | sed 's/.* //g' | while read i; do
+diskutil list | grep Apple_APFS | grep '\b2\.5 GB' | sed 's/.* //g' | while read i; do
     diskutil apfs deleteContainer "$i"
 done
 diskutil list /dev/disk0 | grep -Ei 'asahi|linux|EFI' | sed 's/.* //g' | while read i; do
