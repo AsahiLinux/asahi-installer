@@ -92,6 +92,7 @@ class InstallerMain:
             sys.exit(1)
 
         print(f"Using OS '{self.cur_os.label}' ({self.cur_os.sys_volume}) for machine authentication.")
+        logging.info(f"Current OS: {self.cur_os.label} / {self.cur_os.sys_volume}")
 
     def action_install_into_container(self, avail_parts):
         self.check_cur_os()
@@ -106,6 +107,8 @@ class InstallerMain:
         self.part = self.parts[int(idx)]
 
         ipsw = self.choose_ipsw(template.get("supported_fw", None))
+        logging.info(f"Chosen IPSW version: {ipsw.version}")
+
         self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo, ipsw)
         self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
         self.osins.load_package()
@@ -129,12 +132,15 @@ class InstallerMain:
 
         label = input(f"Enter a name for your OS ({self.osins.name}): ") or self.osins.name
         self.osins.name = label
+        logging.info(f"New OS name: {label}")
         print()
 
         ipsw = self.choose_ipsw(template.get("supported_fw", None))
+        logging.info(f"Chosen IPSW version: {ipsw.version}")
         self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo, ipsw)
 
         print(f"Creating new stub macOS named {label}")
+        logging.info(f"Creating stub macOS: {label}")
         self.part = self.dutil.addPartition(free_part.name, "apfs", label, STUB_SIZE)
 
         self.do_install()
@@ -192,7 +198,9 @@ class InstallerMain:
     def choose_os(self):
         print("Choose an OS to install:")
         idx = self.choice("OS", [i["name"] for i in self.data["os_list"]])
-        return self.data["os_list"][idx]
+        os = self.data["os_list"][idx]
+        logging.info(f"Chosen OS: {os['name']}")
+        return os
 
     def set_reduced_security(self):
         print()
