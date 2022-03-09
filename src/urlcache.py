@@ -45,8 +45,6 @@ class URLCache:
         return fd.read()
 
     def get_block(self, blk):
-        logging.debug(f"get_block {blk}")
-
         if blk in self.cache:
             return self.cache[blk]
 
@@ -62,7 +60,6 @@ class URLCache:
         retries = 5
         for retry in range(retries + 1):
             try:
-                logging.debug(f"get_partial {off} {size}")
                 data = self.get_partial(off, size)
             except Exception as e:
                 if retry == retries:
