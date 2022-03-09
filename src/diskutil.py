@@ -9,6 +9,7 @@ class Partition:
     size: int
     free: bool
     type: str
+    uuid: str = None
     desc: str = None
     label: str = None
     info: object = None
@@ -85,6 +86,7 @@ class DiskUtil:
         part = Partition(name=partinfo["DeviceIdentifier"], free=False,
                             type=partinfo["Content"],
                             offset=off, size=partinfo["Size"],
+                            uuid=partinfo["DiskUUID"],
                             info=partinfo)
         if refresh_apfs:
             self.get_apfs_list(partinfo["APFSContainerReference"])
