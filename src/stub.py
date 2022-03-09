@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import os, os.path, plistlib, shutil, sys, stat, subprocess, urlcache, zipfile, logging
+import os, os.path, plistlib, shutil, sys, stat, subprocess, urlcache, zipfile, logging, json
 import osenum, firmware.wifi
 from util import *
 
@@ -11,6 +11,8 @@ class StubInstaller(PackageInstaller):
         self.osinfo = osinfo
         self.install_version = ipsw_info.version.split(maxsplit=1)[0]
         self.ucache = None
+        self.copy_idata = []
+        self.stub_info = {}
 
         base = os.environ.get("IPSW_BASE", None)
         url = ipsw_info.url
@@ -127,6 +129,18 @@ class StubInstaller(PackageInstaller):
 
         manifest["BuildIdentities"] = [identity]
 
+        self.stub_info.update({
+            "vgid": self.osi.vgid,
+            "system_version": sysver,
+            "manifest_info": {
+                "build_number": identity["Info"]["BuildNumber"],
+                "variant": identity["Info"]["Variant"],
+                "device_class": identity["Info"]["DeviceClass"],
+                "board_id": identity["ApBoardID"],
+                "chip_id": identity["ApChipID"],
+            }
+        })
+
         print("Setting up System volume...")
         logging.info("Setting up System volume")
 
@@ -163,10 +177,14 @@ class StubInstaller(PackageInstaller):
 
         restore_bundle = os.path.join(pb_vgid, bless2["RestoreBundlePath"])
         os.makedirs(restore_bundle, exist_ok=True)
-        with open(os.path.join(restore_bundle, "BuildManifest.plist"), "wb") as fd:
+        restore_manifest = os.path.join(restore_bundle, "BuildManifest.plist")
+        with open(restore_manifest, "wb") as fd:
             plistlib.dump(manifest, fd)
+        self.copy_idata.append((restore_manifest, "BuildManifest.plist"))
         self.extract("SystemVersion.plist", restore_bundle)
         self.extract("RestoreVersion.plist", restore_bundle)
+        self.copy_idata.append((os.path.join(restore_bundle, "RestoreVersion.plist"),
+                                "RestoreVersion.plist"))
         self.extract("usr/standalone/bootcaches.plist", restore_bundle)
 
         self.extract_tree("BootabilityBundle/Restore/Bootability",
@@ -191,10 +209,19 @@ class StubInstaller(PackageInstaller):
         os.makedirs(os.path.join(pb_vgid, "var/db"), exist_ok=True)
         admin_users = os.path.join(cur_os.preboot, cur_os.vgid, "var/db/AdminUserRecoveryInfo.plist")
         tg_admin_users = os.path.join(pb_vgid, "var/db/AdminUserRecoveryInfo.plist")
-
         if os.path.exists(tg_admin_users):
             self.chflags("noschg", tg_admin_users)
         shutil.copy(admin_users, tg_admin_users)
+
+        self.copy_idata.append((tg_admin_users, "AdminUserRecoveryInfo.plist"))
+
+        admin_users = plistlib.load(open(tg_admin_users, "rb"))
+        self.stub_info["admin_users"] = {}
+        for user, info in admin_users.items():
+            self.stub_info["admin_users"][user] = {
+                "uid": info["GeneratedUID"],
+                "real_name": info["RealName"],
+            }
 
         # Stop macOS <12.0 bootability stufff from clobbering this file
         self.chflags("schg", tg_admin_users)
@@ -227,6 +254,7 @@ class StubInstaller(PackageInstaller):
         logging.info("Writing SystemVersion.plist")
         with open(self.systemversion_path, "wb") as fd:
             plistlib.dump(sysver, fd)
+        self.copy_idata.append((self.systemversion_path, "SystemVersion.plist"))
 
         logging.info("Copying Finish Installation.app")
         shutil.copytree("step2/Finish Installation.app",
@@ -264,3 +292,13 @@ class StubInstaller(PackageInstaller):
         pkg.add_files(sorted(col.files()))
         logging.info("Detaching recovery ramdisk")
         subprocess.run(["hdiutil", "detach", "recovery"])
+
+    def collect_installer_data(self, path):
+        print("Collecting installer data...")
+        logging.info(f"Copying installer data to {path}")
+
+        for src, name in self.copy_idata:
+            shutil.copy(src, os.path.join(path, name))
+
+        with open(os.path.join(path, "stub_info.json"), "w") as fd:
+            json.dump(self.stub_info, fd)

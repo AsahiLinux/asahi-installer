@@ -163,6 +163,10 @@ class InstallerMain:
 
         self.osins.install(self.ins.boot_obj_path)
 
+        for i in self.osins.idata_targets:
+            self.ins.collect_installer_data(i)
+            shutil.copy("installer.log", os.path.join(i, "installer.log"))
+
         self.step2()
 
     def choose_ipsw(self, supported_fw=None):

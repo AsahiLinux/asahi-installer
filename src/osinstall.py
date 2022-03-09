@@ -120,6 +120,11 @@ class OSInstaller(PackageInstaller):
                 os.makedirs(base, exist_ok=True)
                 shutil.copy(self.firmware_package.path, os.path.join(base, "firmware.tar"))
                 self.firmware_package.save_manifest(os.path.join(base, "manifest.txt"))
+            if part.get("copy_installer_data", False):
+                mountpoint = self.dutil.mount(info.name)
+                data_path = os.path.join(mountpoint, "asahi")
+                os.makedirs(data_path, exist_ok=True)
+                self.idata_targets.append(data_path)
 
         print("Preparing to finish installation...")
 
