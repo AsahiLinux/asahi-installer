@@ -3,7 +3,8 @@
         {
             "name": "Asahi Linux reference distro (Arch Linux ARM)",
             "default_os_name": "Asahi Linux",
-            "boot_object": "m1n1-uboot.bin",
+            "boot_object": "m1n1.bin",
+            "next_object": "m1n1/boot.bin",
             "package": "asahi-base.zip",
             "supported_fw": ["12.1"],
             "partitions": [
@@ -29,7 +30,9 @@
         {
             "name": "UEFI environment only (m1n1 + U-Boot + ESP)",
             "default_os_name": "UEFI boot",
-            "boot_object": "m1n1-uboot.bin",
+            "boot_object": "m1n1.bin",
+            "next_object": "m1n1/boot.bin",
+            "package": "uefi-only.zip",
             "partitions": [
                 {
                     "name": "EFI",
@@ -37,7 +40,8 @@
                     "size": "512MB",
                     "format": "fat",
                     "copy_firmware": true,
-                    "copy_installer_data": true
+                    "copy_installer_data": true,
+                    "source": "esp"
                 }
             ]
         },
