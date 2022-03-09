@@ -10,7 +10,6 @@ PYTHON_PKG=python-$PYTHON_VER-macos11.pkg
 PYTHON_URI="https://www.python.org/ftp/python/$PYTHON_VER/$PYTHON_PKG"
 
 M1N1="$PWD/m1n1"
-UBOOT="$PWD/u-boot"
 ARTWORK="$PWD/artwork"
 SRC="$PWD/src"
 DL="$PWD/dl"
@@ -21,10 +20,6 @@ rm -rf "$PACKAGE"
 mkdir -p "$DL" "$PACKAGE"
 mkdir -p "$PACKAGE/bin"
 
-echo "Updating submodules..."
-
-git submodule update --init --recursive
-
 echo "Downloading installer components..."
 
 cd "$DL"
@@ -33,11 +28,7 @@ wget -Nc "$PYTHON_URI"
 
 echo "Building m1n1..."
 
-make -C "$M1N1" RELEASE=1 -j4
-
-echo "Building u-boot..."
-
-make -C "$UBOOT" CROSS_COMPILE=aarch64-linux-gnu- -j4  apple_m1_defconfig all
+make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
 
 echo "Copying files..."
 
@@ -45,10 +36,6 @@ cp -r "$SRC"/* "$PACKAGE/"
 cp "$ARTWORK/logos/icns/AsahiLinux_logomark.icns" "$PACKAGE/logo.icns"
 mkdir -p "$PACKAGE/boot"
 cp "$M1N1/build/m1n1.bin" "$PACKAGE/boot"
-cat "$M1N1/build/m1n1.bin" \
-    "$UBOOT/arch/arm/dts/"t[86]*.dtb \
-    "$UBOOT/u-boot-nodtb.bin" \
-    > "$PACKAGE/boot/m1n1-uboot.bin"
 
 echo "Extracting Python framework..."
 

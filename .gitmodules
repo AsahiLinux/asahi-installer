@@ -4,6 +4,3 @@
 [submodule "m1n1"]
 	path = m1n1
 	url = https://github.com/AsahiLinux/m1n1.git
-[submodule "u-boot"]
-	path = u-boot
-	url = https://github.com/AsahiLinux/u-boot.git
