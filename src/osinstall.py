@@ -12,6 +12,8 @@ class OSInstaller(PackageInstaller):
         self.template = template
         self.name = template["default_os_name"]
         self.ucache = None
+        self.efi_part = None
+        self.idata_targets = []
 
     @property
     def default_os_name(self):
@@ -72,6 +74,8 @@ class OSInstaller(PackageInstaller):
 
             print(f"Adding partition {part['name']} ({ssize(size)})...")
             info = self.dutil.addPartition(prev, f"%{ptype}%", "%noformat%", size)
+            if ptype == "EFI":
+                self.efi_part = info
             self.part_info.append(info)
             if fmt == "fat":
                 print("  Formatting as FAT...")
@@ -119,5 +123,28 @@ class OSInstaller(PackageInstaller):
 
         print("Preparing to finish installation...")
 
+        logging.info(f"Building boot object")
         boot_object = self.template["boot_object"]
-        shutil.copy(os.path.join("boot", boot_object), boot_obj_path)
+        next_object = self.template.get("next_object", None)
+        logging.info(f"  Boot object: {boot_object}")
+        logging.info(f"  Next object: {next_object}")
+        with open(os.path.join("boot", boot_object), "rb") as fd:
+            m1n1_data = fd.read()
+
+        m1n1_vars = []
+        if self.efi_part:
+            m1n1_vars.append(f"chosen.efi-partition={self.efi_part.uuid}")
+        if next_object is not None:
+            assert self.efi_part is not None
+            m1n1_vars.append(f"chainload={self.efi_part.uuid};{next_object}")
+
+        logging.info(f"m1n1 vars:")
+        for i in m1n1_vars:
+            logging.info(f"  {i}")
+
+        m1n1_data += b"".join(i.encode("ascii") + b"\n" for i in m1n1_vars) + b"\0\0\0\0"
+
+        with open(boot_obj_path, "wb") as fd:
+            fd.write(m1n1_data)
+
+        logging.info(f"Built boot object at {boot_obj_path}")
