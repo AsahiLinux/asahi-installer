@@ -143,16 +143,16 @@ class InstallerMain:
         logging.info(f"Creating stub macOS: {label}")
         self.part = self.dutil.addPartition(free_part.name, "apfs", label, STUB_SIZE)
 
-        self.do_install()
+        self.do_install(free_part.size - STUB_SIZE)
 
-    def do_install(self):
+    def do_install(self, free_part_size = None):
         print(f"Installing stub macOS into {self.part.name} ({self.part.label})")
 
         self.ins.prepare_volume(self.part)
         self.ins.check_volume()
         self.ins.install_files(self.cur_os)
 
-        self.osins.partition_disk(self.part.name)
+        self.osins.partition_disk(self.part.name, total_size=free_part_size)
 
         pkg = None
         if self.osins.needs_firmware:
