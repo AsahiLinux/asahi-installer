@@ -52,12 +52,22 @@ echo
 
 read
 
-bputil -nc -v "$VGID"
+while ! bputil -nc -v "$VGID"; do
+    echo
+    echo "bputil failed. Did you mistype your password?"
+    echo "Press enter to try again."
+    read
+done
 
 echo
 echo
 
-kmutil configure-boot -c boot.bin --raw --entry-point 2048 --lowest-virtual-address 0 -v "$system_dir"
+while ! kmutil configure-boot -c boot.bin --raw --entry-point 2048 --lowest-virtual-address 0 -v "$system_dir"; do
+    echo
+    echo "kmutil failed. Did you mistype your password?"
+    echo "Press enter to try again."
+    read
+done
 
 echo
 echo "Wrapping up..."
