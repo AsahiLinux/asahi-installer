@@ -138,7 +138,7 @@ class OSInstaller(PackageInstaller):
 
         m1n1_vars = []
         if self.efi_part:
-            m1n1_vars.append(f"chosen.efi-partition={self.efi_part.uuid}")
+            m1n1_vars.append(f"chosen.asahi,efi-system-partition={self.efi_part.uuid}")
         if next_object is not None:
             assert self.efi_part is not None
             m1n1_vars.append(f"chainload={self.efi_part.uuid};{next_object}")
