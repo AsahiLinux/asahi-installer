@@ -202,6 +202,9 @@ class StubInstaller(PackageInstaller):
             if path in copied:
                 continue
             self.extract(path, restore_bundle)
+            if path.startswith("kernelcache."):
+                name = os.path.basename(path)
+                self.copy_idata.append((os.path.join(restore_bundle, name), name))
             copied.add(path)
 
         self.flush_progress()
@@ -290,6 +293,10 @@ class StubInstaller(PackageInstaller):
         logging.info("Collecting WiFi firmware")
         col = firmware.wifi.WiFiFWCollection("recovery/usr/share/firmware/wifi/")
         pkg.add_files(sorted(col.files()))
+        logging.info("Making fallback firmware archive")
+        subprocess.run(["tar", "czf", "all_firmware.tar.gz", "-C",
+                        "recovery/usr/share", "firmware"], check=True)
+        self.copy_idata.append(("all_firmware.tar.gz", "all_firmware.tar.gz"))
         logging.info("Detaching recovery ramdisk")
         subprocess.run(["hdiutil", "detach", "recovery"])
 
