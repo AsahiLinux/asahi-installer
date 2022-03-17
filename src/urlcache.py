@@ -3,6 +3,7 @@ import os, sys, os.path, time, logging
 from dataclasses import dataclass
 
 from urllib import request
+from util import *
 
 @dataclass
 class CacheBlock:
@@ -63,9 +64,9 @@ class URLCache:
                 data = self.get_partial(off, size)
             except Exception as e:
                 if retry == retries:
-                    print(f"Exceeded maximum retries downloading data.")
+                    p_error(f"Exceeded maximum retries downloading data.")
                     raise
-                print(f"Error downloading data ({e}), retrying... ({retry + 1}/{retries})")
+                p_warning(f"Error downloading data ({e}), retrying... ({retry + 1}/{retries})")
                 time.sleep(1)
             else:
                 break

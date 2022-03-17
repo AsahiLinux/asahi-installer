@@ -8,7 +8,7 @@ export LC_ALL=C
 
 export INSTALLER_BASE=http://localhost:5000
 export INSTALLER_DATA=http://localhost:5000/data/installer_data.json
-export REPO_BASE=https://de.mirror.asahilinux.org
+export REPO_BASE=https://cdn.asahilinux.org
 PKG=installer.tar.gz
 
 #TMP="$(mktemp -d)"

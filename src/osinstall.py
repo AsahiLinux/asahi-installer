@@ -37,11 +37,11 @@ class OSInstaller(PackageInstaller):
 
         logging.info(f"OS package URL: {package}")
         if package.startswith("http"):
-            print("Downloading OS package info...")
+            p_progress("Downloading OS package info...")
             self.ucache = urlcache.URLCache(package)
             self.pkg = zipfile.ZipFile(self.ucache)
         else:
-            print("Loading OS package info...")
+            p_progress("Loading OS package info...")
             self.pkg = zipfile.ZipFile(open(package, "rb"))
         self.flush_progress()
         logging.info(f"OS package opened")
@@ -72,34 +72,34 @@ class OSInstaller(PackageInstaller):
                 size += expand_size
                 logging.info(f"Expanded to {size} (+{expand_size})")
 
-            print(f"Adding partition {part['name']} ({ssize(size)})...")
+            p_progress(f"Adding partition {part['name']} ({ssize(size)})...")
             info = self.dutil.addPartition(prev, f"%{ptype}%", "%noformat%", size)
             if ptype == "EFI":
                 self.efi_part = info
             self.part_info.append(info)
             if fmt == "fat":
-                print("  Formatting as FAT...")
+                p_plain("  Formatting as FAT...")
                 args = ["newfs_msdos", "-F", "32",
                         "-v", name[:11]]
                 if "volume_id" in part:
                     args.extend(["-I", part["volume_id"]])
                 args.append(f"/dev/r{info.name}")
                 logging.info(f"Run: {args!r}")
-                subprocess.run(args, check=True)
+                subprocess.run(args, check=True, stdout=subprocess.PIPE)
             elif fmt:
                 raise Exception(f"Unsupported format {fmt}")
 
             prev = info.name
 
     def install(self, boot_obj_path):
-        print("Installing OS...")
+        p_progress("Installing OS...")
         logging.info("OSInstaller.install()")
 
         for part, info in zip(self.template["partitions"], self.part_info):
             logging.info(f"Installing partition {part!r} -> {info.name}")
             image = part.get("image", None)
             if image:
-                print(f"  Extracting {image} into {info.name} partition...")
+                p_plain(f"  Extracting {image} into {info.name} partition...")
                 logging.info(f"Extract: {image}")
                 with self.pkg.open(image) as sfd, \
                     open(f"/dev/r{info.name}", "r+b") as dfd:
@@ -107,14 +107,14 @@ class OSInstaller(PackageInstaller):
                 self.flush_progress()
             source = part.get("source", None)
             if source:
-                print(f"  Copying from {source} into {info.name} partition...")
+                p_plain(f"  Copying from {source} into {info.name} partition...")
                 mountpoint = self.dutil.mount(info.name)
                 logging.info(f"Copy: {source} -> {mountpoint}")
                 self.extract_tree(source, mountpoint)
                 self.flush_progress()
             if part.get("copy_firmware", False):
                 mountpoint = self.dutil.mount(info.name)
-                print(f"  Copying firmware into {info.name} partition...")
+                p_plain(f"  Copying firmware into {info.name} partition...")
                 base = os.path.join(mountpoint, "vendorfw")
                 logging.info(f"Firmware -> {base}")
                 os.makedirs(base, exist_ok=True)
@@ -126,7 +126,7 @@ class OSInstaller(PackageInstaller):
                 os.makedirs(data_path, exist_ok=True)
                 self.idata_targets.append(data_path)
 
-        print("Preparing to finish installation...")
+        p_progress("Preparing to finish installation...")
 
         logging.info(f"Building boot object")
         boot_object = self.template["boot_object"]

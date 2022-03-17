@@ -20,6 +20,21 @@ rm -rf "$PACKAGE"
 mkdir -p "$DL" "$PACKAGE"
 mkdir -p "$PACKAGE/bin"
 
+echo "Determining version..."
+
+VER=$(git describe --always --dirty --tags)
+
+echo "Version: $VER"
+
+if [ -z "$VER" ]; then
+    if [ -e version.tag ]; then
+        VER="$(cat version.tag)"
+    else
+        echo "Could not determine version!"
+        exit 1
+    fi
+fi
+
 echo "Downloading installer components..."
 
 cd "$DL"
@@ -65,5 +80,6 @@ echo "Packaging installer..."
 
 cd "$PACKAGE"
 
+echo "$VER" > version.tag
 tar czf ../installer.tar.gz .
 

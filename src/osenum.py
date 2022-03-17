@@ -2,6 +2,8 @@
 import os, os.path, plistlib, subprocess, logging
 from dataclasses import dataclass
 
+from util import *
+
 UUID_SROS = "3D3287DE-280D-4619-AAAB-D97469CA9C71"
 UUID_FROS = "C8858560-55AC-400F-BBB9-C9220A8DAC0D"
 
@@ -21,26 +23,30 @@ class OSInfo:
     recovery: object = None
     rec_vgid: str = None
     bp: object = None
+    admin_users: object = None
 
     def __str__(self):
         if self.vgid == UUID_SROS:
             return f"recoveryOS v{self.version} [Primary recoveryOS]"
         elif self.vgid == UUID_FROS:
             return f"recoveryOS v{self.version} [Fallback recoveryOS]"
-        elif not self.stub:
+
+        lbl = col(BRIGHT) + self.label + col()
+        if not self.stub:
+            macos = f"{col(BRIGHT, GREEN)}macOS v{self.version}{col()}"
             if self.m1n1_ver is not None:
-                return f"[{self.label}] macOS v{self.version} + m1n1 {self.m1n1_ver} [{self.sys_volume}, {self.vgid}]"
+                return f"[{lbl}] {macos} + {col(CYAN)}m1n1 {self.m1n1_ver}{col()} [{self.sys_volume}, {self.vgid}]"
             elif self.bp and self.bp.get("coih", None):
-                return f"[{self.label}] macOS v{self.version} + unknown fuOS [{self.sys_volume}, {self.vgid}]"
+                return f"[{lbl}] {macos} + {col(YELLOW)}unknown fuOS{col()} [{self.sys_volume}, {self.vgid}]"
             else:
-                return f"[{self.label}] macOS v{self.version} [{self.sys_volume}, {self.vgid}]"
+                return f"[{lbl}] {macos} [{self.sys_volume}, {self.vgid}]"
         elif self.bp and self.bp.get("coih", None):
             if self.m1n1_ver:
-                return f"[{self.label}] m1n1 v{self.m1n1_ver} (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
+                return f"[{lbl}] {col(BRIGHT, CYAN)}m1n1 {self.m1n1_ver}{col()} (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
             else:
-                return f"[{self.label}] unknown fuOS (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
+                return f"[{lbl}] {col(BRIGHT, YELLOW)}unknown fuOS{col()} (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
         else:
-            return f"[{self.label}] incomplete install (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
+            return f"[{lbl}] {col(BRIGHT, RED)}incomplete install{col()} (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
 
 class OSEnum:
     def __init__(self, sysinfo, dutil, sysdsk):
@@ -128,22 +134,27 @@ class OSEnum:
 
         for role in ("Preboot", "Recovery", "System"):
             mounts[role] = self.dutil.mount(volumes[role]["DeviceIdentifier"])
+            logging.info(f"  mounts[{role}]: {mounts[role]}")
 
         # Data will fail to mount for FileVault-enabled OSes; ignore that.
         try:
             mounts["Data"] = self.dutil.mount(volumes["Data"]["DeviceIdentifier"])
+            logging.info(f"  mounts[Data]: {mounts['Data']}")
         except:
             mounts["Data"] = None
+            logging.info(f"  Failed to mount Data (FileVault?)")
 
         rec_vgid = volumes["Recovery"]["APFSVolumeUUID"]
 
         stub = not os.path.exists(os.path.join(mounts["System"], "Library"))
 
         sys_volume = volumes["System"]["DeviceIdentifier"]
+        data_volume = volumes["Data"]["DeviceIdentifier"]
         label = volumes["System"]["Name"]
 
         osi = OSInfo(partition=part, vgid=vgid, stub=stub, label=label,
                      sys_volume=sys_volume,
+                     data_volume=data_volume,
                      system=mounts["System"],
                      data=mounts["Data"],
                      preboot=mounts["Preboot"],
@@ -152,16 +163,28 @@ class OSEnum:
 
         for name in ("SystemVersion.plist", "SystemVersion-disabled.plist"):
             try:
+                logging.info(f"  Trying {name}...")
                 sysver = plistlib.load(open(os.path.join(mounts["System"],
                     "System/Library/CoreServices", name), "rb"))
                 osi.version = sysver["ProductVersion"]
+                logging.info(f"    Version: {osi.version}")
             except FileNotFoundError:
+                logging.info(f"    Not Found")
                 continue
+
+        try:
+            auri = plistlib.load(open(os.path.join(mounts["Preboot"], vgid,
+                                                   "var/db/AdminUserRecoveryInfo.plist"), "rb"))
+            osi.admin_users = list(auri.keys())
+            logging.info(f"  Admin users: {osi.admin_users}")
+        except:
+            logging.warning(f"  Failed to get AdminUserRecoveryInfo.plist")
+            pass
 
         try:
             bps = self.bputil("-d", "-v", vgid)
         except subprocess.CalledProcessError:
-            logging.info(f"  bputil failed")
+            logging.warning(f"  bputil failed")
             return osi
 
         osi.bp = {}

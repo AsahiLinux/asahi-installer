@@ -21,11 +21,11 @@ class StubInstaller(PackageInstaller):
 
         logging.info(f"IPSW URL: {url}")
         if url.startswith("http"):
-            print("Downloading macOS OS package info...")
+            p_progress("Downloading macOS OS package info...")
             self.ucache = urlcache.URLCache(url)
             self.pkg = zipfile.ZipFile(self.ucache)
         else:
-            print("Loading macOS OS package info...")
+            p_progress("Loading macOS OS package info...")
             self.pkg = zipfile.ZipFile(open(url, "rb"))
         self.flush_progress()
         logging.info(f"OS package opened")
@@ -39,8 +39,7 @@ class StubInstaller(PackageInstaller):
 
         ctref = self.part.container["ContainerReference"]
 
-        print("Preparing target volumes...")
-        logging.info("Preparing target volumes")
+        p_progress("Preparing target volumes...")
 
         for volume in self.part.container["Volumes"]:
             roles = tuple(volume["Roles"])
@@ -87,7 +86,7 @@ class StubInstaller(PackageInstaller):
 
         logging.info(f"StubInstaller.check_volume({self.part.name=!r})")
 
-        print("Checking volumes...")
+        p_progress("Checking volumes...")
         os = self.osinfo.collect_part(self.part)
 
         if len(os) != 1:
@@ -104,7 +103,7 @@ class StubInstaller(PackageInstaller):
         logging.info(f"VGID: {self.osi.vgid}")
         logging.info(f"OS info: {self.osi}")
 
-        print("Beginning stub OS install...")
+        p_progress("Beginning stub OS install...")
         ipsw = self.pkg
 
         logging.info("Parsing metadata...")
@@ -141,7 +140,7 @@ class StubInstaller(PackageInstaller):
             }
         })
 
-        print("Setting up System volume...")
+        p_progress("Setting up System volume...")
         logging.info("Setting up System volume")
 
         self.extract("usr/standalone/bootcaches.plist", self.osi.system)
@@ -160,14 +159,14 @@ class StubInstaller(PackageInstaller):
                            "0000000000000000040000000000000000000000000000000000000000000000",
                            self.osi.system], check=True)
         except:
-            print("Failed to apply extended attributes, logo will not work.")
+            p_err("Failed to apply extended attributes, logo will not work.")
 
-        print("Setting up Data volume...")
+        p_progress("Setting up Data volume...")
         logging.info("Setting up Data volume")
 
         os.makedirs(os.path.join(self.osi.data, "private/var/db/dslocal"), exist_ok=True)
 
-        print("Setting up Preboot volume...")
+        p_progress("Setting up Preboot volume...")
         logging.info("Setting up Preboot volume")
 
         pb_vgid = os.path.join(self.osi.preboot, self.osi.vgid)
@@ -236,7 +235,7 @@ class StubInstaller(PackageInstaller):
             os.unlink(sys_restore_bundle)
         os.symlink(restore_bundle, sys_restore_bundle)
 
-        print("Setting up Recovery volume...")
+        p_progress("Setting up Recovery volume...")
         logging.info("Setting up Recovery volume")
 
         rec_vgid = os.path.join(self.osi.recovery, self.osi.vgid)
@@ -252,7 +251,7 @@ class StubInstaller(PackageInstaller):
 
         self.systemversion_path = os.path.join(cs, "SystemVersion.plist")
 
-        print("Wrapping up...")
+        p_progress("Wrapping up...")
 
         logging.info("Writing SystemVersion.plist")
         with open(self.systemversion_path, "wb") as fd:
@@ -277,12 +276,12 @@ class StubInstaller(PackageInstaller):
         shutil.copy("step2/IAPhysicalMedia.plist",
                     os.path.join(self.osi.system, ".IAPhysicalMedia"))
 
-        print("Stub OS installation complete.")
+        p_success("Stub OS installation complete.")
         logging.info("Stub OS installed")
         print()
 
     def collect_firmware(self, pkg):
-        print("Collecting firmware...")
+        p_progress("Collecting firmware...")
         logging.info("StubInstaller.collect_firmware()")
 
         img = os.path.join(self.osi.recovery, self.osi.vgid,
@@ -298,10 +297,10 @@ class StubInstaller(PackageInstaller):
                         "recovery/usr/share", "firmware"], check=True)
         self.copy_idata.append(("all_firmware.tar.gz", "all_firmware.tar.gz"))
         logging.info("Detaching recovery ramdisk")
-        subprocess.run(["hdiutil", "detach", "recovery"])
+        subprocess.run(["hdiutil", "detach", "-quiet", "recovery"])
 
     def collect_installer_data(self, path):
-        print("Collecting installer data...")
+        p_progress("Collecting installer data...")
         logging.info(f"Copying installer data to {path}")
 
         for src, name in self.copy_idata:

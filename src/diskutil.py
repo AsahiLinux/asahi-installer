@@ -22,8 +22,14 @@ class DiskUtil:
         self.verbose = "-v" in sys.argv
     
     def action(self, *args, verbose=False):
+        if verbose == 2:
+            capture = False
+        elif self.verbose:
+            capture = not self.verbose
+        else:
+            capture = True
         logging.debug(f"run: diskutil {args!r}")
-        subprocess.run(["diskutil"] + list(args), check=True, capture_output=(not self.verbose))
+        subprocess.run(["diskutil"] + list(args), check=True, capture_output=capture)
 
     def get(self, *args):
         logging.debug(f"get: diskutil {args!r}")
@@ -174,3 +180,7 @@ class DiskUtil:
 
     def rename(self, volume, name):
         self.action("quiet", "rename", volume, name, verbose=True)
+
+    def resizeContainer(self, name, size):
+        size = str(size)
+        self.action("apfs", "resizeContainer", name, size, verbose=2)

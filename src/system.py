@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: MIT
 import base64, plistlib, struct, subprocess
 
+from util import *
+
 class SystemInfo:
     def __init__(self):
         self.fetch()
@@ -99,25 +101,24 @@ class SystemInfo:
             return None, None
 
     def show(self):
-        print(f"System information:")
-        print(f"  Product name: {self.product_name}")
-        print(f"  SoC: {self.soc_name}")
-        print(f"  Device class: {self.device_class}")
-        print(f"  Product type: {self.product_type}")
-        print(f"  Board ID: {self.board_id:#x}")
-        print(f"  Chip ID: {self.chip_id:#x}")
-        print(f"  System firmware: {self.sys_firmware}")
-        print(f"  Boot UUID: {self.boot_uuid}")
-        print(f"  Boot VGID: {self.boot_vgid}")
-        print(f"  Default boot VGID: {self.default_boot}")
-        print(f"  Boot mode: {self.boot_mode}")
-        print(f"  OS version: {self.macos_ver} ({self.macos_build})")
-        print(f"  System rOS version: {self.sfr_ver} ({self.sfr_build})")
+        p_info(f"  Product name: {col()}{self.product_name}")
+        p_info(f"  SoC: {col()}{self.soc_name}")
+        p_info(f"  Device class: {col()}{self.device_class}")
+        p_info(f"  Product type: {col()}{self.product_type}")
+        p_info(f"  Board ID: {col()}{self.board_id:#x}")
+        p_info(f"  Chip ID: {col()}{self.chip_id:#x}")
+        p_info(f"  System firmware: {col()}{self.sys_firmware}")
+        p_info(f"  Boot UUID: {col()}{self.boot_uuid}")
+        p_info(f"  Boot VGID: {col()}{self.boot_vgid}")
+        p_info(f"  Default boot VGID: {col()}{self.default_boot}")
+        p_info(f"  Boot mode: {col()}{self.boot_mode}")
+        p_info(f"  OS version: {col()}{self.macos_ver} ({self.macos_build})")
+        p_info(f"  System rOS version: {col()}{self.sfr_ver} ({self.sfr_build})")
         if self.fsfr_ver:
-            print(f"  Fallback rOS version: {self.fsfr_ver} ({self.fsfr_build})")
+            p_info(f"  Fallback rOS version: {col()}{self.fsfr_ver} ({self.fsfr_build})")
         else:
-            print(f"  No Fallback rOS")
-        print(f"  Login user: {self.login_user}")
+            p_info(f"  No Fallback rOS")
+        p_info(f"  Login user: {col()}{self.login_user}")
 
     def get_child(self, obj, name):
         for child in obj["IORegistryEntryChildren"]:
