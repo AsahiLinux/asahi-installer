@@ -22,6 +22,9 @@ class OSInstaller(PackageInstaller):
     def min_size(self):
         return sum(self.align(psize(part["size"])) for part in self.template["partitions"])
     @property
+    def expandable(self):
+        return any(part.get("expand", False) for part in self.template["partitions"])
+    @property
     def needs_firmware(self):
         return any(p.get("copy_firmware", False) for p in self.template["partitions"])
 

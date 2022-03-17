@@ -8,7 +8,7 @@ from util import *
 
 PART_ALIGN = psize("1MiB")
 
-STUB_SIZE = psize("2.5GB", PART_ALIGN)
+STUB_SIZE = align_down(psize("2.5GB"), PART_ALIGN)
 
 # Minimum free space to leave when resizing, to allow for OS upgrades
 MIN_FREE_OS = psize("38GB")
@@ -74,6 +74,28 @@ class InstallerMain:
     def input(self):
         self.flush_input()
         return input()
+
+    def get_size(self, prompt, default=None, min=None, max=None, total=None):
+        self.flush_input()
+        if default is not None:
+            prompt += f" ({default})"
+        new_size = input_prompt(prompt + f": ").strip()
+        try:
+            if default is not None and not new_size:
+                new_size = default
+            if new_size.lower() == "min" and min is not None:
+                return min
+            if new_size.lower() == "max" and max is not None:
+                return max
+            elif new_size.endswith("%") and total is not None:
+                return int(float(new_size[:-1]) * total / 100)
+            elif new_size.endswith("B"):
+                return psize(val.upper())
+            else:
+                return psize(val.upper() + "B")
+            return val
+        except:
+            return None
 
     def choice(self, prompt, options, default=None):
         is_array = False
@@ -188,16 +210,59 @@ class InstallerMain:
         self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
         self.osins.load_package()
 
-        frees = {str(i): p.desc for i,p in enumerate(self.parts) if p in avail_free}
-
+        min_size = STUB_SIZE + self.osins.min_size
         print()
+        p_message(f"Minimum required space for this OS: {ssize(min_size)}")
+
+        frees = {str(i): p.desc for i,p in enumerate(self.parts)
+                 if p in avail_free and align_down(p.size, PART_ALIGN) >= min_size}
+
+        if len(frees) < 1:
+            p_error( "There is not enough free space to install this OS.")
+            print()
+            p_message("Press enter to go back to the main menu.")
+            self.input()
+            return True
+
         if len(frees) > 1:
+            print()
             p_question("Choose a free area to install into:")
             idx = self.choice("Target area", frees)
         else:
             idx = list(frees.keys())[0]
         free_part = self.parts[int(idx)]
 
+        print()
+        p_message(f"Available free space: {ssize(free_part.size)}")
+
+        os_size = None
+        if self.osins.expandable:
+            print()
+            p_question("How much space should be allocated to the new OS?")
+            p_message("  You can enter a size such as '1GB', a fraction such as '50%',")
+            p_message("  the word 'min' for the smallest allowable size, or")
+            p_message("  the word 'max' to use all available space.")
+            min_perc = 100 * self.osins.min_size / free_part.size
+            while True:
+                os_size = self.get_size("New OS size", default="max",
+                                    min=self.osins.min_size, max=free_part.size,
+                                    total=free_part.size)
+                if os_size is None:
+                    p_error(f"Invalid size '{new_size}'.")
+                    continue
+                os_size = align_down(os_size, PART_ALIGN)
+                if os_size < self.osins.min_size:
+                    p_error(f"Size is too small, please enter a value > {ssize(min_size)} ({min_perc:.2f}%)")
+                    continue
+                if os_size >= free_part.size:
+                    p_error(f"Size is too large, please enter a value < {ssize(free_part.size)}")
+                    continue
+                break
+
+            p_message(f"The new OS will be allocated {ssize(os_size)} of space,")
+            p_message(f"leaving {ssize(free_part.size - os_size)} of free space.")
+
+        print()
         self.flush_input()
         p_question("Enter a name for your OS")
         label = input_prompt(f"OS name ({self.osins.name}): ") or self.osins.name
@@ -213,16 +278,16 @@ class InstallerMain:
         logging.info(f"Creating stub macOS: {label}")
         self.part = self.dutil.addPartition(free_part.name, "apfs", label, STUB_SIZE)
 
-        self.do_install()
+        self.do_install(os_size)
 
-    def do_install(self):
+    def do_install(self, total_size=None):
         p_progress(f"Installing stub macOS into {self.part.name} ({self.part.label})")
 
         self.ins.prepare_volume(self.part)
         self.ins.check_volume()
         self.ins.install_files(self.cur_os)
 
-        self.osins.partition_disk(self.part.name)
+        self.osins.partition_disk(self.part.name, total_size)
 
         pkg = None
         if self.osins.needs_firmware:
@@ -491,21 +556,7 @@ class InstallerMain:
         if total / 2 < min_size:
             default = "min"
         while True:
-            self.flush_input()
-            new_size = input_prompt(f"New size ({default}): ").strip()
-            try:
-                if not new_size:
-                    new_size = default
-                if new_size.lower() == "min":
-                    val = min_size
-                elif new_size.endswith("%"):
-                    val = int(float(new_size[:-1]) * total / 100)
-                elif new_size.endswith("B"):
-                    val = psize(val.upper())
-                else:
-                    val = psize(val.upper() + "B")
-            except:
-                val = None
+            val = self.get_size("New size", default=default, min=min_size, total=total)
             if val is None:
                 p_error(f"Invalid size '{new_size}'.")
                 continue
@@ -703,14 +754,11 @@ class InstallerMain:
         act = self.choice("Action", actions, default)
 
         if act == "f":
-            self.action_install_into_free(parts_free)
-            return False
+            return self.action_install_into_free(parts_free)
         elif act == "a":
-            self.action_install_into_container(parts_empty_apfs)
-            return False
+            return self.action_install_into_container(parts_empty_apfs)
         elif act == "r":
-            self.action_resize(parts_resizable)
-            return True
+            return self.action_resize(parts_resizable)
         elif act == "m":
             p_error("Unimplemented")
             sys.exit(1)
