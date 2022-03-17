@@ -6,7 +6,7 @@
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "asahi-base.zip",
-            "supported_fw": ["12.1"],
+            "supported_fw": ["12.1", "12.3"],
             "partitions": [
                 {
                     "name": "EFI",
