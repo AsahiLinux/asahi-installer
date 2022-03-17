@@ -11,7 +11,7 @@
                 {
                     "name": "EFI",
                     "type": "EFI",
-                    "size": "512MB",
+                    "size": "500MB",
                     "format": "fat",
                     "volume_id": "0x2abf9f91",
                     "copy_firmware": true,
@@ -37,7 +37,7 @@
                 {
                     "name": "EFI",
                     "type": "EFI",
-                    "size": "512MB",
+                    "size": "500MB",
                     "format": "fat",
                     "copy_firmware": true,
                     "copy_installer_data": true,
