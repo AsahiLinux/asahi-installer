@@ -84,18 +84,23 @@ class InstallerMain:
             if default is not None and not new_size:
                 new_size = default
             if new_size.lower() == "min" and min is not None:
-                return min
+                val = min
             if new_size.lower() == "max" and max is not None:
-                return max
+                val = max
             elif new_size.endswith("%") and total is not None:
-                return int(float(new_size[:-1]) * total / 100)
+                val = int(float(new_size[:-1]) * total / 100)
             elif new_size.endswith("B"):
-                return psize(val.upper())
+                val = psize(new_size.upper())
             else:
-                return psize(val.upper() + "B")
-            return val
-        except:
-            return None
+                val = psize(new_size.upper() + "B")
+        except Exception as e:
+            print(e)
+            val = None
+
+        if val is None:
+            p_error(f"Invalid size '{new_size}'.")
+
+        return val
 
     def choice(self, prompt, options, default=None):
         is_array = False
@@ -248,7 +253,6 @@ class InstallerMain:
                                     min=self.osins.min_size, max=free_part.size,
                                     total=free_part.size)
                 if os_size is None:
-                    p_error(f"Invalid size '{new_size}'.")
                     continue
                 os_size = align_down(os_size, PART_ALIGN)
                 if os_size < self.osins.min_size:
@@ -259,6 +263,7 @@ class InstallerMain:
                     continue
                 break
 
+            print()
             p_message(f"The new OS will be allocated {ssize(os_size)} of space,")
             p_message(f"leaving {ssize(free_part.size - os_size)} of free space.")
 
@@ -558,7 +563,6 @@ class InstallerMain:
         while True:
             val = self.get_size("New size", default=default, min=min_size, total=total)
             if val is None:
-                p_error(f"Invalid size '{new_size}'.")
                 continue
             val = align_down(val, PART_ALIGN)
             if val < min_size:

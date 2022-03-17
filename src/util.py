@@ -12,7 +12,7 @@ def ssize(v):
         v /= 1000
 
 def psize(v, align=None):
-    v = v.upper()
+    v = v.upper().replace(" ", "")
     base = 1000
     if v[-2] == "I":
         base = 1024
