@@ -1,7 +1,34 @@
 {
     "os_list": [
         {
-            "name": "Asahi Linux reference distro (Arch Linux ARM)",
+            "name": "Asahi Linux Plasma (Arch Linux ARM)",
+            "default_os_name": "Asahi Linux",
+            "boot_object": "m1n1.bin",
+            "next_object": "m1n1/boot.bin",
+            "package": "asahi-plasma.zip",
+            "supported_fw": ["12.3"],
+            "partitions": [
+                {
+                    "name": "EFI",
+                    "type": "EFI",
+                    "size": "500MB",
+                    "format": "fat",
+                    "volume_id": "0x2abf9f91",
+                    "copy_firmware": true,
+                    "copy_installer_data": true,
+                    "source": "esp"
+                },
+                {
+                    "name": "Root",
+                    "type": "Linux",
+                    "size": "5GB",
+                    "expand": true,
+                    "image": "root.img"
+                }
+            ]
+        },
+        {
+            "name": "Asahi Linux Core (Arch Linux ARM)",
             "default_os_name": "Asahi Linux",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
