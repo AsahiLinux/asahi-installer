@@ -40,9 +40,9 @@ cp "$M1N1/build/m1n1.bin" "$PACKAGE/boot"
 echo "Extracting Python framework..."
 
 mkdir -p "$PACKAGE/Frameworks/Python.framework"
+cd "$PACKAGE/Frameworks/Python.framework"
 
-7z x -so "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | zcat | \
-    cpio -i -D "$PACKAGE/Frameworks/Python.framework"
+7z x -so "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | zcat | cpio -i
 
 echo "Slimming down Python..."
 
@@ -55,7 +55,7 @@ cd python3.*
 rm -rf test ensurepip idlelib
 cd lib-dynload
 rm -f _test* _tkinter*
-    
+
 echo "Copying certificates..."
 
 certs="$(python3 -c 'import certifi; print(certifi.where())')"
@@ -66,4 +66,3 @@ echo "Packaging installer..."
 cd "$PACKAGE"
 
 tar czf ../installer.tar.gz .
-

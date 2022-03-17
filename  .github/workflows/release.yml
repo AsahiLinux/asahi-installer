@@ -1,0 +1,27 @@
+name: Release
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Deps
+        run: |
+          apt update && apt install -y device-tree-compiler cpio imagemagick p7zip-full python3-pip
+          pip3 install certifi --user
+      - name: Build Installer
+        run: |
+          chmod +x build.sh
+          ./build.sh
+      - name: Checksum Installer
+        run: sha512sum installer.tar.gz > installer.sha512
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            installer.tar.gz
+            installer.sha512
