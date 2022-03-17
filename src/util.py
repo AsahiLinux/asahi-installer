@@ -75,6 +75,8 @@ def p_style(*args, color=[], **kwargs):
         color = [color]
     text = " ".join(map(str, args))
     print(col(*color) + text + col(), **kwargs)
+    if "\033" in text:
+        text += col()
     logging.info(f"MSG: {text}")
 
 def p_plain(*args):

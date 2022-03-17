@@ -276,6 +276,7 @@ class StubInstaller(PackageInstaller):
         shutil.copy("step2/IAPhysicalMedia.plist",
                     os.path.join(self.osi.system, ".IAPhysicalMedia"))
 
+        print()
         p_success("Stub OS installation complete.")
         logging.info("Stub OS installed")
         print()

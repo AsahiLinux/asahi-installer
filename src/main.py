@@ -329,7 +329,7 @@ class InstallerMain:
             idx = len(avail)-1
 
         self.ipsw = ipsw = avail[idx]
-        p_info(f"Using macOS {ipsw.version} for OS firmware")
+        p_message(f"Using macOS {ipsw.version} for OS firmware")
         print()
 
         return ipsw
@@ -568,6 +568,7 @@ class InstallerMain:
                 p_error(f"Size is too large, please enter a value < {ssize(total)}")
                 continue
             freeing = total - val
+            print()
             p_message(f"Resizing will free up {ssize(freeing)} of space.")
             if freeing <= MIN_INSTALL_FREE:
                 if not self.expert:
@@ -578,6 +579,7 @@ class InstallerMain:
             if self.yesno("Continue?"):
                 break
 
+        print()
         self.dutil.resizeContainer(target.name, val)
 
         print()
@@ -791,6 +793,12 @@ if __name__ == "__main__":
         print()
         logging.info("KeyboardInterrupt")
         p_error("Interrupted")
+    except subprocess.CalledProcessError as e:
+        cmd = shlex.join(e.cmd)
+        p_error("Failed to run process: {cmd}")
+        if e.output is not None:
+            p_error("Output: {e.output}")
+        logging.exception("Process execution failed")
     except:
         logging.exception("Exception caught")
         p_warning("If you need to file a bug report, please attach the log file:")
