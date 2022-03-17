@@ -6,7 +6,7 @@ set -e
 export LANG=C
 export LC_ALL=C
 
-export VERSION_FLAG=https://de.mirror.asahilinux.org/installer/latest
+export VERSION_FLAG=https://cdn.asahilinux.org/installer/latest
 export INSTALLER_BASE=https://cdn.asahilinux.org/installer
 export INSTALLER_DATA=https://github.com/AsahiLinux/asahi-installer/raw/prod/data/installer_data.json
 export REPO_BASE=https://cdn.asahilinux.org
