@@ -5,7 +5,7 @@
             "default_os_name": "Asahi Linux",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "asahi-plasma.zip",
+            "package": "asahi-plasma-20220317.zip",
             "supported_fw": ["12.3"],
             "partitions": [
                 {
@@ -21,7 +21,7 @@
                 {
                     "name": "Root",
                     "type": "Linux",
-                    "size": "5GB",
+                    "size": "10GB",
                     "expand": true,
                     "image": "root.img"
                 }
@@ -32,8 +32,8 @@
             "default_os_name": "Asahi Linux",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "asahi-base.zip",
-            "supported_fw": ["12.1", "12.3"],
+            "package": "asahi-base-20220317.zip",
+            "supported_fw": ["12.3"],
             "partitions": [
                 {
                     "name": "EFI",
@@ -59,7 +59,7 @@
             "default_os_name": "UEFI boot",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "uefi-only.zip",
+            "package": "uefi-only-20220317.zip",
             "partitions": [
                 {
                     "name": "EFI",
