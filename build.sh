@@ -14,10 +14,12 @@ ARTWORK="$PWD/artwork"
 SRC="$PWD/src"
 DL="$PWD/dl"
 PACKAGE="$PWD/package"
+RELEASES="$PWD/releases"
+RELEASES_DEV="$PWD/releases-dev"
 
 rm -rf "$PACKAGE"
 
-mkdir -p "$DL" "$PACKAGE"
+mkdir -p "$DL" "$PACKAGE" "$RELEASES" "$RELEASES_DEV"
 mkdir -p "$PACKAGE/bin"
 
 echo "Determining version..."
@@ -81,5 +83,20 @@ echo "Packaging installer..."
 cd "$PACKAGE"
 
 echo "$VER" > version.tag
-tar czf ../installer.tar.gz .
 
+if [ "$1" == "prod" ]; then
+    PKGFILE="$RELEASES/installer-$VER.tar.gz"
+    LATEST="$RELEASES/latest"
+elif [ "$1" == "dev" ]; then
+    PKGFILE="$RELEASES_DEV/installer-$VER.tar.gz"
+    LATEST="$RELEASES_DEV/latest"
+else
+    PKGFILE="../installer.tar.gz"
+    LATEST="../latest"
+fi
+
+tar czf "$PKGFILE" .
+echo "$VER" > "$LATEST"
+
+echo
+echo "Built package: $(basename "$PKGFILE")"
