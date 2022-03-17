@@ -29,7 +29,12 @@ class DiskUtil:
         else:
             capture = True
         logging.debug(f"run: diskutil {args!r}")
-        subprocess.run(["diskutil"] + list(args), check=True, capture_output=capture)
+        if capture:
+            subprocess.run(["diskutil"] + list(args), check=True,
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+        else:
+            subprocess.run(["diskutil"] + list(args), check=True)
 
     def get(self, *args):
         logging.debug(f"get: diskutil {args!r}")
