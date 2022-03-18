@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
 diskutil list | grep Apple_APFS | grep '\b2\.5 GB' | sed 's/.* //g' | while read i; do
     diskutil apfs deleteContainer "$i"

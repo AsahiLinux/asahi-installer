@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
 cat > /tmp/uuids.txt <<EOF
 3D3287DE-280D-4619-AAAB-D97469CA9C71
