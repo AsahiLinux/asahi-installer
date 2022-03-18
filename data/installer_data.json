@@ -21,7 +21,7 @@
                 {
                     "name": "Root",
                     "type": "Linux",
-                    "size": "10GB",
+                    "size": "12GB",
                     "expand": true,
                     "image": "root.img"
                 }
