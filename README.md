@@ -1,6 +1,6 @@
 # Asahi Linux installer
 
-This isn't even remotely ready yet.
+TODO: document
 
 ## Building
 
