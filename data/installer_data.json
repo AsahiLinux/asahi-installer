@@ -1,7 +1,7 @@
 {
     "os_list": [
         {
-            "name": "Asahi Linux Plasma (Arch Linux ARM)",
+            "name": "Asahi Linux Desktop",
             "default_os_name": "Asahi Linux",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
@@ -28,7 +28,7 @@
             ]
         },
         {
-            "name": "Asahi Linux Core (Arch Linux ARM)",
+            "name": "Asahi Linux Minimal (Arch Linux ARM)",
             "default_os_name": "Asahi Linux",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
