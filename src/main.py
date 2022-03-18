@@ -547,15 +547,22 @@ class InstallerMain:
 
         assert free > min_free
 
-        p_message(f"Resizing: {target.desc}")
-        p_info(f"  Total size: {col()}{ssize(total)}")
-        p_info(f"  Free space: {col()}{ssize(free)}")
-        p_info(f"  Minimum free space: {col()}{ssize(min_free)}")
-        p_info(f"  Minimum total size: {col()}{ssize(min_size)} ({min_perc:.2f}%)")
+        p_message( "We're going to resize this partition:")
+        p_message(f"  {target.desc}")
+        p_info(   f"  Total size: {col()}{ssize(total)}")
+        p_info(   f"  Free space: {col()}{ssize(free)}")
+        p_info(   f"  Minimum free space: {col()}{ssize(min_free)}")
+        p_info(   f"  Minimum total size: {col()}{ssize(min_size)} ({min_perc:.2f}%)")
         print()
-        p_question("Enter the new partition size:")
-        p_message("  You can enter a size such as '1GB', a fraction such as '50%',")
-        p_message("  or the word 'min' for the smallest allowable size.")
+        p_question("Enter the new size for your existing partition:")
+        p_message( "  You can enter a size such as '1GB', a fraction such as '50%',")
+        p_message( "  or the word 'min' for the smallest allowable size.")
+        print()
+        p_message( "  Examples:")
+        p_message( "  30%  - 30% to macOS, 70% to the new OS")
+        p_message( "  80GB - 80GB to macOS, the rest to your new OS")
+        p_message( "  min  - Shrink macOS as much as (safely) possible")
+        print()
 
         default = "50%"
         if total / 2 < min_size:
