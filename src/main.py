@@ -85,7 +85,7 @@ class InstallerMain:
                 new_size = default
             if new_size.lower() == "min" and min is not None:
                 val = min
-            if new_size.lower() == "max" and max is not None:
+            elif new_size.lower() == "max" and max is not None:
                 val = max
             elif new_size.endswith("%") and total is not None:
                 val = int(float(new_size[:-1]) * total / 100)
