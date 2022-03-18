@@ -14,9 +14,6 @@ export REPO_BASE=https://cdn.asahilinux.org
 #TMP="$(mktemp -d)"
 TMP=/tmp/asahi-install
 
-echo "Not yet!"
-exit 1
-
 echo
 echo "Bootstrapping installer:"
 
