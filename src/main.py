@@ -504,7 +504,7 @@ class InstallerMain:
             print()
 
     def get_min_free_space(self, p):
-        if p.os and any(os.version for os in p.os):
+        if p.os and any(os.version for os in p.os) and not self.expert:
             logging.info("  Has OS")
             return MIN_FREE_OS
         else:
