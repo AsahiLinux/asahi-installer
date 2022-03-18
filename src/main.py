@@ -547,7 +547,7 @@ class InstallerMain:
 
         assert free > min_free
 
-        p_message(f"Resizing: {target.desc}")
+        p_message(f"Resizing: {target.desc}. This is going to be the new size of the main MacOS disk.")
         p_info(f"  Total size: {col()}{ssize(total)}")
         p_info(f"  Free space: {col()}{ssize(free)}")
         p_info(f"  Minimum free space: {col()}{ssize(min_free)}")
