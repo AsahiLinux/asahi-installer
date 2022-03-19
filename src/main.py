@@ -806,7 +806,7 @@ if __name__ == "__main__":
         p_error("Interrupted")
     except subprocess.CalledProcessError as e:
         cmd = shlex.join(e.cmd)
-        p_error("Failed to run process: {cmd}")
+        p_error(f"Failed to run process: {cmd}")
         if e.output is not None:
             p_error(f"Output: {e.output}")
         logging.exception("Process execution failed")
