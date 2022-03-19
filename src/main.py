@@ -240,7 +240,7 @@ class InstallerMain:
         print()
         p_message(f"Available free space: {ssize(free_part.size)}")
 
-        os_size = None
+        os_size = min_size
         if self.osins.expandable:
             print()
             p_question("How much space should be allocated to the new OS?")
