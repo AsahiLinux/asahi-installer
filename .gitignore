@@ -2,4 +2,5 @@ __pycache__
 dl
 package
 installer.tar.gz
+latest
 *.ipsw
