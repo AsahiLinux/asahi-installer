@@ -808,7 +808,7 @@ if __name__ == "__main__":
         cmd = shlex.join(e.cmd)
         p_error("Failed to run process: {cmd}")
         if e.output is not None:
-            p_error("Output: {e.output}")
+            p_error(f"Output: {e.output}")
         logging.exception("Process execution failed")
     except:
         logging.exception("Exception caught")
