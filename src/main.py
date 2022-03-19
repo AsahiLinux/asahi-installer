@@ -247,15 +247,15 @@ class InstallerMain:
             p_message("  You can enter a size such as '1GB', a fraction such as '50%',")
             p_message("  the word 'min' for the smallest allowable size, or")
             p_message("  the word 'max' to use all available space.")
-            min_perc = 100 * self.osins.min_size / free_part.size
+            min_perc = 100 * min_size / free_part.size
             while True:
                 os_size = self.get_size("New OS size", default="max",
-                                    min=self.osins.min_size, max=free_part.size,
+                                    min=min_size, max=free_part.size,
                                     total=free_part.size)
                 if os_size is None:
                     continue
                 os_size = align_down(os_size, PART_ALIGN)
-                if os_size < self.osins.min_size:
+                if os_size < min_size:
                     p_error(f"Size is too small, please enter a value > {ssize(min_size)} ({min_perc:.2f}%)")
                     continue
                 if os_size >= free_part.size:
@@ -283,7 +283,7 @@ class InstallerMain:
         logging.info(f"Creating stub macOS: {label}")
         self.part = self.dutil.addPartition(free_part.name, "apfs", label, STUB_SIZE)
 
-        self.do_install(os_size)
+        self.do_install(os_size - STUB_SIZE)
 
     def do_install(self, total_size=None):
         p_progress(f"Installing stub macOS into {self.part.name} ({self.part.label})")
