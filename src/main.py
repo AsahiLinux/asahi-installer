@@ -457,6 +457,7 @@ class InstallerMain:
         time.sleep(2)
         p_prompt( "Press enter to shut down the system.")
         self.input()
+        time.sleep(1)
         os.system("shutdown -h now")
 
     def startup_disk(self, recovery=False, volume_blessed=False, reboot=False):
