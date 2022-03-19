@@ -588,6 +588,9 @@ class InstallerMain:
                     continue
                 else:
                     p_warning(f"That's not enough free space for an OS install.")
+            print()
+            p_message("Note: your system may appear to freeze during the resize.")
+            p_message("This is normal, just wait until the process completes.")
             if self.yesno("Continue?"):
                 break
 
