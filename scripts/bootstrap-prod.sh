@@ -17,6 +17,17 @@ TMP=/tmp/asahi-install
 echo
 echo "Bootstrapping installer:"
 
+echo "  Checking divice..."
+DIVICE_CLASS=`ioreg | grep -iE 'j274ap|j293ap|j313ap|j456ap|j457ap|j314cap|j314sap|j316cap|j316sap'` || true
+
+if [ -z "$DIVICE_CLASS" ]; then
+    echo
+    echo "  Your mac may not be supported to install."
+    echo "  Please check the list of support."
+    echo "  exit..."
+    exit 1
+fi
+
 mkdir -p "$TMP"
 cd "$TMP"
 
