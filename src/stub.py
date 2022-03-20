@@ -159,7 +159,7 @@ class StubInstaller(PackageInstaller):
                            "0000000000000000040000000000000000000000000000000000000000000000",
                            self.osi.system], check=True)
         except:
-            p_err("Failed to apply extended attributes, logo will not work.")
+            p_error("Failed to apply extended attributes, logo will not work.")
 
         p_progress("Setting up Data volume...")
         logging.info("Setting up Data volume")
