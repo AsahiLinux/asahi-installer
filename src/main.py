@@ -266,6 +266,7 @@ class InstallerMain:
             print()
             p_message(f"The new OS will be allocated {ssize(os_size)} of space,")
             p_message(f"leaving {ssize(free_part.size - os_size)} of free space.")
+            os_size -= STUB_SIZE
 
         print()
         self.flush_input()
@@ -283,7 +284,7 @@ class InstallerMain:
         logging.info(f"Creating stub macOS: {label}")
         self.part = self.dutil.addPartition(free_part.name, "apfs", label, STUB_SIZE)
 
-        self.do_install(os_size - STUB_SIZE)
+        self.do_install(os_size)
 
     def do_install(self, total_size=None):
         p_progress(f"Installing stub macOS into {self.part.name} ({self.part.label})")
