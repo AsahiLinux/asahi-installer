@@ -22,4 +22,4 @@ if [ $(arch) != "arm64" ]; then
 fi
 
 exec </dev/tty >/dev/tty 2>/dev/tty
-exec $arch caffeinate -dis $python main.py "$@"
+exec $arch $python main.py "$@"
