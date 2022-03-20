@@ -118,21 +118,46 @@ def input_prompt(*args):
 class PackageInstaller:
     def __init__(self):
         self.verbose = "-v" in sys.argv
+        self.printed_progress = False
 
     def flush_progress(self):
-        if self.ucache:
-            self.ucache.flush_progress()
+        if self.ucache and self.ucache.flush_progress():
+            self.printed_progress = False
+            return
+        if self.printed_progress:
+            sys.stdout.write("\n")
+            self.printed_progress = False
 
     def extract(self, src, dest):
         logging.info(f"  {src} -> {dest}/")
         self.pkg.extract(src, dest)
 
+    def fdcopy(self, sfd, dfd, size=None):
+        BLOCK = 128 * 1024 * 1024
+        copied = 0
+        while True:
+            if size is not None:
+                prog = copied / size * 100
+                sys.stdout.write(f"\033[3G{prog:6.2f}% ")
+                sys.stdout.flush()
+                self.printed_progress = True
+            d = sfd.read(BLOCK)
+            if not d:
+                break
+            dfd.write(d)
+            copied += len(d)
+
+        if size is not None:
+            sys.stdout.write("\033[3G100.00% ")
+            sys.stdout.flush()
+
     def extract_file(self, src, dest, optional=True):
         try:
+            info = self.pkg.getinfo(src)
             with self.pkg.open(src) as sfd, \
                 open(dest, "wb") as dfd:
                 logging.info(f"  {src} -> {dest}")
-                shutil.copyfileobj(sfd, dfd)
+                self.fdcopy(sfd, dfd, info.file_size)
         except KeyError:
             if not optional:
                 raise

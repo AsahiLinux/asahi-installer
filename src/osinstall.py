@@ -104,9 +104,10 @@ class OSInstaller(PackageInstaller):
             if image:
                 p_plain(f"  Extracting {image} into {info.name} partition...")
                 logging.info(f"Extract: {image}")
+                zinfo = self.pkg.getinfo(image)
                 with self.pkg.open(image) as sfd, \
                     open(f"/dev/r{info.name}", "r+b") as dfd:
-                    shutil.copyfileobj(sfd, dfd, 1024 * 1024)
+                    self.fdcopy(sfd, dfd, zinfo.file_size)
                 self.flush_progress()
             source = part.get("source", None)
             if source:
