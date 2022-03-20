@@ -11,9 +11,9 @@ class CacheBlock:
     data: bytes
 
 class URLCache:
-    CACHESIZE = 32
+    CACHESIZE = 64
     BLOCKSIZE = 1 * 1024 * 1024
-    READAHEAD = 10
+    READAHEAD = 20
     TIMEOUT = 30
 
     def __init__(self, url):
