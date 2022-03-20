@@ -168,6 +168,7 @@ class OSEnum:
                     "System/Library/CoreServices", name), "rb"))
                 osi.version = sysver["ProductVersion"]
                 logging.info(f"    Version: {osi.version}")
+                break
             except FileNotFoundError:
                 logging.info(f"    Not Found")
                 continue
