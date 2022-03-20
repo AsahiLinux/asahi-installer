@@ -14,6 +14,7 @@ class URLCache:
     CACHESIZE = 32
     BLOCKSIZE = 1 * 1024 * 1024
     READAHEAD = 10
+    TIMEOUT = 30
 
     def __init__(self, url):
         self.url = url
@@ -34,7 +35,7 @@ class URLCache:
         #print("get_partial", off, size)
         req = request.Request(self.url, method="GET")
         req.add_header("Range", f"bytes={off}-{off+size-1}")
-        fd = request.urlopen(req)
+        fd = request.urlopen(req, timeout=self.TIMEOUT)
 
         if size <= self.BLOCKSIZE:
             sys.stdout.write(".")
@@ -58,7 +59,8 @@ class URLCache:
             size += self.BLOCKSIZE
 
         size = min(off + size, self.size) - off
-        retries = 5
+        retries = 10
+        sleep = 1
         for retry in range(retries + 1):
             try:
                 data = self.get_partial(off, size)
@@ -67,7 +69,8 @@ class URLCache:
                     p_error(f"Exceeded maximum retries downloading data.")
                     raise
                 p_warning(f"Error downloading data ({e}), retrying... ({retry + 1}/{retries})")
-                time.sleep(1)
+                time.sleep(sleep)
+                sleep += 1
             else:
                 break
 
