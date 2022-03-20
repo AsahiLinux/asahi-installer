@@ -42,7 +42,7 @@ echo
 if [ "$USER" != "root" ]; then
     echo "The installer needs to run as root."
     echo "Please enter your sudo password if prompted."
-    exec sudo -E ./install.sh "$@"
+    exec caffeinate -dis sudo -E ./install.sh "$@"
 else
-    exec ./install.sh "$@"
+    exec caffeinate -dis ./install.sh "$@"
 fi
