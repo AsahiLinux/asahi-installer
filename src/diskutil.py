@@ -24,15 +24,16 @@ class DiskUtil:
     def action(self, *args, verbose=False):
         if verbose == 2:
             capture = False
-        elif self.verbose:
+        elif verbose:
             capture = not self.verbose
         else:
             capture = True
         logging.debug(f"run: diskutil {args!r}")
         if capture:
-            subprocess.run(["diskutil"] + list(args), check=True,
-                           stdout=subprocess.PIPE,
-                           stderr=subprocess.STDOUT)
+            p = subprocess.run(["diskutil"] + list(args), check=True,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT)
+            logging.debug(f"process output: {p.stdout}")
         else:
             subprocess.run(["diskutil"] + list(args), check=True)
 
@@ -46,16 +47,24 @@ class DiskUtil:
         logging.info(f"DiskUtil.get_list()")
         self.list = self.get("list", "-plist")
         self.disk_list = self.list["WholeDisks"]
+        logging.debug("  Whole disks:")
+        for i in self.disk_list:
+            logging.debug(f"  - {i!r}")
         self.disk_parts = {dsk["DeviceIdentifier"]: dsk for dsk in self.list["AllDisksAndPartitions"]}
+        logging.debug("  All disks and partitions:")
+        for k, v in self.disk_parts.items():
+            logging.debug(f"  - {k}: {v!r}")
 
     def get_apfs_list(self, dev=None):
-        logging.info(f"DiskUtil.get_apfs_list()")
+        logging.info(f"DiskUtil.get_apfs_list({dev=!r})")
         if dev:
             apfs = self.get("apfs", "list", dev, "-plist")
         else:
             apfs = self.get("apfs", "list", "-plist")
         for ctnr in apfs["Containers"]:
             vgs = self.get("apfs", "listVolumeGroups", ctnr["ContainerReference"], "-plist")
+            logging.debug(f"container: {ctnr!r}")
+            logging.debug(f"  VGs: {vgs!r}")
             ctnr["VolumeGroups"] = vgs["Containers"][0]["VolumeGroups"]
             self.ctnr_by_ref[ctnr["ContainerReference"]] = ctnr
             self.ctnr_by_store[ctnr["DesignatedPhysicalStore"]] = ctnr
@@ -65,6 +74,7 @@ class DiskUtil:
         self.disks = {}
         for i in self.disk_list:
             self.disks[i] = self.get("info", "-plist", i)
+            logging.debug(f" {i}: {self.disks[i]}")
 
     def get_info(self):
         logging.info(f"DiskUtil.get_info()")
@@ -117,7 +127,8 @@ class DiskUtil:
            part.container = {}
            part.container["Volumes"] = []
            logging.info(f"{part.name} doesn't have any Volumes")
-        
+
+        logging.debug("Partition {dev}: {part}")
         return part
 
     def get_partitions(self, dskname):
@@ -151,7 +162,7 @@ class DiskUtil:
         part.container = self.ctnr_by_store[part.name]
 
     def mount(self, target):
-        self.action("quiet", "mount", target)
+        self.action("mount", target)
         info = self.get("info", "-plist", target)
         return info["MountPoint"]
 
@@ -159,11 +170,11 @@ class DiskUtil:
         args = []
         for k, v in kwargs.items():
             args.extend(["-" + k, v])
-        self.action("quiet", "apfs", "addVolume", container, "apfs", name, *args, verbose=True)
+        self.action("apfs", "addVolume", container, "apfs", name, *args, verbose=True)
 
     def addPartition(self, after, fs, label, size):
         size = str(size)
-        self.action("quiet", "addPartition", after, fs, label, size, verbose=True)
+        self.action("addPartition", after, fs, label, size, verbose=True)
 
         disk = after.rsplit("s", 1)[0]
 
@@ -181,10 +192,10 @@ class DiskUtil:
         raise Exception("Could not find new partition")
 
     def changeVolumeRole(self, volume, role):
-        self.action("quiet", "apfs", "changeVolumeRole", volume, role, verbose=True)
+        self.action("apfs", "changeVolumeRole", volume, role, verbose=True)
 
     def rename(self, volume, name):
-        self.action("quiet", "rename", volume, name, verbose=True)
+        self.action("rename", volume, name, verbose=True)
 
     def resizeContainer(self, name, size):
         size = str(size)
