@@ -11,10 +11,12 @@ class CacheBlock:
     data: bytes
 
 class URLCache:
-    CACHESIZE = 64
+    CACHESIZE = 128
     BLOCKSIZE = 1 * 1024 * 1024
-    READAHEAD = 20
     TIMEOUT = 30
+    MIN_READAHEAD = 8
+    MAX_READAHEAD = 64
+    SPINNER = "/-\\|"
 
     def __init__(self, url):
         self.url = url
@@ -22,6 +24,8 @@ class URLCache:
         self.p = 0
         self.cache = {}
         self.blocks_read = 0
+        self.readahead = self.MAX_READAHEAD
+        self.spin = 0
 
     def seekable(self):
         return True
@@ -37,23 +41,26 @@ class URLCache:
         req.add_header("Range", f"bytes={off}-{off+size-1}")
         fd = request.urlopen(req, timeout=self.TIMEOUT)
 
-        if size <= self.BLOCKSIZE:
-            sys.stdout.write(".")
-        else:
-            sys.stdout.write("+")
+        d = fd.read()
+
+        self.spin = (self.spin + 1) % len(self.SPINNER)
+        sys.stdout.write(f"\r{self.SPINNER[self.spin]} ")
         sys.stdout.flush()
         self.blocks_read += 1
 
-        return fd.read()
+        return d
 
-    def get_block(self, blk):
+    def get_block(self, blk, readahead=1):
         if blk in self.cache:
             return self.cache[blk]
 
         off = blk * self.BLOCKSIZE
         size = self.BLOCKSIZE
 
-        for i in range(self.READAHEAD):
+        blocks = max(self.MIN_READAHEAD,
+                     min(readahead, self.readahead)) - 1
+
+        for i in range(blocks):
             if blk + i in self.cache:
                 break
             size += self.BLOCKSIZE
@@ -71,6 +78,9 @@ class URLCache:
                 p_warning(f"Error downloading data ({e}), retrying... ({retry + 1}/{retries})")
                 time.sleep(sleep)
                 sleep += 1
+                # Retry in smaller chunks
+                self.readahead = self.MIN_READAHEAD
+                size = min(size, self.readahead * self.BLOCKSIZE)
             else:
                 break
 
@@ -102,9 +112,14 @@ class URLCache:
         blk_start = self.p // self.BLOCKSIZE
         blk_end = (self.p + count - 1) // self.BLOCKSIZE
 
+        blocks = blk_end - blk_start + 1
+
         d = []
         for blk in range(blk_start, blk_end + 1):
-            d.append(self.get_block(blk).data)
+            readahead = blk_end - blk + 1
+            d.append(self.get_block(blk, readahead).data)
+            prog = (blk - blk_start + 1) / blocks * 100
+            self.blocks_read += 1
 
         trim = self.p - (blk_start * self.BLOCKSIZE)
         d[0] = d[0][trim:]
@@ -117,8 +132,10 @@ class URLCache:
     def flush_progress(self):
         if self.blocks_read > 0:
             sys.stdout.write("\n")
-        self.blocks_read = 0
-
+            self.blocks_read = 0
+            return True
+        else:
+            return False
 
 if __name__ == "__main__":
     import sys, zipfile
