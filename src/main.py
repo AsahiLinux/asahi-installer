@@ -757,8 +757,8 @@ class InstallerMain:
         if parts_resizable:
             actions["r"] = "Resize an existing partition to make space for a new OS"
             default = default or "r"
-            if self.sysinfo.boot_mode == "one true recoveryOS":
-                actions["m"] = "Upgrade bootloader of an existing OS"
+        if self.sysinfo.boot_mode == "one true recoveryOS" and False:
+            actions["m"] = "Upgrade bootloader of an existing OS"
 
         if not actions:
             p_error("No actions available on this system.")
