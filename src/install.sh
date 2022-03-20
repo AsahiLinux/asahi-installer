@@ -12,5 +12,14 @@ python=Frameworks/Python.framework/Versions/3.9/bin/python3.9
 export SSL_CERT_FILE=$PWD/Frameworks/Python.framework/Versions/Current/etc/openssl/cert.pem
 export PATH="$PWD/bin:$PATH"
 
+arch=
+
+if [ $(arch) != "arm64" ]; then
+    echo
+    echo "You're running the installer in Intel mode under Rosetta!"
+    echo "Don't worry, we can fix that for you. Switching to ARM64 mode..."
+    arch="arch -arm64"
+fi
+
 exec </dev/tty >/dev/tty 2>/dev/tty
-exec $python main.py "$@"
+exec $arch $python main.py "$@"
