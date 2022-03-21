@@ -14,27 +14,27 @@ PKG=installer.tar.gz
 #TMP="$(mktemp -d)"
 TMP=/tmp/asahi-install
 
-echo
-echo "Bootstrapping installer:"
+/bin/echo
+/bin/echo "Bootstrapping installer:"
 
-mkdir -p "$TMP"
-cd "$TMP"
+/bin/mkdir -p "$TMP"
+/usr/bin/cd "$TMP"
 
-echo "  Downloading..."
+/bin/echo "  Downloading..."
 
-curl -s -L -O "$INSTALLER_BASE/$PKG"
-curl -s -L -O "$INSTALLER_DATA"
+/usr/bin/curl -s -L -O "$INSTALLER_BASE/$PKG"
+/usr/bin/curl -s -L -O "$INSTALLER_DATA"
 
-echo "  Extracting..."
+/bin/echo "  Extracting..."
 
-tar xf "$PKG"
+/usr/bin/tar xf "$PKG"
 
-echo "  Initializing..."
-echo
+/bin/echo "  Initializing..."
+/bin/echo
 
 if [ "$USER" != "root" ]; then
-    echo "The installer needs to run as root."
-    echo "Please enter your sudo password if prompted."
+    /bin/echo "The installer needs to run as root."
+    /bin/echo "Please enter your sudo password if prompted."
     exec caffeinate -dis sudo -E ./install.sh "$@"
 else
     exec caffeinate -dis ./install.sh "$@"

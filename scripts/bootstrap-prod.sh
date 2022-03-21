@@ -6,42 +6,42 @@ set -e
 export LANG=C
 export LC_ALL=C
 
-export VERSION_FLAG=https://cdn.asahilinux.org/installer/latest
-export INSTALLER_BASE=https://cdn.asahilinux.org/installer
+export VERSION_FLAG=https:///usr/bin/cdn.asahilinux.org/installer/latest
+export INSTALLER_BASE=https:///usr/bin/cdn.asahilinux.org/installer
 export INSTALLER_DATA=https://github.com/AsahiLinux/asahi-installer/raw/prod/data/installer_data.json
-export REPO_BASE=https://cdn.asahilinux.org
+export REPO_BASE=https:///usr/bin/cdn.asahilinux.org
 
 #TMP="$(mktemp -d)"
 TMP=/tmp/asahi-install
 
-echo
-echo "Bootstrapping installer:"
+/bin/echo
+/bin/echo "Bootstrapping installer:"
 
-mkdir -p "$TMP"
-cd "$TMP"
+/bin/mkdir -p "$TMP"
+/usr/bin/cd "$TMP"
 
-echo "  Checking version..."
+/bin/echo "  Checking version..."
 
-PKG_VER="$(curl -s -L "$VERSION_FLAG")"
-echo "  Version: $PKG_VER"
+PKG_VER="$(/usr/bin/curl -s -L "$VERSION_FLAG")"
+/bin/echo "  Version: $PKG_VER"
 
 PKG="installer-$PKG_VER.tar.gz"
 
-echo "  Downloading..."
+/bin/echo "  Downloading..."
 
-curl -s -L -o "$PKG" "$INSTALLER_BASE/$PKG"
-curl -s -L -O "$INSTALLER_DATA"
+/usr/bin/curl -s -L -o "$PKG" "$INSTALLER_BASE/$PKG"
+/usr/bin/curl -s -L -O "$INSTALLER_DATA"
 
-echo "  Extracting..."
+/bin/echo "  Extracting..."
 
-tar xf "$PKG"
+/usr/bin/tar xf "$PKG"
 
-echo "  Initializing..."
-echo
+/bin/echo "  Initializing..."
+/bin/echo
 
 if [ "$USER" != "root" ]; then
-    echo "The installer needs to run as root."
-    echo "Please enter your sudo password if prompted."
+    /bin/echo "The installer needs to run as root."
+    /bin/echo "Please enter your sudo password if prompted."
     exec caffeinate -dis sudo -E ./install.sh "$@"
 else
     exec caffeinate -dis ./install.sh "$@"

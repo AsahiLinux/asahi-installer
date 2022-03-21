@@ -14,18 +14,18 @@ export PATH="$PWD/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 arch=
 
-if ! arch -arm64 ls >/dev/null 2>/dev/null; then
-    echo
-    echo "Looks like this is an Intel Mac!"
-    echo "Sorry, Asahi Linux only supports Apple Silicon machines."
-    echo "May we interest you in https://t2linux.org/ instead?"
+if ! /usr/bin/arch -arm64 /bin/ls >/dev/null 2>/dev/null; then
+    /bin/echo
+    /bin/echo "Looks like this is an Intel Mac!"
+    /bin/echo "Sorry, Asahi Linux only supports Apple Silicon machines."
+    /bin/echo "May we interest you in https://t2linux.org/ instead?"
     exit 1
 fi
 
-if [ $(arch) != "arm64" ]; then
-    echo
-    echo "You're running the installer in Intel mode under Rosetta!"
-    echo "Don't worry, we can fix that for you. Switching to ARM64 mode..."
+if [ $(/usr/bin/arch) != "arm64" ]; then
+    /bin/echo
+    /bin/echo "You're running the installer in Intel mode under Rosetta!"
+    /bin/echo "Don't worry, we can fix that for you. Switching to ARM64 mode..."
     arch="arch -arm64"
 fi
 

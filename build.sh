@@ -3,7 +3,7 @@
 
 set -e
 
-cd "$(dirname "$0")"
+/usr/bin/cd "$(dirname "$0")"
 
 PYTHON_VER=3.9.6
 PYTHON_PKG=python-$PYTHON_VER-macos11.pkg
@@ -17,72 +17,72 @@ PACKAGE="$PWD/package"
 RELEASES="$PWD/releases"
 RELEASES_DEV="$PWD/releases-dev"
 
-rm -rf "$PACKAGE"
+/bin/rm -rf "$PACKAGE"
 
-mkdir -p "$DL" "$PACKAGE" "$RELEASES" "$RELEASES_DEV"
-mkdir -p "$PACKAGE/bin"
+/bin/mkdir -p "$DL" "$PACKAGE" "$RELEASES" "$RELEASES_DEV"
+/bin/mkdir -p "$PACKAGE/bin"
 
-echo "Determining version..."
+/bin/echo "Determining version..."
 
-VER=$(git describe --always --dirty --tags)
+VER=$(/usr/bin/git describe --always --dirty --tags)
 
-echo "Version: $VER"
+/bin/echo "Version: $VER"
 
 if [ -z "$VER" ]; then
     if [ -e version.tag ]; then
-        VER="$(cat version.tag)"
+        VER="$(/bin/cat version.tag)"
     else
-        echo "Could not determine version!"
+        /bin/echo "Could not determine version!"
         exit 1
     fi
 fi
 
-echo "Downloading installer components..."
+/bin/echo "Downloading installer components..."
 
-cd "$DL"
+/usr/bin/cd "$DL"
 
 wget -Nc "$PYTHON_URI"
 
-echo "Building m1n1..."
+/bin/echo "Building m1n1..."
 
-make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
+/usr/bin/make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
 
-echo "Copying files..."
+/bin/echo "Copying files..."
 
-cp -r "$SRC"/* "$PACKAGE/"
-cp "$ARTWORK/logos/icns/AsahiLinux_logomark.icns" "$PACKAGE/logo.icns"
-mkdir -p "$PACKAGE/boot"
-cp "$M1N1/build/m1n1.bin" "$PACKAGE/boot"
+/bin/cp -r "$SRC"/* "$PACKAGE/"
+/bin/cp "$ARTWORK/logos/icns/AsahiLinux_logomark.icns" "$PACKAGE/logo.icns"
+/bin/mkdir -p "$PACKAGE/boot"
+/bin/cp "$M1N1/build/m1n1.bin" "$PACKAGE/boot"
 
-echo "Extracting Python framework..."
+/bin/echo "Extracting Python framework..."
 
-mkdir -p "$PACKAGE/Frameworks/Python.framework"
+/bin/mkdir -p "$PACKAGE/Frameworks/Python.framework"
 
-7z x -so "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | zcat | \
-    cpio -i -D "$PACKAGE/Frameworks/Python.framework"
+7z x -so "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | /usr/bin/zcat | \
+    /usr/bin/cpio -i -D "$PACKAGE/Frameworks/Python.framework"
 
-echo "Slimming down Python..."
+/bin/echo "Slimming down Python..."
 
-cd "$PACKAGE/Frameworks/Python.framework/Versions/Current"
+/usr/bin/cd "$PACKAGE/Frameworks/Python.framework/Versions/Current"
 
-rm -rf include share
-cd lib
-rm -rf -- tdb* tk* Tk* libtk* *tcl*
-cd python3.*
-rm -rf test ensurepip idlelib
-cd lib-dynload
-rm -f _test* _tkinter*
+/bin/rm -rf include share
+/usr/bin/cd lib
+/bin/rm -rf -- tdb* tk* Tk* libtk* *tcl*
+/usr/bin/cd python3.*
+/bin/rm -rf test ensurepip idlelib
+/usr/bin/cd lib-dynload
+/bin/rm -f _test* _tkinter*
     
-echo "Copying certificates..."
+/bin/echo "Copying certificates..."
 
-certs="$(python3 -c 'import certifi; print(certifi.where())')"
-cp "$certs" "$PACKAGE/Frameworks/Python.framework/Versions/Current/etc/openssl/cert.pem"
+certs="$(/usr/bin/python3 -c 'import certifi; print(certifi.where())')"
+/bin/cp "$certs" "$PACKAGE/Frameworks/Python.framework/Versions/Current/etc/openssl/cert.pem"
 
-echo "Packaging installer..."
+/bin/echo "Packaging installer..."
 
-cd "$PACKAGE"
+/usr/bin/cd "$PACKAGE"
 
-echo "$VER" > version.tag
+/bin/echo "$VER" > version.tag
 
 if [ "$1" == "prod" ]; then
     PKGFILE="$RELEASES/installer-$VER.tar.gz"
@@ -95,8 +95,8 @@ else
     LATEST="../latest"
 fi
 
-tar czf "$PKGFILE" .
-echo "$VER" > "$LATEST"
+/usr/bin/tar czf "$PKGFILE" .
+/bin/echo "$VER" > "$LATEST"
 
-echo
-echo "Built package: $(basename "$PKGFILE")"
+/bin/echo
+/bin/echo "Built package: $(/usr/bin/basename "$PKGFILE")"
