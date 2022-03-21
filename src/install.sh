@@ -14,7 +14,7 @@ export PATH="$PWD/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 arch=
 
-if ! arch -arm64 true 2>/dev/null; then
+if ! arch -arm64 ls >/dev/null 2>/dev/null; then
     echo
     echo "Looks like this is an Intel Mac!"
     echo "Sorry, Asahi Linux only supports Apple Silicon machines."
