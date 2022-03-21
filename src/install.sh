@@ -14,6 +14,14 @@ export PATH="$PWD/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 arch=
 
+if ! arch -arm64 true 2>/dev/null; then
+    echo
+    echo "Looks like this is an Intel Mac!"
+    echo "Sorry, Asahi Linux only supports Apple Silicon machines."
+    echo "May we interest you in https://t2linux.org/ instead?"
+    exit 1
+fi
+
 if [ $(arch) != "arm64" ]; then
     echo
     echo "You're running the installer in Intel mode under Rosetta!"
