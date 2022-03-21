@@ -3,8 +3,8 @@
 
 set -e
 
-export LC_ALL=C
-export LANG=C
+export LC_ALL=UTF-8
+export LANG=UTF-8
 
 export DYLD_LIBRARY_PATH=$PWD/Frameworks/Python.framework/Versions/Current/lib
 export DYLD_FRAMEWORK_PATH=$PWD/Frameworks
