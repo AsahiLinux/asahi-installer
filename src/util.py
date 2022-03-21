@@ -110,8 +110,13 @@ def p_choice(*args):
     p_style(*args)
 
 def input_prompt(*args):
-    p_style(f"{col(BRIGHT, WHITE)}»{col(BRIGHT, CYAN)}", *args, end="")
-    val = input()
+    while True:
+        p_style(f"{col(BRIGHT, WHITE)}»{col(BRIGHT, CYAN)}", *args, end="")
+        val = input()
+        if any (ord(c) < 0x20 for c in val):
+            p_error("Invalid input")
+            continue
+        break
     logging.info(f"INPUT: {val!r}")
     return val
 
