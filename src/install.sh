@@ -10,7 +10,9 @@ export DYLD_LIBRARY_PATH=$PWD/Frameworks/Python.framework/Versions/Current/lib
 export DYLD_FRAMEWORK_PATH=$PWD/Frameworks
 python=Frameworks/Python.framework/Versions/3.9/bin/python3.9
 export SSL_CERT_FILE=$PWD/Frameworks/Python.framework/Versions/Current/etc/openssl/cert.pem
-export PATH="$PWD/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+# Bootstrap does part of this, but install.sh can be run standalone
+# so do it again for good measure.
+export PATH="$PWD/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 arch=
 

@@ -5,6 +5,7 @@ set -e
 
 export LANG=C
 export LC_ALL=C
+export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 export INSTALLER_BASE=http://localhost:5000
 export INSTALLER_DATA=http://localhost:5000/data/installer_data.json

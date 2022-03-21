@@ -5,6 +5,7 @@ set -e
 
 export LANG=C
 export LC_ALL=C
+export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 export VERSION_FLAG=https://cdn.asahilinux.org/installer-dev/latest
 export INSTALLER_BASE=https://cdn.asahilinux.org/installer-dev
