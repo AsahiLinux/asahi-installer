@@ -20,7 +20,46 @@ echo "VGID: $VGID"
 echo "System volume: $system_dir"
 echo
 
-if ! bputil -d -v "$VGID" | grep -q 'one true recoveryOS'; then
+bputil -d -v "$VGID" >/tmp/bp.txt
+
+if ! grep -q ': Paired' /tmp/bp.txt; then
+    echo "Your system did not boot into the correct recoveryOS."
+    echo
+    echo "Each OS in your machine comes with its own copy of recoveryOS."
+    echo "In order to complete the installation, we need to boot into"
+    echo "the brand new recoveryOS that matches the OS which you are"
+    echo "installing. The final installation step cannot be completed from"
+    echo "a different recoveryOS."
+    echo
+    echo "Normally this should happen automatically after the initial"
+    echo "installer sets up your new OS as the default boot option,"
+    echo "but it seems something went wrong there. Let's try that again."
+    echo
+    echo "Press enter to continue."
+    read
+
+    while ! bless --setBoot --mount "$system_dir"; do
+        echo
+        echo "bless failed. Did you mistype your password?"
+        echo "Press enter to try again."
+        read
+    done
+
+    echo
+    echo "Phew, hopefully that fixed it!"
+    echo
+    echo "Your system will now shut down. Once the screen goes blank,"
+    echo "please wait 10 seconds, then press the power button and do not"
+    echo "release it until you see the 'Entering startup options...'"
+    echo "message, then select '$os_name' again."
+    echo
+    echo "Press enter to shut down your system."
+    read
+    shutdown -h now
+    exit 1
+fi
+
+if ! grep -q 'one true recoveryOS' /tmp/bp.txt; then
     echo "Your system did not boot in One True RecoveryOS (1TR) mode."
     echo
     echo "To finish the installation, the system must be in this special"
