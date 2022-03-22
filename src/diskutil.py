@@ -174,7 +174,7 @@ class DiskUtil:
             self.action("apfs", "addVolume", container, "apfs", name, *args, verbose=True)
         except subprocess.CalledProcessError as e:
             if e.output is not None and b"Mounting APFS Volume" in e.output:
-                logging.warning("diskutil addVolume errored out spuriously, squelching: {e.output}")
+                logging.warning(f"diskutil addVolume errored out spuriously, squelching: {e.output}")
             else:
                 raise
 
