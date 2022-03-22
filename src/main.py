@@ -458,7 +458,7 @@ class InstallerMain:
         p_warning( "   * It is important that the system be fully powered off before this step,")
         p_warning( "     and that you press and hold down the button once, not multiple times.")
         p_warning( "     This is required to put the machine into the right mode.")
-        p_message( "3. Release it once 'Entering startup options' is displayed,")
+        p_message( "3. Release it once 'Loading startup options' is displayed,")
         p_message( "   or you see a spinner.")
         p_message( "4. Wait for the volume list to appear.")
         p_message(f"5. Choose '{self.part.label}'.")
