@@ -170,7 +170,13 @@ class DiskUtil:
         args = []
         for k, v in kwargs.items():
             args.extend(["-" + k, v])
-        self.action("apfs", "addVolume", container, "apfs", name, *args, verbose=True)
+        try:
+            self.action("apfs", "addVolume", container, "apfs", name, *args, verbose=True)
+        except subprocess.CalledProcessError as e:
+            if e.output is not None and b"Mounting APFS Volume" in e.output:
+                logging.warning("diskutil addVolume errored out spuriously, squelching: {e.output}")
+            else:
+                raise
 
     def addPartition(self, after, fs, label, size):
         size = str(size)
