@@ -379,6 +379,19 @@ class InstallerMain:
                                check=True)
                 break
             except subprocess.CalledProcessError:
+                if self.admin_password.strip() != self.admin_password:
+                    p_warning("Failed to run bless.")
+                    p_warning("This is probably because your password starts or ends with a space,")
+                    p_warning("and that doesn't work due to a silly Apple bug.")
+                    p_warning("Let's try a different way. Sorry, you'll have to type it in again.")
+                    try:
+                        subprocess.run(["bless", "--setBoot",
+                                        "--device", "/dev/" + self.ins.osi.sys_volume,
+                                        "--user", self.admin_user], check=True)
+                        print()
+                        return
+                    except subprocess.CalledProcessError:
+                        pass
                 p_error("Failed to run bless. Press enter to try again.")
                 self.input()
 
