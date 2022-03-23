@@ -828,6 +828,8 @@ if __name__ == "__main__":
         if e.output is not None:
             p_error(f"Output: {e.output}")
         logging.exception("Process execution failed")
+        p_warning("If you need to file a bug report, please attach the log file:")
+        p_warning(f"  {os.getcwd()}/installer.log")
     except:
         logging.exception("Exception caught")
         p_warning("If you need to file a bug report, please attach the log file:")
