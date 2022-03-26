@@ -16,18 +16,16 @@ DL="$PWD/dl"
 PACKAGE="$PWD/package"
 RELEASES="$PWD/releases"
 RELEASES_DEV="$PWD/releases-dev"
+PYTHON_FWORK="$PACKAGE/Frameworks/Python.framework"
+PYTHON_FWORK_VERSION="$PYTHON_FWORK/Versions/Current"
 
 rm -rf "$PACKAGE"
 
-mkdir -p "$DL" "$PACKAGE" "$RELEASES" "$RELEASES_DEV"
-mkdir -p "$PACKAGE/bin"
+mkdir -p "$DL" "$PACKAGE/bin" "$PACKAGE/boot" "$RELEASES" "$RELEASES_DEV"
 
 echo "Determining version..."
 
 VER=$(git describe --always --dirty --tags)
-
-echo "Version: $VER"
-
 if [ -z "$VER" ]; then
     if [ -e version.tag ]; then
         VER="$(cat version.tag)"
@@ -37,52 +35,43 @@ if [ -z "$VER" ]; then
     fi
 fi
 
+echo "Version: $VER"
+
 echo "Downloading installer components..."
-
-cd "$DL"
-
-wget -Nc "$PYTHON_URI"
+wget -Nc "$DL" "$PYTHON_URI"
 
 echo "Building m1n1..."
-
 make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
 
 echo "Copying files..."
-
 cp -r "$SRC"/* "$PACKAGE/"
 cp "$ARTWORK/logos/icns/AsahiLinux_logomark.icns" "$PACKAGE/logo.icns"
-mkdir -p "$PACKAGE/boot"
 cp "$M1N1/build/m1n1.bin" "$PACKAGE/boot"
 
 echo "Extracting Python framework..."
-
-mkdir -p "$PACKAGE/Frameworks/Python.framework"
+mkdir -p "$PYTHON_FWORK"
 
 7z x -so "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | zcat | \
-    cpio -i -D "$PACKAGE/Frameworks/Python.framework"
+    cpio -i -D "$PYTHON_FWORK"
 
 echo "Slimming down Python..."
+(
+    cd "$PYTHON_FWORK_VERSION"
+    rm -rf include share
+    cd lib
+    rm -rf -- tdb* tk* Tk* libtk* *tcl*
+    cd python3.*
+    rm -rf test ensurepip idlelib
+    cd lib-dynload
+    rm -f _test* _tkinter*
+)
 
-cd "$PACKAGE/Frameworks/Python.framework/Versions/Current"
-
-rm -rf include share
-cd lib
-rm -rf -- tdb* tk* Tk* libtk* *tcl*
-cd python3.*
-rm -rf test ensurepip idlelib
-cd lib-dynload
-rm -f _test* _tkinter*
-    
 echo "Copying certificates..."
-
 certs="$(python3 -c 'import certifi; print(certifi.where())')"
-cp "$certs" "$PACKAGE/Frameworks/Python.framework/Versions/Current/etc/openssl/cert.pem"
+cp "$certs" "$PYTHON_FWORK_VERSION/etc/openssl/cert.pem"
 
 echo "Packaging installer..."
-
 cd "$PACKAGE"
-
-echo "$VER" > version.tag
 
 if [ "$1" == "prod" ]; then
     PKGFILE="$RELEASES/installer-$VER.tar.gz"
@@ -95,6 +84,7 @@ else
     LATEST="../latest"
 fi
 
+echo "$VER" > version.tag
 tar czf "$PKGFILE" .
 echo "$VER" > "$LATEST"
 
