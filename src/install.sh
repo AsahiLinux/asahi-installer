@@ -3,6 +3,8 @@
 
 set -e
 
+cd "$(dirname "$0")"
+
 export LC_ALL=UTF-8
 export LANG=UTF-8
 
@@ -13,8 +15,6 @@ export SSL_CERT_FILE=$PWD/Frameworks/Python.framework/Versions/Current/etc/opens
 # Bootstrap does part of this, but install.sh can be run standalone
 # so do it again for good measure.
 export PATH="$PWD/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
-
-arch=
 
 if ! arch -arm64 ls >/dev/null 2>/dev/null; then
     echo
@@ -28,8 +28,10 @@ if [ $(arch) != "arm64" ]; then
     echo
     echo "You're running the installer in Intel mode under Rosetta!"
     echo "Don't worry, we can fix that for you. Switching to ARM64 mode..."
-    arch="arch -arm64"
+
+    # This loses env vars in some security states, so just re-launch ourselves
+    exec arch -arm64 ./install.sh
 fi
 
 exec </dev/tty >/dev/tty 2>/dev/tty
-exec $arch $python main.py "$@"
+exec $python main.py "$@"
