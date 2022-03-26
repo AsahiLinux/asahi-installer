@@ -1,10 +1,10 @@
 #!/bin/sh
 set -e
 
-diskutil list | grep Apple_APFS | grep '\b2\.5 GB' | sed 's/.* //g' | while read i; do
+diskutil list | awk '/Apple_APFS.* 2\.5 GB/{print $NF}' | while read i; do
     diskutil apfs deleteContainer "$i"
 done
-diskutil list /dev/disk0 | grep -Ei 'asahi|linux|EFI' | sed 's/.* //g' | while read i; do
+diskutil list /dev/disk0 | awk 'tolower($0) ~ /asahi|linux|EFI/{print $NF}' | while read i; do
     diskutil eraseVolume free free "$i"
 done
 
