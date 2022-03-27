@@ -128,7 +128,7 @@ class DiskUtil:
            part.container["Volumes"] = []
            logging.info(f"{part.name} doesn't have any Volumes")
 
-        logging.debug("Partition {dev}: {part}")
+        logging.debug(f"Partition {dev}: {part}")
         return part
 
     def get_partitions(self, dskname):
