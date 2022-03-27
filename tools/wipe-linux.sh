@@ -1,6 +1,20 @@
 #!/bin/sh
 set -e
 
+echo "THIS SCRIPT IS DANGEROUS!"
+echo "DO NOT BLINDLY RUN IT IF SOMEONE JUST SENT YOU HERE."
+echo "IT WILL INDISCRIMINATELY WIPE A BUNCH OF PARTITIONS"
+echo "THAT MAY OR MAY NOT BE THE ONES YOU WANT TO WIPE."
+echo
+echo "You are much better off reading and understanding this guide:"
+echo "https://github.com/AsahiLinux/docs/wiki/Partitioning-cheatsheet"
+echo
+echo "Press enter twice if you really want to continue."
+echo "Press Control-C to exit."
+
+read
+read
+
 diskutil list | grep Apple_APFS | grep '\b2\.5 GB' | sed 's/.* //g' | while read i; do
     diskutil apfs deleteContainer "$i"
 done
