@@ -58,7 +58,7 @@
         },
         {
             "name": "UEFI environment only (m1n1 + U-Boot + ESP)",
-            "desc": "This option provides you with only a UEFI environment via U-Boot, and you are required to bring your own distro. This is useful if you wish to use an external drive as your root partition, or wish to install a distro from external media as you would on a traditional PC. Your distro must support UEFI booting on AArch64, which is often referred to as Arm EBBR or Arm SystemReady.",
+            "desc": "This option provides you with only a UEFI environment via U-Boot, and you are required to bring your own distro. This is useful if you wish to use an external drive as your root partition, or wish to install a distro from external media as you would on a traditional PC. Note that Apple Silicon machines will not boot properly with kernels older than 5.17. Your distro must also support UEFI booting on AArch64, which is often referred to as Arm EBBR or Arm SystemReady.",
             "default_os_name": "UEFI boot",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
