@@ -2,6 +2,7 @@
     "os_list": [
         {
             "name": "Asahi Linux Desktop",
+            "desc": "Our user-friendly Arch Linux ARM remix, representing the state of the art of Apple Silicon support on GNU/Linux. Comes bundled with the Plasma desktop, Firefox, and other handy applications to get you up and running.",
             "default_os_name": "Asahi Linux",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
@@ -29,6 +30,7 @@
         },
         {
             "name": "Asahi Linux Minimal (Arch Linux ARM)",
+            "desc": "A lighter weight option for power users. This is a stock Arch Linux ARM root image, bundled only with a barebones set of utilities required to make the hardware useful. No DE or other \"extra\" stuff is installed by default.",
             "default_os_name": "Asahi Linux",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
@@ -56,6 +58,7 @@
         },
         {
             "name": "UEFI environment only (m1n1 + U-Boot + ESP)",
+            "desc": "This option provides you with only a UEFI environment via U-Boot, and you are required to bring your own distro. This is useful if you wish to use an external drive as your root partition, or wish to install a distro from external media as you would on a traditional PC. Your distro must support UEFI booting on AArch64, which is often referred to as Arm EBBR or Arm SystemReady.",
             "default_os_name": "UEFI boot",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
@@ -74,6 +77,7 @@
         },
         {
             "name": "Tethered boot (m1n1, for development)",
+            "desc": "This will install nothing but m1n1. m1n1 will initialise the hardware and then wait for further instructions, which must be delivered to it via USB from a host machine. This is only useful for developers and reverse engineers working on low-level hardware support. Please see the wiki for more information on using m1n1 in this mode. If you are at all unsure, do not pick this option.",
             "default_os_name": "m1n1 proxy",
             "expert": true,
             "boot_object": "m1n1.bin",
