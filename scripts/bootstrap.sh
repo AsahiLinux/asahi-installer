@@ -23,8 +23,8 @@ cd "$TMP"
 
 echo "  Downloading..."
 
-curl -s -L -O "$INSTALLER_BASE/$PKG"
-curl -s -L -O "$INSTALLER_DATA"
+curl --no-progress-meter -L -O "$INSTALLER_BASE/$PKG"
+curl --no-progress-meter -L -O "$INSTALLER_DATA"
 
 echo "  Extracting..."
 

@@ -23,15 +23,15 @@ cd "$TMP"
 
 echo "  Checking version..."
 
-PKG_VER="$(curl -s -L "$VERSION_FLAG")"
+PKG_VER="$(curl --no-progress-meter -L "$VERSION_FLAG")"
 echo "  Version: $PKG_VER"
 
 PKG="installer-$PKG_VER.tar.gz"
 
 echo "  Downloading..."
 
-curl -s -L -o "$PKG" "$INSTALLER_BASE/$PKG"
-curl -s -L -O "$INSTALLER_DATA"
+curl --no-progress-meter -L -o "$PKG" "$INSTALLER_BASE/$PKG"
+curl --no-progress-meter -L -O "$INSTALLER_DATA"
 
 echo "  Extracting..."
 
