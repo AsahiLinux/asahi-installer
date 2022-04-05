@@ -10,6 +10,7 @@ export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 export VERSION_FLAG=https://cdn.asahilinux.org/installer/latest
 export INSTALLER_BASE=https://cdn.asahilinux.org/installer
 export INSTALLER_DATA=https://github.com/AsahiLinux/asahi-installer/raw/prod/data/installer_data.json
+export INSTALLER_DATA_ALT=https://alx.sh/installer_data.json
 export REPO_BASE=https://cdn.asahilinux.org
 
 #TMP="$(mktemp -d)"
@@ -31,7 +32,12 @@ PKG="installer-$PKG_VER.tar.gz"
 echo "  Downloading..."
 
 curl --no-progress-meter -L -o "$PKG" "$INSTALLER_BASE/$PKG"
-curl --no-progress-meter -L -O "$INSTALLER_DATA"
+if ! curl --no-progress-meter -L -O "$INSTALLER_DATA"; then
+	echo "    Error downloading installer_data.json. GitHub might be blocked in your network."
+	echo "    Please consider using a VPN if you experience issues."
+	echo "    Trying workaround..."
+	curl --no-progress-meter -L -O "$INSTALLER_DATA_ALT"
+fi
 
 echo "  Extracting..."
 
