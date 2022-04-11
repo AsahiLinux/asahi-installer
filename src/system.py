@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import base64, plistlib, struct, subprocess
+import base64, plistlib, struct, subprocess, logging
 
 from util import *
 
@@ -85,9 +85,14 @@ class SystemInfo:
         self.nvram = {}
 
         for line in nvram_data.rstrip(b"\n").split(b"\n"):
-            line = line.decode("ascii")
-            k, v = line.split("\t", 1)
-            self.nvram[k] = v
+            try:
+                k, v = line.split(b"\t", 1)
+                k = k.decode("ascii")
+                v = v.decode("utf-8")
+                self.nvram[k] = v
+            except:
+                logging.warning(f"Bad nvram line: {line!r}")
+                continue # Hopefully we don't need this value...
 
         self.default_boot = None
         if "boot-volume" in self.nvram:
