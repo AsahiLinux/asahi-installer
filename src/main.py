@@ -21,6 +21,7 @@ MIN_INSTALL_FREE = psize("10GB")
 MIN_MACOS_VERSION = "12.3"
 MIN_MACOS_VERSION_EXPERT = "12.1"
 
+
 @dataclass
 class IPSW:
     version: str
@@ -29,20 +30,21 @@ class IPSW:
     paired_sfr: bool
     url: str
 
+
 CHIP_MIN_VER = {
-    0x8103: "11.0",     # T8103, M1
-    0x6000: "12.0",     # T6000, M1 Pro
-    0x6001: "12.0",     # T6001, M1 Max
+    0x8103: "11.0",  # T8103, M1
+    0x6000: "12.0",  # T6000, M1 Pro
+    0x6001: "12.0",  # T6001, M1 Max
     # Not yet
     # 0x6002: "12.3"      # T6002, M1 Ultra
 }
 
 DEVICE_MIN_VER = {
-    "j274ap": "11.0",   # Mac mini (M1, 2020)
-    "j293ap": "11.0",   # MacBook Pro (13-inch, M1, 2020)
-    "j313ap": "11.0",   # MacBook Air (M1, 2020)
-    "j456ap": "11.3",   # iMac (24-inch, M1, 2021)
-    "j457ap": "11.3",   # iMac (24-inch, M1, 2021)
+    "j274ap": "11.0",  # Mac mini (M1, 2020)
+    "j293ap": "11.0",  # MacBook Pro (13-inch, M1, 2020)
+    "j313ap": "11.0",  # MacBook Air (M1, 2020)
+    "j456ap": "11.3",  # iMac (24-inch, M1, 2021)
+    "j457ap": "11.3",  # iMac (24-inch, M1, 2021)
     "j314cap": "12.0",  # MacBook Pro (14-inch, M1 Max, 2021)
     "j314sap": "12.0",  # MacBook Pro (14-inch, M1 Pro, 2021)
     "j316cap": "12.0",  # MacBook Pro (16-inch, M1 Max, 2021)
@@ -65,11 +67,18 @@ IPSW_VERSIONS = [
          "https://updates.cdn-apple.com/2022SpringFCS/fullrestores/071-08757/74A4F2A1-C747-43F9-A22A-C0AD5FB4ECB6/UniversalMac_12.3_21E230_Restore.ipsw"),
 ]
 
+
 class InstallerMain:
     def __init__(self):
         self.data = json.load(open("installer_data.json"))
         self.credentials_validated = False
         self.expert = False
+        self.admin_user = None
+        self.admin_password = None
+        self.part = None
+        self.ins = None
+        self.osins = None
+        self.ipsw = None
 
     def input(self):
         self.flush_input()
@@ -107,7 +116,7 @@ class InstallerMain:
 
         if isinstance(options, list):
             is_array = True
-            options = {str(i+1): v for i, v in enumerate(options)}
+            options = {str(i + 1): v for i, v in enumerate(options)}
             if default is not None:
                 default += 1
 
@@ -193,7 +202,7 @@ class InstallerMain:
     def action_install_into_container(self, avail_parts):
         template = self.choose_os()
 
-        containers = {str(i): p.desc for i,p in enumerate(self.parts) if p in avail_parts}
+        containers = {str(i): p.desc for i, p in enumerate(self.parts) if p in avail_parts}
 
         print()
         p_question("Choose a container to install into:")
@@ -219,11 +228,11 @@ class InstallerMain:
         print()
         p_message(f"Minimum required space for this OS: {ssize(min_size)}")
 
-        frees = {str(i): p.desc for i,p in enumerate(self.parts)
+        frees = {str(i): p.desc for i, p in enumerate(self.parts)
                  if p in avail_free and align_down(p.size, PART_ALIGN) >= min_size}
 
         if len(frees) < 1:
-            p_error( "There is not enough free space to install this OS.")
+            p_error("There is not enough free space to install this OS.")
             print()
             p_message("Press enter to go back to the main menu.")
             self.input()
@@ -250,8 +259,8 @@ class InstallerMain:
             min_perc = 100 * min_size / free_part.size
             while True:
                 os_size = self.get_size("New OS size", default="max",
-                                    min=min_size, max=free_part.size,
-                                    total=free_part.size)
+                                        min=min_size, max=free_part.size,
+                                        total=free_part.size)
                 if os_size is None:
                     continue
                 os_size = align_down(os_size, PART_ALIGN)
@@ -316,8 +325,8 @@ class InstallerMain:
         chip_min = split_ver(CHIP_MIN_VER.get(self.sysinfo.chip_id, "0"))
         device_min = split_ver(DEVICE_MIN_VER.get(self.sysinfo.device_class, "0"))
         minver = [ipsw for ipsw in IPSW_VERSIONS
-                 if split_ver(ipsw.version) >= max(chip_min, device_min)
-                 and (supported_fw is None or ipsw.version in supported_fw)]
+                  if split_ver(ipsw.version) >= max(chip_min, device_min)
+                  and (supported_fw is None or ipsw.version in supported_fw)]
         avail = [ipsw for ipsw in minver
                  if split_ver(ipsw.min_iboot) <= sys_iboot
                  and split_ver(ipsw.min_macos) <= sys_macos]
@@ -330,9 +339,9 @@ class InstallerMain:
         if self.expert:
             p_question("Choose the macOS version to use for boot firmware:")
             p_plain("(If unsure, just press enter)")
-            idx = self.choice("Version", [i.version for i in avail], len(avail)-1)
+            idx = self.choice("Version", [i.version for i in avail], len(avail) - 1)
         else:
-            idx = len(avail)-1
+            idx = len(avail) - 1
 
         self.ipsw = ipsw = avail[idx]
         p_message(f"Using macOS {ipsw.version} for OS firmware")
@@ -346,9 +355,9 @@ class InstallerMain:
             os_list = [i for i in os_list if not i.get("expert", False)]
         p_question("Choose an OS to install:")
         idx = self.choice("OS", [i["name"] for i in os_list])
-        os = os_list[idx]
-        logging.info(f"Chosen OS: {os['name']}")
-        return os
+        operating_system = os_list[idx]
+        logging.info(f"Chosen OS: {operating_system['name']}")
+        return operating_system
 
     def set_reduced_security(self):
         while True:
@@ -414,7 +423,7 @@ class InstallerMain:
             self.startup_disk()
             self.step2_indirect()
         else:
-            assert False # should never happen, we don't give users the option
+            assert False  # should never happen, we don't give users the option
 
     def step2_1tr_direct(self):
         self.startup_disk_recovery()
@@ -435,41 +444,42 @@ class InstallerMain:
                   self.ins.systemversion_path.replace("SystemVersion.plist",
                                                       "SystemVersion-disabled.plist"))
 
-        p_success( "Installation successful!")
+        p_success("Installation successful!")
         print()
         p_progress("Install information:")
-        p_info(   f"  APFS VGID: {col()}{self.ins.osi.vgid}")
+        p_info(f"  APFS VGID: {col()}{self.ins.osi.vgid}")
         if self.osins.efi_part:
             p_info(f"  EFI PARTUUID: {col()}{self.osins.efi_part.uuid.lower()}")
         print()
-        p_message( "To be able to boot your new OS, you will need to complete one more step.")
-        p_warning( "Please read the following instructions carefully. Failure to do so")
-        p_warning( "will leave your new installation in an unbootable state.")
+        p_message("To be able to boot your new OS, you will need to complete one more step.")
+        p_warning("Please read the following instructions carefully. Failure to do so")
+        p_warning("will leave your new installation in an unbootable state.")
         print()
-        p_question( "Press enter to continue.")
+        p_question("Press enter to continue.")
         self.input()
         print()
         print()
         print()
-        p_message( "When the system shuts down, follow these steps:")
+        p_message("When the system shuts down, follow these steps:")
         print()
-        p_message( "1. Wait 15 seconds for the system to fully shut down.")
-        p_message(f"2. Press and {col(BRIGHT, YELLOW)}hold{col()}{col(BRIGHT)} down the power button to power on the system.")
-        p_warning( "   * It is important that the system be fully powered off before this step,")
-        p_warning( "     and that you press and hold down the button once, not multiple times.")
-        p_warning( "     This is required to put the machine into the right mode.")
-        p_message( "3. Release it once 'Entering startup options' is displayed,")
-        p_message( "   or you see a spinner.")
-        p_message( "4. Wait for the volume list to appear.")
+        p_message("1. Wait 15 seconds for the system to fully shut down.")
+        p_message(
+            f"2. Press and {col(BRIGHT, YELLOW)}hold{col()}{col(BRIGHT)} down the power button to power on the system.")
+        p_warning("   * It is important that the system be fully powered off before this step,")
+        p_warning("     and that you press and hold down the button once, not multiple times.")
+        p_warning("     This is required to put the machine into the right mode.")
+        p_message("3. Release it once 'Entering startup options' is displayed,")
+        p_message("   or you see a spinner.")
+        p_message("4. Wait for the volume list to appear.")
         p_message(f"5. Choose '{self.part.label}'.")
-        p_message( "6. You will briefly see a 'macOS Recovery' dialog.")
-        p_plain(   "   * If you are asked to 'Select a volume to recover',")
-        p_plain(   "     then choose your normal macOS volume and click Next.")
-        p_plain(   "     You may need to authenticate yourself with your macOS credentials.")
-        p_message( "7. Once the 'Asahi Linux installer' screen appears, follow the prompts.")
+        p_message("6. You will briefly see a 'macOS Recovery' dialog.")
+        p_plain("   * If you are asked to 'Select a volume to recover',")
+        p_plain("     then choose your normal macOS volume and click Next.")
+        p_plain("     You may need to authenticate yourself with your macOS credentials.")
+        p_message("7. Once the 'Asahi Linux installer' screen appears, follow the prompts.")
         print()
         time.sleep(2)
-        p_prompt( "Press enter to shut down the system.")
+        p_prompt("Press enter to shut down the system.")
         self.input()
         time.sleep(1)
         os.system("shutdown -h now")
@@ -482,9 +492,9 @@ class InstallerMain:
         print()
         p_message(f"When the Startup Disk screen appears, choose '{self.part.label}', then click Restart.")
         if not volume_blessed:
-            p_message( "You will have to authenticate yourself.")
+            p_message("You will have to authenticate yourself.")
         print()
-        p_prompt( "Press enter to continue.")
+        p_prompt("Press enter to continue.")
         self.input()
 
         if recovery:
@@ -544,7 +554,7 @@ class InstallerMain:
             return True
 
     def action_resize(self, resizable):
-        choices = {str(i): p.desc for i,p in enumerate(self.parts) if p in resizable}
+        choices = {str(i): p.desc for i, p in enumerate(self.parts) if p in resizable}
 
         print()
         if len(resizable) > 1 or self.expert:
@@ -562,21 +572,21 @@ class InstallerMain:
 
         assert free > min_free
 
-        p_message( "We're going to resize this partition:")
+        p_message("We're going to resize this partition:")
         p_message(f"  {target.desc}")
-        p_info(   f"  Total size: {col()}{ssize(total)}")
-        p_info(   f"  Free space: {col()}{ssize(free)}")
-        p_info(   f"  Minimum free space: {col()}{ssize(min_free)}")
-        p_info(   f"  Minimum total size: {col()}{ssize(min_size)} ({min_perc:.2f}%)")
+        p_info(f"  Total size: {col()}{ssize(total)}")
+        p_info(f"  Free space: {col()}{ssize(free)}")
+        p_info(f"  Minimum free space: {col()}{ssize(min_free)}")
+        p_info(f"  Minimum total size: {col()}{ssize(min_size)} ({min_perc:.2f}%)")
         print()
         p_question("Enter the new size for your existing partition:")
-        p_message( "  You can enter a size such as '1GB', a fraction such as '50%',")
-        p_message( "  or the word 'min' for the smallest allowable size.")
+        p_message("  You can enter a size such as '1GB', a fraction such as '50%',")
+        p_message("  or the word 'min' for the smallest allowable size.")
         print()
-        p_message( "  Examples:")
-        p_message( "  30%  - 30% to macOS, 70% to the new OS")
-        p_message( "  80GB - 80GB to macOS, the rest to your new OS")
-        p_message( "  min  - Shrink macOS as much as (safely) possible")
+        p_message("  Examples:")
+        p_message("  30%  - 30% to macOS, 70% to the new OS")
+        p_message("  80GB - 80GB to macOS, the rest to your new OS")
+        p_message("  min  - Shrink macOS as much as (safely) possible")
         print()
 
         default = "50%"
@@ -627,7 +637,7 @@ class InstallerMain:
         p_message("debugging issues or providing detailed bug reports.")
         print()
         p_message("Please make sure you are familiar with our documentation at:")
-        p_plain( f"  {col(BLUE, BRIGHT)}https://alx.sh/w{col()}")
+        p_plain(f"  {col(BLUE, BRIGHT)}https://alx.sh/w{col()}")
         print()
         p_question("Press enter to continue.")
         self.input()
@@ -642,7 +652,7 @@ class InstallerMain:
         self.sysinfo.show()
         print()
         if (self.sysinfo.chip_id not in CHIP_MIN_VER or
-            self.sysinfo.device_class not in DEVICE_MIN_VER):
+                self.sysinfo.device_class not in DEVICE_MIN_VER):
             p_error("This device is not supported yet!")
             p_error("Please check out the Asahi Linux Blog for updates on device support:")
             print()
@@ -651,8 +661,8 @@ class InstallerMain:
             sys.exit(1)
 
         if self.sysinfo.boot_mode == "macOS" and (
-            (not self.sysinfo.login_user)
-            or self.sysinfo.login_user == "unknown"):
+                (not self.sysinfo.login_user)
+                or self.sysinfo.login_user == "unknown"):
             p_error("Could not detect logged in user.")
             p_error("Perhaps you are running this installer over SSH?")
             p_error("Please make sure a user is logged into the local console.")
@@ -765,7 +775,7 @@ class InstallerMain:
         if parts_free:
             actions["f"] = "Install an OS into free space"
             default = default or "f"
-        if parts_empty_apfs and False: # This feature is confusing, disable it for now
+        if parts_empty_apfs and False:  # This feature is confusing, disable it for now
             actions["a"] = "Install an OS into an existing APFS container"
         if parts_resizable:
             actions["r"] = "Resize an existing partition to make space for a new OS"
@@ -795,6 +805,7 @@ class InstallerMain:
             sys.exit(1)
         elif act == "q":
             return False
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
