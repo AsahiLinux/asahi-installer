@@ -5,8 +5,8 @@ set -e
 
 cd "$(dirname "$0")"
 
-export LC_ALL=UTF-8
-export LANG=UTF-8
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
 
 export DYLD_LIBRARY_PATH=$PWD/Frameworks/Python.framework/Versions/Current/lib
 export DYLD_FRAMEWORK_PATH=$PWD/Frameworks

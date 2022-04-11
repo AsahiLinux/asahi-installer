@@ -3,8 +3,8 @@
 
 set -e
 
-export LANG=C
-export LC_ALL=C
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
 export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 export VERSION_FLAG=https://cdn.asahilinux.org/installer/latest
