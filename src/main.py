@@ -79,6 +79,10 @@ class InstallerMain:
         self.ins = None
         self.osins = None
         self.ipsw = None
+        self.dutil = None
+        self.sysdsk = None
+        self.parts = None
+        self.osinfo = None
 
     def input(self):
         self.flush_input()
