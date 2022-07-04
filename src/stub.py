@@ -113,6 +113,7 @@ class StubInstaller(PackageInstaller):
         bootcaches = plistlib.load(ipsw.open("usr/standalone/bootcaches.plist"))
         self.flush_progress()
 
+        self.manifest = manifest
         for identity in manifest["BuildIdentities"]:
             if (identity["ApBoardID"] != f'0x{self.sysinfo.board_id:02X}' or
                 identity["ApChipID"] != f'0x{self.sysinfo.chip_id:04X}' or
@@ -126,6 +127,7 @@ class StubInstaller(PackageInstaller):
 
         logging.info(f'Using OS build {identity["Info"]["BuildNumber"]} for {self.sysinfo.device_class}')
 
+        self.all_identities = manifest["BuildIdentities"]
         manifest["BuildIdentities"] = [identity]
 
         self.stub_info.update({
@@ -285,6 +287,35 @@ class StubInstaller(PackageInstaller):
         p_progress("Collecting firmware...")
         logging.info("StubInstaller.collect_firmware()")
 
+        logging.info("Collecting FUD firmware")
+        os.makedirs("fud_firmware", exist_ok=True)
+        copied = set()
+        for identity in self.all_identities:
+            if (identity["Info"]["RestoreBehavior"] != "Erase" or
+                identity["Info"]["Variant"] != "macOS Customer"):
+                continue
+            device = identity["Info"]["DeviceClass"]
+            if not device.endswith("ap"):
+                continue
+            device = device[:-2]
+            for key, val in identity["Manifest"].items():
+                if key in ("BaseSystem", "OS", "Ap,SystemVolumeCanonicalMetadata",
+                           "StaticTrustCache", "SystemVolume"):
+                    continue
+                path = val["Info"]["Path"]
+                if (not val["Info"].get("IsFUDFirmware", False)
+                    or val["Info"].get("IsLoadedByiBoot", False)
+                    or val["Info"].get("IsLoadedByiBootStage1", False)
+                    or not path.endswith(".im4p")):
+                    continue
+                if path not in copied:
+                    self.extract(path, "fud_firmware")
+                    copied.add(path)
+                fud_dir = os.path.join("fud_firmware", device)
+                os.makedirs(fud_dir, exist_ok=True)
+                os.symlink(os.path.join("..", path),
+                           os.path.join(fud_dir, key + ".im4p"))
+
         img = os.path.join(self.osi.recovery, self.osi.vgid,
                            "usr/standalone/firmware/arm64eBaseSystem.dmg")
         logging.info("Attaching recovery ramdisk")
@@ -294,8 +325,10 @@ class StubInstaller(PackageInstaller):
         col = firmware.wifi.WiFiFWCollection("recovery/usr/share/firmware/wifi/")
         pkg.add_files(sorted(col.files()))
         logging.info("Making fallback firmware archive")
-        subprocess.run(["tar", "czf", "all_firmware.tar.gz", "-C",
-                        "recovery/usr/share", "firmware"], check=True)
+        subprocess.run(["tar", "czf", "all_firmware.tar.gz",
+                        "fud_firmware",
+                        "-C", "recovery/usr/share", "firmware",
+                       ], check=True)
         self.copy_idata.append(("all_firmware.tar.gz", "all_firmware.tar.gz"))
         logging.info("Detaching recovery ramdisk")
         subprocess.run(["hdiutil", "detach", "-quiet", "recovery"])
