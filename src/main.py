@@ -39,8 +39,7 @@ CHIP_MIN_VER = {
     0x8103: "11.0",     # T8103, M1
     0x6000: "12.0",     # T6000, M1 Pro
     0x6001: "12.0",     # T6001, M1 Max
-    # Not yet
-    # 0x6002: "12.3"      # T6002, M1 Ultra
+    0x6002: "12.3",     # T6002, M1 Ultra
 }
 
 DEVICES = {
@@ -53,6 +52,8 @@ DEVICES = {
     "j314sap":  Device("12.0", False),  # MacBook Pro (14-inch, M1 Pro, 2021)
     "j316cap":  Device("12.0", False),  # MacBook Pro (16-inch, M1 Max, 2021)
     "j316sap":  Device("12.0", False),  # MacBook Pro (16-inch, M1 Pro, 2021)
+    "j375cap":  Device("12.3", False),  # Mac Studio (M1 Max, 2022)
+    "j375dap":  Device("12.3", False),  # Mac Studio (M1 Ultra, 2022)
 }
 
 IPSW_VERSIONS = [
