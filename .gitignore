@@ -4,3 +4,6 @@ package
 installer.tar.gz
 latest
 *.ipsw
+*.egg-info
+build
+dist
