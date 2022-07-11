@@ -69,6 +69,7 @@ class SystemInfo:
         self.macos_ver, self.macos_build = self.get_version("/System/Library/CoreServices/SystemVersion.plist")
         self.sfr_ver, self.sfr_build = self.get_version("/System/Volumes/iSCPreboot/SFR/current/SystemVersion.plist")
         self.fsfr_ver, self.fsfr_build = self.get_version("/System/Volumes/iSCPreboot/SFR/fallback/SystemVersion.plist")
+        self.sfr_full_ver = self.get_restore_version("/System/Volumes/iSCPreboot/SFR/current/RestoreVersion.plist")
 
         self.login_user = None
         consoleuser = subprocess.run(["scutil"],
@@ -105,6 +106,13 @@ class SystemInfo:
         except:
             return None, None
 
+    def get_restore_version(self, name):
+        try:
+            data = plistlib.load(open(name, "rb"))
+            return data["RestoreLongVersion"]
+        except:
+            return None
+
     def show(self):
         p_info(f"  Product name: {col()}{self.product_name}")
         p_info(f"  SoC: {col()}{self.soc_name}")
@@ -118,6 +126,7 @@ class SystemInfo:
         p_info(f"  Default boot VGID: {col()}{self.default_boot}")
         p_info(f"  Boot mode: {col()}{self.boot_mode}")
         p_info(f"  OS version: {col()}{self.macos_ver} ({self.macos_build})")
+        p_info(f"  SFR version: {col()}{self.sfr_full_ver}")
         p_info(f"  System rOS version: {col()}{self.sfr_ver} ({self.sfr_build})")
         if self.fsfr_ver:
             p_info(f"  Fallback rOS version: {col()}{self.fsfr_ver} ({self.fsfr_build})")

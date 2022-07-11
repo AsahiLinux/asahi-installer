@@ -26,6 +26,7 @@ class IPSW:
     version: str
     min_macos: str
     min_iboot: str
+    min_sfr: str
     paired_sfr: bool
     expert_only: bool
     url: str
@@ -63,6 +64,7 @@ IPSW_VERSIONS = [
     IPSW("12.1",
          "12.1",
          "iBoot-7429.61.2",
+         "21.3.52.0.0,0",
          False,
          True,
          "https://updates.cdn-apple.com/2021FCSWinter/fullrestores/002-42433/F3F6D5CD-67FE-449C-9212-F7409808B6C4/UniversalMac_12.1_21C52_Restore.ipsw"),
@@ -70,12 +72,14 @@ IPSW_VERSIONS = [
     IPSW("12.4",
          "12.1",
          "iBoot-7459.101.3",
+         "21.6.81.2.0,0",
          False,
          True,
          "https://updates.cdn-apple.com/2022SpringFCS/fullrestores/012-17781/F045A95A-44B4-4BA9-8A8A-919ECCA2BB31/UniversalMac_12.4_21F2081_Restore.ipsw"),
     IPSW("12.3",
          "12.1",
          "iBoot-7459.101.2",
+         "21.5.230.0.0,0",
          False,
          False,
          "https://updates.cdn-apple.com/2022SpringFCS/fullrestores/071-08757/74A4F2A1-C747-43F9-A22A-C0AD5FB4ECB6/UniversalMac_12.3_21E230_Restore.ipsw"),
@@ -329,6 +333,7 @@ class InstallerMain:
     def choose_ipsw(self, supported_fw=None):
         sys_iboot = split_ver(self.sysinfo.sys_firmware)
         sys_macos = split_ver(self.sysinfo.macos_ver)
+        sys_sfr = split_ver(self.sysinfo.sfr_full_ver)
         chip_min = split_ver(CHIP_MIN_VER.get(self.sysinfo.chip_id, "0"))
         device_min = split_ver(self.device.min_ver)
         minver = [ipsw for ipsw in IPSW_VERSIONS
@@ -337,7 +342,8 @@ class InstallerMain:
         avail = [ipsw for ipsw in minver
                  if split_ver(ipsw.min_iboot) <= sys_iboot
                  and split_ver(ipsw.min_macos) <= sys_macos
-                 and (not ipsw.expert_only or self.expert)]
+                 and split_ver(ipsw.min_sfr) <= sys_sfr
+                 and not ipsw.expert_only or self.expert]
 
         if not avail:
             p_error("Your system firmware is too old.")

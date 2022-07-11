@@ -32,7 +32,7 @@ def psize(v, align=None):
     return val
 
 def split_ver(s):
-    parts = re.split(r"[-. ]", s)
+    parts = re.split(r"[-,. ]", s)
     parts2 = []
     for i in parts:
         try:
