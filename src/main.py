@@ -27,7 +27,13 @@ class IPSW:
     min_macos: str
     min_iboot: str
     paired_sfr: bool
+    expert_only: bool
     url: str
+
+@dataclass
+class Device:
+    min_ver: str
+    expert_only: bool
 
 CHIP_MIN_VER = {
     0x8103: "11.0",     # T8103, M1
@@ -37,19 +43,16 @@ CHIP_MIN_VER = {
     # 0x6002: "12.3"      # T6002, M1 Ultra
 }
 
-DEVICE_MIN_VER = {
-    "j274ap": "11.0",   # Mac mini (M1, 2020)
-    "j293ap": "11.0",   # MacBook Pro (13-inch, M1, 2020)
-    "j313ap": "11.0",   # MacBook Air (M1, 2020)
-    "j456ap": "11.3",   # iMac (24-inch, M1, 2021)
-    "j457ap": "11.3",   # iMac (24-inch, M1, 2021)
-    "j314cap": "12.0",  # MacBook Pro (14-inch, M1 Max, 2021)
-    "j314sap": "12.0",  # MacBook Pro (14-inch, M1 Pro, 2021)
-    "j316cap": "12.0",  # MacBook Pro (16-inch, M1 Max, 2021)
-    "j316sap": "12.0",  # MacBook Pro (16-inch, M1 Pro, 2021)
-    # Not yet
-    # "j375cap": "12.3",  # Mac Studio (M1 Max, 2022)
-    # "j375dap": "12.3",  # Mac Studio (M1 Ultra, 2022)
+DEVICES = {
+    "j274ap":   Device("11.0", False),  # Mac mini (M1, 2020)
+    "j293ap":   Device("11.0", False),  # MacBook Pro (13-inch, M1, 2020)
+    "j313ap":   Device("11.0", False),  # MacBook Air (M1, 2020)
+    "j456ap":   Device("11.3", False),  # iMac (24-inch, M1, 2021)
+    "j457ap":   Device("11.3", False),  # iMac (24-inch, M1, 2021)
+    "j314cap":  Device("12.0", False),  # MacBook Pro (14-inch, M1 Max, 2021)
+    "j314sap":  Device("12.0", False),  # MacBook Pro (14-inch, M1 Pro, 2021)
+    "j316cap":  Device("12.0", False),  # MacBook Pro (16-inch, M1 Max, 2021)
+    "j316sap":  Device("12.0", False),  # MacBook Pro (16-inch, M1 Pro, 2021)
 }
 
 IPSW_VERSIONS = [
@@ -57,10 +60,12 @@ IPSW_VERSIONS = [
          "12.1",
          "iBoot-7429.61.2",
          False,
+         True,
          "https://updates.cdn-apple.com/2021FCSWinter/fullrestores/002-42433/F3F6D5CD-67FE-449C-9212-F7409808B6C4/UniversalMac_12.1_21C52_Restore.ipsw"),
     IPSW("12.3",
          "12.1",
          "iBoot-7459.101.2",
+         False,
          False,
          "https://updates.cdn-apple.com/2022SpringFCS/fullrestores/071-08757/74A4F2A1-C747-43F9-A22A-C0AD5FB4ECB6/UniversalMac_12.3_21E230_Restore.ipsw"),
 ]
@@ -314,13 +319,14 @@ class InstallerMain:
         sys_iboot = split_ver(self.sysinfo.sys_firmware)
         sys_macos = split_ver(self.sysinfo.macos_ver)
         chip_min = split_ver(CHIP_MIN_VER.get(self.sysinfo.chip_id, "0"))
-        device_min = split_ver(DEVICE_MIN_VER.get(self.sysinfo.device_class, "0"))
+        device_min = split_ver(self.device.min_ver)
         minver = [ipsw for ipsw in IPSW_VERSIONS
                  if split_ver(ipsw.version) >= max(chip_min, device_min)
                  and (supported_fw is None or ipsw.version in supported_fw)]
         avail = [ipsw for ipsw in minver
                  if split_ver(ipsw.min_iboot) <= sys_iboot
-                 and split_ver(ipsw.min_macos) <= sys_macos]
+                 and split_ver(ipsw.min_macos) <= sys_macos
+                 and (not ipsw.expert_only or self.expert)]
 
         if not avail:
             p_error("Your system firmware is too old.")
@@ -641,9 +647,18 @@ class InstallerMain:
         self.sysinfo = system.SystemInfo()
         self.sysinfo.show()
         print()
-        if (self.sysinfo.chip_id not in CHIP_MIN_VER or
-            self.sysinfo.device_class not in DEVICE_MIN_VER):
+        self.chip_min_ver = CHIP_MIN_VER.get(self.sysinfo.chip_id, None)
+        self.device = DEVICES.get(self.sysinfo.device_class, None)
+        if not self.chip_min_ver or not self.device:
             p_error("This device is not supported yet!")
+            p_error("Please check out the Asahi Linux Blog for updates on device support:")
+            print()
+            p_error("   https://asahilinux.org/blog/")
+            print()
+            sys.exit(1)
+
+        if self.device.expert_only and not self.expert:
+            p_error("This device is in preliminary support and only available in expert mode.")
             p_error("Please check out the Asahi Linux Blog for updates on device support:")
             print()
             p_error("   https://asahilinux.org/blog/")
