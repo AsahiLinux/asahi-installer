@@ -4,6 +4,8 @@ from collections import namedtuple, defaultdict
 
 from .core import FWFile
 
+log = logging.getLogger("asahi_firmware.bluetooth")
+
 BluetoothChip = namedtuple(
     "BluetoothChip", ("chip", "stepping", "board_type", "vendor")
 )
@@ -42,7 +44,7 @@ class BluetoothFWCollection(object):
                 continue
 
             if self.fwfiles[chip][idx] is not None:
-                logging.warning(f"duplicate entry for {chip}: {self.fwfiles[chip][idx].name} and now {fname + ext}")
+                log.warning(f"duplicate entry for {chip}: {self.fwfiles[chip][idx].name} and now {fname + ext}")
                 continue
 
             path = os.path.join(source_path, fname)
@@ -56,7 +58,7 @@ class BluetoothFWCollection(object):
 
         match = re.fullmatch("bcm(43[0-9]{2})([a-z][0-9])", fname[0].lower())
         if not match:
-            logging.warning(f"Unexpected firmware file: {fname}")
+            log.warning(f"Unexpected firmware file: {fname}")
             return None
         chip, stepping = match.groups()
 
@@ -64,7 +66,7 @@ class BluetoothFWCollection(object):
         try:
             pcie_offset = fname.index("PCIE")
         except:
-            logging.warning(f"Can't find board type in {fname}")
+            log.warning(f"Can't find board type in {fname}")
             return None
 
         if fname[pcie_offset + 1] == "macOS":
@@ -79,7 +81,7 @@ class BluetoothFWCollection(object):
             if vendor in fname:
                 otp_values.add(otp_value)
         if len(otp_values) != 1:
-            logging.warning(f"Unable to determine vendor ({otp_values}) in {fname}")
+            log.warning(f"Unable to determine vendor ({otp_values}) in {fname}")
             return None
         vendor = otp_values.pop()
 
@@ -94,13 +96,13 @@ class BluetoothFWCollection(object):
                 fname_base += f"-{chip.vendor}"
 
             if bin is None:
-                logging.warning(f"no bin for {chip}")
+                log.warning(f"no bin for {chip}")
                 continue
             else:
                 yield fname_base + ".bin", bin
 
             if ptb is None:
-                logging.warning(f"no ptb for {chip}")
+                log.warning(f"no ptb for {chip}")
                 continue
             else:
                 yield fname_base + ".ptb", ptb

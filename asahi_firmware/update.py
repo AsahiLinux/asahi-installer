@@ -26,6 +26,8 @@ def update_firmware(source, dest, manifest):
 
 if __name__ == "__main__":
     import argparse
+    import logging
+    logging.basicConfig()
 
     parser = argparse.ArgumentParser(description='Update vendor firmware tarball')
     parser.add_argument('source', metavar='DIR', type=pathlib.Path,

@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: MIT
 import sys, os, os.path, pprint, statistics, logging
-
 from .core import FWFile
+
+log = logging.getLogger("asahi_firmware.wifi")
 
 class FWNode(object):
     def __init__(self, this=None, leaves=None):
