@@ -20,6 +20,7 @@ git describe --tags --always --dirty > /tmp/asahi-install/version.tag
 
 cd /tmp/asahi-install
 ln -sf "$base/src"/* .
+ln -sf "$base/asahi_firmware" .
 mkdir -p boot
 ln -sf "$base/m1n1/build/m1n1.bin" boot/m1n1.bin
 ln -sf "$base/artwork/logos/icns/AsahiLinux_logomark.icns" logo.icns

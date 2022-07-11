@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 import os, os.path, plistlib, shutil, sys, stat, subprocess, urlcache, zipfile, logging, json
-import osenum, firmware.wifi, firmware.bluetooth
+import osenum, asahi_firmware.wifi, asahi_firmware.bluetooth
 from util import *
 
 class StubInstaller(PackageInstaller):
@@ -322,10 +322,10 @@ class StubInstaller(PackageInstaller):
         subprocess.run(["hdiutil", "attach", "-quiet", "-readonly", "-mountpoint", "recovery", img],
                        check=True)
         logging.info("Collecting WiFi firmware")
-        col = firmware.wifi.WiFiFWCollection("recovery/usr/share/firmware/wifi/")
+        col = asahi_firmware.wifi.WiFiFWCollection("recovery/usr/share/firmware/wifi/")
         pkg.add_files(sorted(col.files()))
         logging.info("Collecting Bluetooth firmware")
-        col = firmware.bluetooth.BluetoothFWCollection("recovery/usr/share/firmware/bluetooth/")
+        col = asahi_firmware.bluetooth.BluetoothFWCollection("recovery/usr/share/firmware/bluetooth/")
         pkg.add_files(sorted(col.files()))
         logging.info("Making fallback firmware archive")
         subprocess.run(["tar", "czf", "all_firmware.tar.gz",

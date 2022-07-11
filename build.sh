@@ -50,6 +50,7 @@ make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
 echo "Copying files..."
 
 cp -r "$SRC"/* "$PACKAGE/"
+cp -r asahi_firmware "$PACKAGE/"
 cp "$ARTWORK/logos/icns/AsahiLinux_logomark.icns" "$PACKAGE/logo.icns"
 mkdir -p "$PACKAGE/boot"
 cp "$M1N1/build/m1n1.bin" "$PACKAGE/boot"

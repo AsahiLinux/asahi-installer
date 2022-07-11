@@ -2,7 +2,7 @@
 import logging, os, os.path, re, sys
 from collections import namedtuple, defaultdict
 
-from . import FWFile
+from .core import FWFile
 
 BluetoothChip = namedtuple(
     "BluetoothChip", ("chip", "stepping", "board_type", "vendor")

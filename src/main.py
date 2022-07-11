@@ -3,7 +3,7 @@
 import os, os.path, shlex, subprocess, sys, time, termios, json, getpass
 from dataclasses import dataclass
 
-import system, osenum, stub, diskutil, osinstall, firmware
+import system, osenum, stub, diskutil, osinstall, asahi_firmware
 from util import *
 
 PART_ALIGN = psize("1MiB")
@@ -297,7 +297,7 @@ class InstallerMain:
 
         pkg = None
         if self.osins.needs_firmware:
-            pkg = firmware.FWPackage("firmware.tar")
+            pkg = asahi_firmware.core.FWPackage("firmware.tar")
             self.ins.collect_firmware(pkg)
             pkg.close()
             self.osins.firmware_package = pkg

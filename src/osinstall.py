@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import os, shutil, sys, stat, subprocess, urlcache, zipfile, logging, firmware
+import os, shutil, sys, stat, subprocess, urlcache, zipfile, logging
 
 from util import *
 

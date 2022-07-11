@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 import sys, os, os.path, pprint, statistics, logging
 
-from . import FWFile
+from .core import FWFile
 
 class FWNode(object):
     def __init__(self, this=None, leaves=None):
