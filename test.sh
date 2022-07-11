@@ -26,4 +26,4 @@ ln -sf "$base/m1n1/build/m1n1.bin" boot/m1n1.bin
 ln -sf "$base/artwork/logos/icns/AsahiLinux_logomark.icns" logo.icns
 ln -sf "$base/data/installer_data.json" installer_data.json
 
-sudo -E python3 $base/src/main.py
+sudo -E python3 main.py
