@@ -4,6 +4,7 @@ import pathlib, tempfile, subprocess
 from .core import FWPackage
 from .wifi import WiFiFWCollection
 from .bluetooth import BluetoothFWCollection
+from .multitouch import MultitouchFWCollection
 
 def update_firmware(source, dest, manifest):
     raw_fw = source.joinpath("all_firmware.tar.gz")
@@ -15,9 +16,14 @@ def update_firmware(source, dest, manifest):
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = pathlib.Path(tmpdir)
         subprocess.run(["tar", "xf", str(raw_fw.resolve())], cwd=tmpdir, check=True)
+
         col = WiFiFWCollection(str(tmpdir.joinpath("firmware", "wifi")))
         pkg.add_files(sorted(col.files()))
+
         col = BluetoothFWCollection(str(tmpdir.joinpath("firmware", "bluetooth")))
+        pkg.add_files(sorted(col.files()))
+
+        col = MultitouchFWCollection(str(tmpdir.joinpath("fud_firmware")))
         pkg.add_files(sorted(col.files()))
 
     pkg.close()
