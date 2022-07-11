@@ -156,7 +156,7 @@ class MultitouchFWCollection(object):
         collected = set()
         for key, val in plist.items():
             # Touchpad firmwares only for now
-            if not key.startswith("C1FD0"):
+            if not key.startswith("C1FD"):
                 log.info(f"  Skipping {key}")
                 continue
 
