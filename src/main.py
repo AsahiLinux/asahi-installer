@@ -862,7 +862,7 @@ if __name__ == "__main__":
         logging.exception("Process execution failed")
         p_warning("If you need to file a bug report, please attach the log file:")
         p_warning(f"  {os.getcwd()}/installer.log")
-    except:
+    except Exception:
         logging.exception("Exception caught")
         p_warning("If you need to file a bug report, please attach the log file:")
         p_warning(f"  {os.getcwd()}/installer.log")
