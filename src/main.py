@@ -40,6 +40,7 @@ CHIP_MIN_VER = {
     0x6000: "12.0",     # T6000, M1 Pro
     0x6001: "12.0",     # T6001, M1 Max
     0x6002: "12.3",     # T6002, M1 Ultra
+    0x8112: "12.4",     # T8112, M2
 }
 
 DEVICES = {
@@ -54,6 +55,8 @@ DEVICES = {
     "j316sap":  Device("12.0", False),  # MacBook Pro (16-inch, M1 Pro, 2021)
     "j375cap":  Device("12.3", False),  # Mac Studio (M1 Max, 2022)
     "j375dap":  Device("12.3", False),  # Mac Studio (M1 Ultra, 2022)
+    "j413ap":   Device("12.4", True),   # MacBook Air (M2, 2022)
+    "j493ap":   Device("12.4", True),   # MacBook Pro (13-inch, M2, 2022)
 }
 
 IPSW_VERSIONS = [
@@ -63,6 +66,13 @@ IPSW_VERSIONS = [
          False,
          True,
          "https://updates.cdn-apple.com/2021FCSWinter/fullrestores/002-42433/F3F6D5CD-67FE-449C-9212-F7409808B6C4/UniversalMac_12.1_21C52_Restore.ipsw"),
+    # This is the special M2 version, it comes ahead so it isn't the default in expert mode
+    IPSW("12.4",
+         "12.1",
+         "iBoot-7459.101.3",
+         False,
+         True,
+         "https://updates.cdn-apple.com/2022SpringFCS/fullrestores/012-17781/F045A95A-44B4-4BA9-8A8A-919ECCA2BB31/UniversalMac_12.4_21F2081_Restore.ipsw"),
     IPSW("12.3",
          "12.1",
          "iBoot-7459.101.2",
