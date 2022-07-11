@@ -17,6 +17,9 @@ class BluetoothFWCollection(object):
         "USI": "u",
         "GEN": None,
     }
+    STRIP_SUFFIXES = [
+        "ES2"
+    ]
 
     def __init__(self, source_path):
         self.fwfiles = defaultdict(lambda: [None, None])
@@ -73,6 +76,8 @@ class BluetoothFWCollection(object):
             board_type = fname[pcie_offset + 2]
         else:
             board_type = fname[pcie_offset + 1]
+        for i in self.STRIP_SUFFIXES:
+            board_type = board_type.rstrip(i)
         board_type = "apple," + board_type.lower()
 
         # make sure we can identify exactly one vendor
