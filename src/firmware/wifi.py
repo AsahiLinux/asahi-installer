@@ -41,6 +41,8 @@ class WiFiFWCollection(object):
         for dirpath, dirnames, filenames in os.walk(source_path):
             if "perf" in dirnames:
                 dirnames.remove("perf")
+            if "assert" in dirnames:
+                dirnames.remove("assert")
             subpath = dirpath.lstrip(source_path)
             for name in sorted(filenames):
                 if not any(name.endswith("." + i) for i in self.EXTMAP):
