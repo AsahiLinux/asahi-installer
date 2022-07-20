@@ -343,7 +343,7 @@ class InstallerMain:
                  if split_ver(ipsw.min_iboot) <= sys_iboot
                  and split_ver(ipsw.min_macos) <= sys_macos
                  and split_ver(ipsw.min_sfr) <= sys_sfr
-                 and not ipsw.expert_only or self.expert]
+                 and (not ipsw.expert_only or self.expert)]
 
         if not avail:
             p_error("Your system firmware is too old.")
