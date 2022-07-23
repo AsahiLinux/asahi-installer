@@ -3,7 +3,9 @@
 
 set -e
 
-cd "$(dirname "$0")"
+if [ "${0%/*}" != "$0" ]; then
+    cd "${0%/*}"
+fi
 
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
