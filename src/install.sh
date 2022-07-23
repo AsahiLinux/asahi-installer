@@ -3,7 +3,9 @@
 
 set -e
 
-cd "$(dirname "$0")"
+if [ "${0%/*}" != "$0" ]; then
+    cd "${0%/*}"
+fi
 
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
@@ -15,6 +17,23 @@ export SSL_CERT_FILE=$PWD/Frameworks/Python.framework/Versions/Current/etc/opens
 # Bootstrap does part of this, but install.sh can be run standalone
 # so do it again for good measure.
 export PATH="$PWD/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+
+
+set +e
+macos_ver=$(/usr/libexec/PlistBuddy -c "Print :ProductVersion" \
+	/System/Library/CoreServices/SystemVersion.plist)
+res=$?
+set -e
+
+if [ "$res" -ne 0 ] || [ -z "$macos_ver" ]; then
+    echo "Unable to determine macOS version. Please report a bug."
+    exit 1
+fi
+
+if [ "${macos_ver%%.*}" -lt 12 ]; then
+    echo "This installer requires macOS 12.3 or later."
+    exit 1
+fi
 
 if ! arch -arm64 ls >/dev/null 2>/dev/null; then
     echo
