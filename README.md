@@ -1,6 +1,8 @@
 # Asahi Linux installer
 
-TODO: document
+This Installer is intended for the currently alpha Asahi Linux distribution, aimed at running Linux on M1 and future Apple Silicon.
+
+
 
 ## License
 
