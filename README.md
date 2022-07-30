@@ -26,6 +26,8 @@ To build yourself, open GUI/Asahi Linux Installer in Xcode and build.
 
 ## Process 
 
+First of all, for the full info see the [blog post](https://asahilinux.org/2022/03/asahi-linux-alpha-release/), from where the following information is taken.
+
 The installer is designed to be as self-explanatory as possible. You will see a series of prompts that guide you through resizing your macOS partition (if necessary) and installing your new OS. We expect users to install Linux alongside macOS at this point. The installer will not delete or affect your macOS installation, other than performing a live resize.
 
 Once the first stage of the installation is done, you will have to reboot into 1TR mode (One True recoveryOS) in order to finish the install. Read the instructions that the installer prints carefully! Simply rebooting into the new OS won’t work until this is done. You need to fully shut down your machine, then boot by holding down the power button until you see “Entering startup options”, choose your new OS in the boot selector menu, and follow the prompts.
@@ -112,7 +114,8 @@ The Asahi Linux kernel is compiled to use 16K pages. This both performs better, 
 - Emacs (fix committed, not released)
 - Anything using jemalloc (e.g. Rust installed via the official Arch repositories)
 - Anything using libunwind (fix committed, not released)
-- Hopefully this release will help motivate upstream projects to fix these issues and properly support all ARM64 page sizes (64K, 16K, and 4K). 16K provides a significant performance improvement of up to 20% or so under some workloads, so it’s worth it.
+
+Hopefully this release will help motivate upstream projects to fix these issues and properly support all ARM64 page sizes (64K, 16K, and 4K). 16K provides a significant performance improvement of up to 20% or so under some workloads, so it’s worth it.
 
 There is a category of software that will likely never support 16K page sizes: certain emulators and compatibility layers, including FEX. Android is also affected, in case someone wants to try running it natively some day. For users of these tools, we will provide 4K page size kernels in the future, once the kernel changes that make this possible are ready for upstreaming.
 
@@ -130,9 +133,10 @@ Visit our docs wiki for more information! We could use more people working on do
 If you’re a developer or reverse engineer, we have some really cool toys:
 
 [SW:Hypervisor](https://github.com/AsahiLinux/docs/wiki/SW:Hypervisor)
+
 And if you’re bored:
 
-Trivia
+[Trivia](https://github.com/AsahiLinux/docs/wiki/Trivia)
 
 ## License
 
@@ -145,4 +149,6 @@ This installer vendors [python-asn1](https://github.com/andrivet/python-asn1), w
 ## Building
 
 `./build.sh`
+
+(README contributed to by @MDNich)
 
