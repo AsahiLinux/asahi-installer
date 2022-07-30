@@ -1,6 +1,15 @@
 # Asahi Linux installer
 
-This Installer is intended for the currently alpha Asahi Linux distribution, aimed at running Linux on M1 and future Apple Silicon.
+This Installer is intended for the currently alpha [Asahi Linux](https://asahilinux.org) distribution, aimed at running Linux on M1 and future Apple Silicon.
+
+Currently working is a command line interface with a GUI version on the way.
+
+## Usage
+
+To use, run
+`curl https://alx.sh | sh`
+
+
 
 
 
