@@ -1,8 +1,12 @@
 # SPDX-License-Identifier: MIT
+import logging
+import os
+import plistlib
+import struct
 import xml.etree.ElementTree as ET
-import plistlib, base64, struct, os, logging
-from .img4 import img4p_extract
+
 from .core import FWFile
+from .img4 import img4p_extract
 
 log = logging.getLogger("asahi_firmware.multitouch")
 

@@ -1,7 +1,10 @@
 # SPDX-License-Identifier: MIT
-import base64, plistlib, struct, subprocess, logging
+import plistlib
+import struct
+import subprocess
 
 from util import *
+
 
 class SystemInfo:
     def __init__(self):

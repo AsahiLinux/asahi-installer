@@ -1,7 +1,10 @@
 # SPDX-License-Identifier: MIT
-import os, shutil, sys, stat, subprocess, urlcache, zipfile, logging
+import subprocess
+import urlcache
+import zipfile
 
 from util import *
+
 
 class OSInstaller(PackageInstaller):
     PART_ALIGNMENT = 1024 * 1024

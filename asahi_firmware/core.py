@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: MIT
-import tarfile, io, logging
+import io
+import logging
+import tarfile
 from hashlib import sha256
+
 
 class FWFile(object):
     def __init__(self, name, data):

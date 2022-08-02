@@ -1,9 +1,20 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: MIT
-import os, os.path, shlex, subprocess, sys, time, termios, json, getpass
+import getpass
+import json
+import os.path
+import shlex
+import subprocess
+import termios
+import time
 from dataclasses import dataclass
 
-import system, osenum, stub, diskutil, osinstall, asahi_firmware
+import asahi_firmware
+import diskutil
+import osenum
+import osinstall
+import stub
+import system
 from util import *
 
 PART_ALIGN = psize("1MiB")

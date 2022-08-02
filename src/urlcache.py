@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: MIT
-import os, sys, os.path, time, logging
+import os.path
+import time
 from dataclasses import dataclass
-
 from urllib import request
+
 from util import *
+
 
 @dataclass
 class CacheBlock:

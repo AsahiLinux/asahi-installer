@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: MIT
-import plistlib, subprocess, sys, logging
+import logging
+import plistlib
+import subprocess
+import sys
 from dataclasses import dataclass
+
 
 @dataclass
 class Partition:

@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: MIT
-import os, os.path, plistlib, subprocess, logging
+import os.path
+import plistlib
+import subprocess
 from dataclasses import dataclass
 
 from util import *
