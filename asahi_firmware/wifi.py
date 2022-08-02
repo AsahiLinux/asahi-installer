@@ -1,8 +1,13 @@
 # SPDX-License-Identifier: MIT
-import sys, os, os.path, pprint, statistics, logging
+import logging
+import os
+import os.path
+import sys
+
 from .core import FWFile
 
 log = logging.getLogger("asahi_firmware.wifi")
+
 
 class FWNode(object):
     def __init__(self, this=None, leaves=None):
@@ -25,6 +30,7 @@ class FWNode(object):
         for k, v in self.leaves.items():
             v.print(depth + 1, k)
 
+
 class WiFiFWCollection(object):
     EXTMAP = {
         "trx": "bin",
@@ -33,6 +39,7 @@ class WiFiFWCollection(object):
         "txcb": "txcap_blob",
     }
     DIMS = ["C", "s", "P", "M", "V", "m", "A"]
+
     def __init__(self, source_path):
         self.root = FWNode()
         self.load(source_path)
@@ -137,6 +144,7 @@ class WiFiFWCollection(object):
 
     def print(self):
         self.root.print()
+
 
 if __name__ == "__main__":
     col = WiFiFWCollection(sys.argv[1])

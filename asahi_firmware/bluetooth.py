@@ -1,5 +1,9 @@
 # SPDX-License-Identifier: MIT
-import logging, os, os.path, re, sys
+import logging
+import os
+import os.path
+import re
+import sys
 from collections import namedtuple, defaultdict
 
 from .core import FWFile

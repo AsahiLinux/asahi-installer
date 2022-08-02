@@ -1,10 +1,13 @@
 # SPDX-License-Identifier: MIT
-import pathlib, tempfile, subprocess
+import pathlib
+import subprocess
+import tempfile
 
-from .core import FWPackage
-from .wifi import WiFiFWCollection
 from .bluetooth import BluetoothFWCollection
+from .core import FWPackage
 from .multitouch import MultitouchFWCollection
+from .wifi import WiFiFWCollection
+
 
 def update_firmware(source, dest, manifest):
     raw_fw = source.joinpath("all_firmware.tar.gz")
@@ -29,6 +32,7 @@ def update_firmware(source, dest, manifest):
     pkg.close()
 
     pkg.save_manifest(manifest)
+
 
 if __name__ == "__main__":
     import argparse

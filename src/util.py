@@ -1,5 +1,10 @@
 # SPDX-License-Identifier: MIT
-import re, logging, sys, os, stat, shutil
+import logging
+import os
+import re
+import stat
+import sys
+
 
 def ssize(v):
     suffixes = ["B", "KB", "MB", "GB", "TB"]
@@ -10,6 +15,7 @@ def ssize(v):
             else:
                 return f"{v:.2f} {i}"
         v /= 1000
+
 
 def psize(v, align=None):
     v = v.upper().replace(" ", "")
@@ -31,6 +37,7 @@ def psize(v, align=None):
         val = align_up(val, align)
     return val
 
+
 def split_ver(s):
     parts = re.split(r"[-,. ]", s)
     parts2 = []
@@ -44,10 +51,13 @@ def split_ver(s):
         parts2[-2] = 99
     return tuple(parts2)
 
+
 def align_up(v, a=16384):
     return (v + a - 1) & ~(a - 1)
 
+
 align = align_up
+
 
 def align_down(v, a=16384):
     return v & ~(a - 1)
@@ -66,9 +76,11 @@ DIM       = 2
 NORMAL    = 22
 RESET_ALL = 0
 
+
 def col(*color):
     color = ";".join(map(str, color))
     return f"\033[{color}m"
+
 
 def p_style(*args, color=[], **kwargs):
     if isinstance(color, int):
@@ -79,35 +91,46 @@ def p_style(*args, color=[], **kwargs):
         text += col()
     logging.info(f"MSG: {text}")
 
+
 def p_plain(*args):
     p_style(*args)
+
 
 def p_info(*args):
     p_style(*args, color=(BRIGHT, BLUE))
 
+
 def p_progress(*args):
     p_style(*args, color=(BRIGHT, MAGENTA))
+
 
 def p_message(*args):
     p_style(*args, color=BRIGHT)
 
+
 def p_error(*args):
     p_style(*args, color=(BRIGHT, RED))
+
 
 def p_warning(*args):
     p_style(*args, color=(BRIGHT, YELLOW))
 
+
 def p_question(*args):
     p_style(*args, color=(BRIGHT, CYAN))
+
 
 def p_success(*args):
     p_style(*args, color=(BRIGHT, GREEN))
 
+
 def p_prompt(*args):
     p_style(*args, color=(BRIGHT, CYAN))
 
+
 def p_choice(*args):
     p_style(*args)
+
 
 def input_prompt(*args):
     while True:
@@ -119,6 +142,7 @@ def input_prompt(*args):
         break
     logging.info(f"INPUT: {val!r}")
     return val
+
 
 class PackageInstaller:
     def __init__(self):

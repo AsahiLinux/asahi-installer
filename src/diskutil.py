@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: MIT
-import plistlib, subprocess, sys, logging
+import logging
+import plistlib
+import subprocess
+import sys
 from dataclasses import dataclass
+
 
 @dataclass
 class Partition:
@@ -16,8 +20,10 @@ class Partition:
     container: object = None
     os: object = None
 
+
 class DiskUtil:
     FREE_THRESHOLD = 16 * 1024 * 1024
+
     def __init__(self):
         self.verbose = "-v" in sys.argv
     

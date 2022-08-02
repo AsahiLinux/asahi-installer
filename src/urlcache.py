@@ -1,14 +1,17 @@
 # SPDX-License-Identifier: MIT
-import os, sys, os.path, time, logging
+import os.path
+import time
 from dataclasses import dataclass
-
 from urllib import request
+
 from util import *
+
 
 @dataclass
 class CacheBlock:
     idx: int
     data: bytes
+
 
 class URLCache:
     CACHESIZE = 128
@@ -136,6 +139,7 @@ class URLCache:
             return True
         else:
             return False
+
 
 if __name__ == "__main__":
     import sys, zipfile

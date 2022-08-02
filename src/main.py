@@ -1,9 +1,20 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: MIT
-import os, os.path, shlex, subprocess, sys, time, termios, json, getpass
+import getpass
+import json
+import os.path
+import shlex
+import subprocess
+import termios
+import time
 from dataclasses import dataclass
 
-import system, osenum, stub, diskutil, osinstall, asahi_firmware
+import asahi_firmware
+import diskutil
+import osenum
+import osinstall
+import stub
+import system
 from util import *
 
 PART_ALIGN = psize("1MiB")
@@ -21,6 +32,7 @@ MIN_INSTALL_FREE = psize("10GB")
 MIN_MACOS_VERSION = "12.3"
 MIN_MACOS_VERSION_EXPERT = "12.1"
 
+
 @dataclass
 class IPSW:
     version: str
@@ -31,10 +43,12 @@ class IPSW:
     expert_only: bool
     url: str
 
+
 @dataclass
 class Device:
     min_ver: str
     expert_only: bool
+
 
 CHIP_MIN_VER = {
     0x8103: "11.0",     # T8103, M1
@@ -84,6 +98,7 @@ IPSW_VERSIONS = [
          False,
          "https://updates.cdn-apple.com/2022SpringFCS/fullrestores/071-08757/74A4F2A1-C747-43F9-A22A-C0AD5FB4ECB6/UniversalMac_12.3_21E230_Restore.ipsw"),
 ]
+
 
 class InstallerMain:
     def __init__(self):
@@ -827,6 +842,7 @@ class InstallerMain:
             sys.exit(1)
         elif act == "q":
             return False
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,

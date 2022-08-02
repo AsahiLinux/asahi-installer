@@ -1,10 +1,16 @@
 # SPDX-License-Identifier: MIT
-import os, os.path, plistlib, shutil, sys, stat, subprocess, urlcache, zipfile, logging, json
-import osenum
-from asahi_firmware.wifi import WiFiFWCollection
+import json
+import os.path
+import plistlib
+import subprocess
+import urlcache
+import zipfile
+
 from asahi_firmware.bluetooth import BluetoothFWCollection
 from asahi_firmware.multitouch import MultitouchFWCollection
+from asahi_firmware.wifi import WiFiFWCollection
 from util import *
+
 
 class StubInstaller(PackageInstaller):
     def __init__(self, sysinfo, dutil, osinfo, ipsw_info):

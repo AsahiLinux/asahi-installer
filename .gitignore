@@ -7,3 +7,4 @@ latest
 *.egg-info
 build
 dist
+/.idea

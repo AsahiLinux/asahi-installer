@@ -1,11 +1,14 @@
 # SPDX-License-Identifier: MIT
-import os, os.path, plistlib, subprocess, logging
+import os.path
+import plistlib
+import subprocess
 from dataclasses import dataclass
 
 from util import *
 
 UUID_SROS = "3D3287DE-280D-4619-AAAB-D97469CA9C71"
 UUID_FROS = "C8858560-55AC-400F-BBB9-C9220A8DAC0D"
+
 
 @dataclass
 class OSInfo:
@@ -47,6 +50,7 @@ class OSInfo:
                 return f"[{lbl}] {col(BRIGHT, YELLOW)}unknown fuOS{col()} (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
         else:
             return f"[{lbl}] {col(BRIGHT, RED)}incomplete install{col()} (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
+
 
 class OSEnum:
     def __init__(self, sysinfo, dutil, sysdsk):
