@@ -10,10 +10,12 @@ from .img4 import img4p_extract
 
 log = logging.getLogger("asahi_firmware.multitouch")
 
+
 def load_plist_xml(d):
     root = ET.fromstring(d.decode("ascii"))
 
     idmap = {}
+
     def unmunge(el, idmap):
         if "ID" in el.attrib:
             idmap[el.attrib["ID"]] = el
@@ -32,6 +34,7 @@ def load_plist_xml(d):
     pl.append(unmunge(root, idmap))
 
     return plistlib.loads(ET.tostring(pl))
+
 
 def plist_to_bin(plist):
     iface_offset = None
@@ -126,6 +129,7 @@ def plist_to_bin(plist):
     assert len(hdr) == 32
 
     return hdr + blob
+
 
 class MultitouchFWCollection(object):
     def __init__(self, source_path):

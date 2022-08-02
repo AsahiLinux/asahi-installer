@@ -8,6 +8,7 @@ from util import *
 
 class OSInstaller(PackageInstaller):
     PART_ALIGNMENT = 1024 * 1024
+
     def __init__(self, dutil, data, template):
         super().__init__()
         self.dutil = dutil
@@ -21,12 +22,15 @@ class OSInstaller(PackageInstaller):
     @property
     def default_os_name(self):
         return self.template["default_os_name"]
+
     @property
     def min_size(self):
         return sum(self.align(psize(part["size"])) for part in self.template["partitions"])
+
     @property
     def expandable(self):
         return any(part.get("expand", False) for part in self.template["partitions"])
+
     @property
     def needs_firmware(self):
         return any(p.get("copy_firmware", False) for p in self.template["partitions"])

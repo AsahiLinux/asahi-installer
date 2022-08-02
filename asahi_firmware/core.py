@@ -22,6 +22,7 @@ class FWFile(object):
     def __hash__(self):
         return hash(self.sha)
 
+
 class FWPackage(object):
     def __init__(self, target):
         self.path = target

@@ -20,8 +20,10 @@ class Partition:
     container: object = None
     os: object = None
 
+
 class DiskUtil:
     FREE_THRESHOLD = 16 * 1024 * 1024
+
     def __init__(self):
         self.verbose = "-v" in sys.argv
     

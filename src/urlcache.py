@@ -12,6 +12,7 @@ class CacheBlock:
     idx: int
     data: bytes
 
+
 class URLCache:
     CACHESIZE = 128
     BLOCKSIZE = 1 * 1024 * 1024
@@ -138,6 +139,7 @@ class URLCache:
             return True
         else:
             return False
+
 
 if __name__ == "__main__":
     import sys, zipfile

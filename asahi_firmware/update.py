@@ -33,6 +33,7 @@ def update_firmware(source, dest, manifest):
 
     pkg.save_manifest(manifest)
 
+
 if __name__ == "__main__":
     import argparse
     import logging
