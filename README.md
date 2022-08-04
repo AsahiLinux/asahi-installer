@@ -110,7 +110,6 @@ Everything else, but notably:
 
 The Asahi Linux kernel is compiled to use 16K pages. This both performs better, and is required with our kernel branch right now in order to work properly with the M1’s IOMMUs. Unfortunately, some Linux software has problems running with 16K pages. Most notably:
 
-- Chromium (needs volunteer to fix)
 - Emacs (fix committed, not released)
 - Anything using jemalloc (e.g. Rust installed via the official Arch repositories)
 - Anything using libunwind (fix committed, not released)
