@@ -197,6 +197,14 @@ class DiskUtil:
 
         raise Exception("Could not find new partition")
 
+    def deletePartition(self, part):
+        if part.type == "Apple_APFS":
+            logging.info(f"Deleting APFS partition {part.name}")
+            self.action("apfs", "deleteContainer", part.name, verbose=True)
+        else:
+            logging.info(f"Deleting non-APFS partition {part.name}")
+            self.action("eraseVolume", "free", "free", part.name, verbose=True)
+
     def changeVolumeRole(self, volume, role):
         self.action("apfs", "changeVolumeRole", volume, role, verbose=True)
 

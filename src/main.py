@@ -641,6 +641,72 @@ class InstallerMain:
 
         return True
 
+    def delete_partitions(self, partitions):
+        logging.info("Confirming deletion of partitions: {partitions}")
+
+        print()
+        p_warning("The following partitions will be DELETED:")
+        for part in partitions:
+            p_info(f" - {part.name}: {part.desc}")
+        p_warning("This operation cannot be reverted!")
+        if not self.yesno("Do you want to continue?"):
+            return
+
+        def order_key(part):
+            disk, idx = part.name.rsplit('s', 1)
+            return disk, -int(idx)
+
+        delete_order = sorted(partitions, key=order_key)
+        default_deleted = False
+        for part in delete_order:
+            if self.default_os in part.os:
+                default_deleted = True
+            p_progress(f"Deleting partition {part.name}...")
+            self.dutil.deletePartition(part)
+
+        if default_deleted:
+            p_warning("The default startup partition was deleted. Please use the Startup Disk")
+            p_warning("preference panel to select another one before rebooting.")
+            p_prompt("Press enter to continue.")
+            self.input()
+
+    def action_delete_partitions(self):
+        choices = {}
+        for idx, part in enumerate(self.parts, 1):
+            if part.free:
+                continue
+            if part.type in {"Apple_APFS_ISC", "Apple_APFS_Recovery"}:
+                continue
+            if self.cur_os in part.os:
+                continue
+            choices[str(idx)] = part
+
+        if not choices:
+            p_info("No partitions can be deleted.")
+            return True
+
+        p_question("Choose partitions to delete:")
+        for idx, part in choices.items():
+            p_choice(f"  {col(BRIGHT)}{idx}{col(NORMAL)}: {part.desc}")
+
+        while True:
+            self.flush_input()
+            res = input_prompt("Partitions numbers to delete (separated by spaces): ")
+            res = [i for i in res.replace(',', ' ').split() if i]
+            if not res:
+                return
+
+            try:
+                partitions = [choices[idx] for idx in res]
+            except KeyError:
+                continue
+
+            break
+
+        self.delete_partitions(partitions)
+
+        return True
+
     def main(self):
         print()
         p_message("Welcome to the Asahi Linux installer!")
@@ -749,7 +815,7 @@ class InstallerMain:
 
         self.cur_os = None
         self.is_sfr_recovery = self.sysinfo.boot_vgid in (osenum.UUID_SROS, osenum.UUID_FROS)
-        default_os = None
+        self.default_os = None
 
         r = col(YELLOW) + "R" + col()
         b = col(GREEN) + "B" + col()
@@ -776,7 +842,7 @@ class InstallerMain:
                 elif self.sysinfo.boot_vgid == os.vgid:
                     state = u
                 if self.sysinfo.default_boot == os.vgid:
-                    default_os = os
+                    self.default_os = os
                     state += d
                 else:
                     state += " "
@@ -788,7 +854,7 @@ class InstallerMain:
         print()
 
         if self.cur_os is None and self.sysinfo.boot_mode != "macOS":
-            self.cur_os = default_os
+            self.cur_os = self.default_os
         self.check_cur_os()
 
         actions = {}
@@ -804,6 +870,8 @@ class InstallerMain:
             default = default or "r"
         if self.sysinfo.boot_mode == "one true recoveryOS" and False:
             actions["m"] = "Upgrade bootloader of an existing OS"
+        if self.expert:
+            actions["d"] = "Delete partitions"
 
         if not actions:
             p_error("No actions available on this system.")
@@ -825,6 +893,8 @@ class InstallerMain:
         elif act == "m":
             p_error("Unimplemented")
             sys.exit(1)
+        elif act == "d":
+            return self.action_delete_partitions()
         elif act == "q":
             return False
 
