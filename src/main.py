@@ -670,6 +670,61 @@ class InstallerMain:
             p_prompt("Press enter to continue.")
             self.input()
 
+    def action_uninstall(self, m1n1_stubs):
+        print()
+        if len(m1n1_stubs) > 1 or self.expert:
+            choices = {str(i): s for i, s in enumerate(m1n1_stubs, 1)}
+            p_question("Choose an existing installation:")
+            idx = self.choice("Installation", choices)
+            stub_os = choices[idx]
+        else:
+            stub_os = m1n1_stubs[0]
+            p_plain(f"Selecting installation: {stub_os}")
+
+        stub_part = stub_os.partition
+
+        if len(stub_part.os) != 1:
+            p_error(f"This installation resides on partition ({stub_part.name}) that contains multiple ")
+            p_error(f"OSes; it cannot be automatically deleted.")
+            return False
+
+        efi_uuid = stub_os.m1n1_esp_uuid
+        efi_part = None
+        linux_parts = []
+
+        if efi_uuid:
+            efi_uuid = efi_uuid.upper()
+            for part in self.parts:
+                if efi_part:
+                    if part.type == "Linux Filesystem":
+                        linux_parts.append(part)
+                    else:
+                        break
+                elif part.uuid.upper() == efi_uuid:
+                    efi_part = part
+
+        if not efi_part:
+            p_error("Unable to find the EFI partition of this installation.")
+            p_error("Use the installer in expert mode to manually delete the partitions.")
+            return False
+
+        to_delete = [stub_part, efi_part]
+
+        if linux_parts:
+            p_info(f"{len(linux_parts)} Linux partition(s) seem to be part of this installation.")
+            if self.yesno("Delete them?", default=True):
+                to_delete.extend(linux_parts)
+            else:
+                p_info("You can delete these partitions later by re-running the installer in expert ")
+                p_info("mode.")
+        else:
+            p_warning("No Linux partitions attached to this installation were found.")
+            p_warning("If needed, you can delete any partition later by re-running the installer in ")
+            p_warning("expert mode.")
+
+        self.delete_partitions(to_delete)
+        return True
+
     def action_delete_partitions(self):
         choices = {}
         for idx, part in enumerate(self.parts, 1):
@@ -786,6 +841,7 @@ class InstallerMain:
         parts_free = []
         parts_empty_apfs = []
         parts_resizable = []
+        m1n1_stubs = []
 
         for i, p in enumerate(self.parts):
             if p.type in ("Apple_APFS_ISC",):
@@ -807,6 +863,9 @@ class InstallerMain:
                 else:
                     if p.size >= STUB_SIZE * 0.95:
                         parts_empty_apfs.append(p)
+                for part_os in p.os:
+                    if part_os.m1n1_ver:
+                        m1n1_stubs.append(part_os)
             else:
                 p.desc = f"{p.type} ({ssize(p.size)})"
 
@@ -868,6 +927,8 @@ class InstallerMain:
         if parts_resizable:
             actions["r"] = "Resize an existing partition to make space for a new OS"
             default = default or "r"
+        if m1n1_stubs:
+            actions["u"] = "Uninstall an OS"
         if self.sysinfo.boot_mode == "one true recoveryOS" and False:
             actions["m"] = "Upgrade bootloader of an existing OS"
         if self.expert:
@@ -890,6 +951,8 @@ class InstallerMain:
             return self.action_install_into_container(parts_empty_apfs)
         elif act == "r":
             return self.action_resize(parts_resizable)
+        elif act == "u":
+            return self.action_uninstall(m1n1_stubs)
         elif act == "m":
             p_error("Unimplemented")
             sys.exit(1)

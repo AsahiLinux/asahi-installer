@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: MIT
-import os, os.path, plistlib, subprocess, logging
+import os, os.path, plistlib, re, subprocess, logging
 from dataclasses import dataclass
 
 from util import *
 
 UUID_SROS = "3D3287DE-280D-4619-AAAB-D97469CA9C71"
 UUID_FROS = "C8858560-55AC-400F-BBB9-C9220A8DAC0D"
+M1N1_CHAINLOAD_RE = re.compile(rb'chainload=([a-zA-Z0-9-]+);([\x20-\x7E]+)(?:\x00|\n|$)')
 
 @dataclass
 class OSInfo:
@@ -17,6 +18,8 @@ class OSInfo:
     stub: bool = False
     version: str = None
     m1n1_ver: str = None
+    m1n1_esp_uuid: str = None
+    m1n1_next_obj: str = None
     system: object = None
     data: object = None
     preboot: object = None
@@ -207,6 +210,11 @@ class OSEnum:
             if b"##m1n1_ver##" in fuos:
                 osi.m1n1_ver = fuos.split(b"##m1n1_ver##")[1].split(b"\0")[0].decode("ascii")
                 logging.info(f"  m1n1 version found: {osi.m1n1_ver}")
+                res = M1N1_CHAINLOAD_RE.search(fuos)
+                if res:
+                    osi.m1n1_esp_uuid = res.group(1).decode('ascii')
+                    osi.m1n1_next_obj = res.group(2).decode('ascii')
+                    logging.info(f"   m1n1 chainload found: ESP {osi.m1n1_esp_uuid} next {osi.m1n1_next_obj}")
 
         return osi
 
