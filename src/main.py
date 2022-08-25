@@ -641,6 +641,20 @@ class InstallerMain:
 
         return True
 
+    def action_grow(self, growable):
+        p_message("The following partitions will be resized to their maximum size.")
+        for part in growable:
+            new_size = part.size + part.free_space_after
+            p_info(f" - {part.name}: {part.desc} to {ssize(new_size)}")
+
+        if self.yesno(f"Proceed?", default=True):
+            for part in growable:
+                p_progress(f"Resizing {part.name}...")
+                new_size = part.size + part.free_space_after
+                self.dutil.resizeContainer(part.name, new_size)
+
+        return True
+
     def delete_partitions(self, partitions):
         logging.info("Confirming deletion of partitions: {partitions}")
 
@@ -841,6 +855,7 @@ class InstallerMain:
         parts_free = []
         parts_empty_apfs = []
         parts_resizable = []
+        parts_growable = []
         m1n1_stubs = []
 
         for i, p in enumerate(self.parts):
@@ -858,6 +873,8 @@ class InstallerMain:
                     p.desc += f" [{p.label}]"
                 vols = p.container["Volumes"]
                 p.desc += f" ({ssize(p.size)}, {len(vols)} volume{'s' if len(vols) != 1 else ''})"
+                if p.type == "Apple_APFS" and p.free_space_after > 0:
+                    parts_growable.append(p)
                 if self.can_resize(p):
                     parts_resizable.append(p)
                 else:
@@ -927,6 +944,8 @@ class InstallerMain:
         if parts_resizable:
             actions["r"] = "Resize an existing partition to make space for a new OS"
             default = default or "r"
+        if parts_growable:
+            actions["g"] = "Grow a partition to reclaim free space after it"
         if m1n1_stubs:
             actions["u"] = "Uninstall an OS"
         if self.sysinfo.boot_mode == "one true recoveryOS" and False:
@@ -951,6 +970,8 @@ class InstallerMain:
             return self.action_install_into_container(parts_empty_apfs)
         elif act == "r":
             return self.action_resize(parts_resizable)
+        elif act == "g":
+            return self.action_grow(parts_growable)
         elif act == "u":
             return self.action_uninstall(m1n1_stubs)
         elif act == "m":
