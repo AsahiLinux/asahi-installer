@@ -5,6 +5,7 @@ from .core import FWPackage
 from .wifi import WiFiFWCollection
 from .bluetooth import BluetoothFWCollection
 from .multitouch import MultitouchFWCollection
+from .kernel import KernelFWCollection
 
 def update_firmware(source, dest, manifest):
     raw_fw = source.joinpath("all_firmware.tar.gz")
@@ -25,6 +26,9 @@ def update_firmware(source, dest, manifest):
 
         col = MultitouchFWCollection(str(tmpdir.joinpath("fud_firmware")))
         pkg.add_files(sorted(col.files()))
+
+    col = KernelFWCollection(str(source))
+    pkg.add_files(sorted(col.files()))
 
     pkg.close()
 
