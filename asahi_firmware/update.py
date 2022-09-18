@@ -40,11 +40,11 @@ if __name__ == "__main__":
     logging.basicConfig()
 
     parser = argparse.ArgumentParser(description='Update vendor firmware tarball')
-    parser.add_argument('source', metavar='DIR', type=pathlib.Path,
+    parser.add_argument('source', metavar='SOURCE', type=pathlib.Path,
                         help='path containing raw firmware')
-    parser.add_argument('dest', metavar='FILE', type=pathlib.Path,
+    parser.add_argument('dest', metavar='TARBALL', type=pathlib.Path,
                         help='output vendor firmware tarball')
-    parser.add_argument('manifest', metavar='FILE', type=pathlib.Path,
+    parser.add_argument('manifest', metavar='MANIFEST', type=pathlib.Path,
                         help='output vendor firmware manifest')
     
     args = parser.parse_args()
