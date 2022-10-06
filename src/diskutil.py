@@ -147,11 +147,6 @@ class DiskUtil:
                     continue
                 break
 
-        if part.container is None:
-           part.container = {}
-           part.container["Volumes"] = []
-           logging.info(f"{part.name} doesn't have any Volumes")
-
         logging.debug(f"Partition {dev}: {part}")
         return part
 

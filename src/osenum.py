@@ -68,6 +68,9 @@ class OSEnum:
 
     def collect_recovery(self, part):
         logging.info(f"OSEnum.collect_recovery(part={part.name})")
+        if part.container is None:
+            return
+
         recs = []
 
         for volume in part.container["Volumes"]:
