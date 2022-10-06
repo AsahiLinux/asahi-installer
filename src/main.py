@@ -734,13 +734,16 @@ class InstallerMain:
                     p.desc += " (System Recovery)"
                 if p.label is not None:
                     p.desc += f" [{p.label}]"
-                vols = p.container["Volumes"]
-                p.desc += f" ({ssize(p.size)}, {len(vols)} volume{'s' if len(vols) != 1 else ''})"
-                if self.can_resize(p):
-                    parts_resizable.append(p)
+                if p.container is None:
+                    p.desc += f" (not a container)"
                 else:
-                    if p.size >= STUB_SIZE * 0.95:
-                        parts_empty_apfs.append(p)
+                    vols = p.container["Volumes"]
+                    p.desc += f" ({ssize(p.size)}, {len(vols)} volume{'s' if len(vols) != 1 else ''})"
+                    if self.can_resize(p):
+                        parts_resizable.append(p)
+                    else:
+                        if p.size >= STUB_SIZE * 0.95:
+                            parts_empty_apfs.append(p)
             else:
                 p.desc = f"{p.type} ({ssize(p.size)})"
 
