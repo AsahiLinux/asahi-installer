@@ -658,7 +658,14 @@ class InstallerMain:
                 break
 
         print()
-        self.dutil.resizeContainer(target.name, val)
+        try:
+            self.dutil.resizeContainer(target.name, val)
+        except subprocess.CalledProcessError as e:
+            print()
+            p_error(f"Resize failed. This is usually caused by pre-existing APFS filesystem corruption.")
+            p_warning("Carefully read the diskutil logs above for more information about the cause.")
+            p_warning("This can usually be solved by doing a First Aid repair from Disk Utility in Recovery Mode.")
+            return False
 
         print()
         p_success(f"Resize complete. Press enter to continue.")
