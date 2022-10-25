@@ -278,7 +278,7 @@ class InstallerMain:
                 if os_size < min_size:
                     p_error(f"Size is too small, please enter a value > {ssize(min_size)} ({min_perc:.2f}%)")
                     continue
-                if os_size >= free_part.size:
+                if os_size > free_part.size:
                     p_error(f"Size is too large, please enter a value < {ssize(free_part.size)}")
                     continue
                 break
