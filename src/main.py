@@ -635,7 +635,7 @@ class InstallerMain:
             val = self.get_size("New size", default=default, min=min_size, total=total)
             if val is None:
                 continue
-            val = align_down(val, PART_ALIGN)
+            val = align_up(val, PART_ALIGN)
             if val < min_size:
                 p_error(f"Size is too small, please enter a value > {ssize(min_size)} ({min_perc:.2f}%)")
                 continue
