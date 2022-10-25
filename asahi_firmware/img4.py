@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: MIT
+import sys
 from . import asn1
 from ctypes import *
 
 __all__ = ["img4p_extract_compressed", "img4p_extract"]
 
-def decode_lzfse(cdata, raw_size):
+def decode_lzfse_liblzfse(cdata, raw_size):
     lzfse = CDLL("liblzfse.so")
 
     dest = create_string_buffer(raw_size)
@@ -12,6 +13,23 @@ def decode_lzfse(cdata, raw_size):
 
     assert decoded == raw_size
     return dest.raw
+
+def decode_lzfse_darwin(cdata, raw_size):
+    compression = CDLL("libcompression.dylib")
+
+    dest = create_string_buffer(raw_size)
+    COMPRESSION_LZFSE = 0x801
+    decoded = compression.compression_decode_buffer(dest, raw_size,
+                                                    cdata, len(cdata),
+                                                    None, COMPRESSION_LZFSE)
+
+    assert decoded == raw_size
+    return dest.raw
+
+if sys.platform == 'darwin':
+    decode_lzfse = decode_lzfse_darwin
+else:
+    decode_lzfse = decode_lzfse_liblzfse
 
 def decode_header(decoder):
     tag = decoder.peek()
