@@ -9,6 +9,7 @@ class Partition:
     size: int
     free: bool
     type: str
+    free_space_after: int = 0
     uuid: str = None
     desc: str = None
     label: str = None
@@ -141,19 +142,26 @@ class DiskUtil:
             parts.append(self.get_partition_info(dskpart["DeviceIdentifier"]))
         parts.sort(key=lambda i: i.offset)
 
+        prev_part = None
         prev_name = dskname
         parts2 = []
         for part in parts:
-            if (part.offset - p) > self.FREE_THRESHOLD:
+            free_space = part.offset - p
+            if free_space > self.FREE_THRESHOLD:
                 parts2.append(Partition(name=prev_name, free=True, type=None,
-                                        offset=p, size=(part.offset - p)))
+                                        offset=p, size=free_space))
+                if prev_part is not None:
+                    prev_part.free_space_after = free_space
             parts2.append(part)
+            prev_part = part
             prev_name = part.name
             p = part.offset + part.size
 
-        if (total_size - p) > self.FREE_THRESHOLD:
+        free_space = total_size - p
+        if free_space > self.FREE_THRESHOLD:
             parts2.append(Partition(name=prev_name, free=True, type=None,
-                                    offset=p, size=(total_size - p)))
+                                    offset=p, size=free_space))
+            prev_part.free_space_after = free_space
         return parts2
 
     def refresh_part(self, part):
@@ -196,6 +204,14 @@ class DiskUtil:
                 return new_part
 
         raise Exception("Could not find new partition")
+
+    def deletePartition(self, part):
+        if part.type == "Apple_APFS":
+            logging.info(f"Deleting APFS partition {part.name}")
+            self.action("apfs", "deleteContainer", part.name, verbose=True)
+        else:
+            logging.info(f"Deleting non-APFS partition {part.name}")
+            self.action("eraseVolume", "free", "free", part.name, verbose=True)
 
     def changeVolumeRole(self, volume, role):
         self.action("apfs", "changeVolumeRole", volume, role, verbose=True)

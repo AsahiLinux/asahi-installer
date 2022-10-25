@@ -674,6 +674,141 @@ class InstallerMain:
 
         return True
 
+    def action_grow(self, growable):
+        p_message("The following partitions will be resized to their maximum size.")
+        for part in growable:
+            new_size = part.size + part.free_space_after
+            p_info(f" - {part.name}: {part.desc} to {ssize(new_size)}")
+
+        if self.yesno(f"Proceed?", default=True):
+            for part in growable:
+                p_progress(f"Resizing {part.name}...")
+                new_size = part.size + part.free_space_after
+                self.dutil.resizeContainer(part.name, new_size)
+
+        return True
+
+    def delete_partitions(self, partitions):
+        logging.info("Confirming deletion of partitions: {partitions}")
+
+        print()
+        p_warning("The following partitions will be DELETED:")
+        for part in partitions:
+            p_info(f" - {part.name}: {part.desc}")
+        p_warning("This operation cannot be reverted!")
+        if not self.yesno("Do you want to continue?"):
+            return
+
+        def order_key(part):
+            disk, idx = part.name.rsplit('s', 1)
+            return disk, -int(idx)
+
+        delete_order = sorted(partitions, key=order_key)
+        default_deleted = False
+        for part in delete_order:
+            if self.default_os in part.os:
+                default_deleted = True
+            p_progress(f"Deleting partition {part.name}...")
+            self.dutil.deletePartition(part)
+
+        if default_deleted:
+            p_warning("The default startup partition was deleted. Please use the Startup Disk")
+            p_warning("preference panel to select another one before rebooting.")
+            p_prompt("Press enter to continue.")
+            self.input()
+
+    def action_uninstall(self, m1n1_stubs):
+        print()
+        if len(m1n1_stubs) > 1 or self.expert:
+            choices = {str(i): s for i, s in enumerate(m1n1_stubs, 1)}
+            p_question("Choose an existing installation:")
+            idx = self.choice("Installation", choices)
+            stub_os = choices[idx]
+        else:
+            stub_os = m1n1_stubs[0]
+            p_plain(f"Selecting installation: {stub_os}")
+
+        stub_part = stub_os.partition
+
+        if len(stub_part.os) != 1:
+            p_error(f"This installation resides on partition ({stub_part.name}) that contains multiple ")
+            p_error(f"OSes; it cannot be automatically deleted.")
+            return False
+
+        efi_uuid = stub_os.m1n1_esp_uuid
+        efi_part = None
+        linux_parts = []
+
+        if efi_uuid:
+            efi_uuid = efi_uuid.upper()
+            for part in self.parts:
+                if efi_part:
+                    if part.type == "Linux Filesystem":
+                        linux_parts.append(part)
+                    else:
+                        break
+                elif part.uuid.upper() == efi_uuid:
+                    efi_part = part
+
+        if not efi_part:
+            p_error("Unable to find the EFI partition of this installation.")
+            p_error("Use the installer in expert mode to manually delete the partitions.")
+            return False
+
+        to_delete = [stub_part, efi_part]
+
+        if linux_parts:
+            p_info(f"{len(linux_parts)} Linux partition(s) seem to be part of this installation.")
+            if self.yesno("Delete them?", default=True):
+                to_delete.extend(linux_parts)
+            else:
+                p_info("You can delete these partitions later by re-running the installer in expert ")
+                p_info("mode.")
+        else:
+            p_warning("No Linux partitions attached to this installation were found.")
+            p_warning("If needed, you can delete any partition later by re-running the installer in ")
+            p_warning("expert mode.")
+
+        self.delete_partitions(to_delete)
+        return True
+
+    def action_delete_partitions(self):
+        choices = {}
+        for idx, part in enumerate(self.parts, 1):
+            if part.free:
+                continue
+            if part.type in {"Apple_APFS_ISC", "Apple_APFS_Recovery"}:
+                continue
+            if self.cur_os in part.os:
+                continue
+            choices[str(idx)] = part
+
+        if not choices:
+            p_info("No partitions can be deleted.")
+            return True
+
+        p_question("Choose partitions to delete:")
+        for idx, part in choices.items():
+            p_choice(f"  {col(BRIGHT)}{idx}{col(NORMAL)}: {part.desc}")
+
+        while True:
+            self.flush_input()
+            res = input_prompt("Partitions numbers to delete (separated by spaces): ")
+            res = [i for i in res.replace(',', ' ').split() if i]
+            if not res:
+                return
+
+            try:
+                partitions = [choices[idx] for idx in res]
+            except KeyError:
+                continue
+
+            break
+
+        self.delete_partitions(partitions)
+
+        return True
+
     def main(self):
         print()
         p_message("Welcome to the Asahi Linux installer!")
@@ -753,6 +888,8 @@ class InstallerMain:
         parts_free = []
         parts_empty_apfs = []
         parts_resizable = []
+        parts_growable = []
+        m1n1_stubs = []
 
         for i, p in enumerate(self.parts):
             if p.type in ("Apple_APFS_ISC",):
@@ -769,11 +906,16 @@ class InstallerMain:
                     p.desc += f" [{p.label}]"
                 vols = p.container["Volumes"]
                 p.desc += f" ({ssize(p.size)}, {len(vols)} volume{'s' if len(vols) != 1 else ''})"
+                if p.type == "Apple_APFS" and p.free_space_after > 0:
+                    parts_growable.append(p)
                 if self.can_resize(p):
                     parts_resizable.append(p)
                 else:
                     if p.size >= STUB_SIZE * 0.95:
                         parts_empty_apfs.append(p)
+                for part_os in p.os:
+                    if part_os.m1n1_ver:
+                        m1n1_stubs.append(part_os)
             else:
                 p.desc = f"{p.type} ({ssize(p.size)})"
 
@@ -782,7 +924,7 @@ class InstallerMain:
 
         self.cur_os = None
         self.is_sfr_recovery = self.sysinfo.boot_vgid in (osenum.UUID_SROS, osenum.UUID_FROS)
-        default_os = None
+        self.default_os = None
 
         r = col(YELLOW) + "R" + col()
         b = col(GREEN) + "B" + col()
@@ -809,7 +951,7 @@ class InstallerMain:
                 elif self.sysinfo.boot_vgid == os.vgid:
                     state = u
                 if self.sysinfo.default_boot == os.vgid:
-                    default_os = os
+                    self.default_os = os
                     state += d
                 else:
                     state += " "
@@ -821,7 +963,7 @@ class InstallerMain:
         print()
 
         if self.cur_os is None and self.sysinfo.boot_mode != "macOS":
-            self.cur_os = default_os
+            self.cur_os = self.default_os
         self.check_cur_os()
 
         actions = {}
@@ -835,8 +977,14 @@ class InstallerMain:
         if parts_resizable:
             actions["r"] = "Resize an existing partition to make space for a new OS"
             default = default or "r"
+        if parts_growable:
+            actions["g"] = "Grow a partition to reclaim free space after it"
+        if m1n1_stubs:
+            actions["u"] = "Uninstall an OS"
         if self.sysinfo.boot_mode == "one true recoveryOS" and False:
             actions["m"] = "Upgrade bootloader of an existing OS"
+        if self.expert:
+            actions["d"] = "Delete partitions"
 
         if not actions:
             p_error("No actions available on this system.")
@@ -855,9 +1003,15 @@ class InstallerMain:
             return self.action_install_into_container(parts_empty_apfs)
         elif act == "r":
             return self.action_resize(parts_resizable)
+        elif act == "g":
+            return self.action_grow(parts_growable)
+        elif act == "u":
+            return self.action_uninstall(m1n1_stubs)
         elif act == "m":
             p_error("Unimplemented")
             sys.exit(1)
+        elif act == "d":
+            return self.action_delete_partitions()
         elif act == "q":
             return False
 
