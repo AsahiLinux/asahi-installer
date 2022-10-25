@@ -550,6 +550,10 @@ class InstallerMain:
 
     def can_resize(self, p):
         logging.info(f"Checking resizability of {p.name}")
+        if p.type != "Apple_APFS":
+            logging.info(f"  Not APFS or system container")
+            return False
+
         if p.container is None:
             logging.info(f"  No container?")
             return False
