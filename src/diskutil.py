@@ -203,6 +203,9 @@ class DiskUtil:
     def rename(self, volume, name):
         self.action("rename", volume, name, verbose=True)
 
+    def get_resize_limits(self, name):
+        return self.get("apfs", "resizeContainer", name, "limits", "-plist")
+
     def resizeContainer(self, name, size):
         size = str(size)
         self.action("apfs", "resizeContainer", name, size, verbose=2)

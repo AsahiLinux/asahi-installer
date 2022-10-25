@@ -581,10 +581,19 @@ class InstallerMain:
         else:
             target = resizable[0]
 
+        limits = self.dutil.get_resize_limits(target.name)
+
         total = target.container["CapacityCeiling"]
         free = target.container["CapacityFree"]
         min_free = self.get_min_free_space(target)
-        min_size = align_up(total - free + min_free, PART_ALIGN)
+        # Minimum size, ignoring APFS snapshots & co, but with a conservative buffer
+        min_size_raw = align_up(total - free + min_free, PART_ALIGN)
+        # Minimum size reported by diskutil, considering APFS snapshots & co but with a less conservative buffer
+        min_size_safe = limits["MinimumSizePreferred"]
+        min_size = max(min_size_raw, min_size_safe)
+        overhead = min_size - min_size_raw
+        avail = total - min_size
+
         min_perc = 100 * min_size / total
 
         assert free > min_free
@@ -593,9 +602,22 @@ class InstallerMain:
         p_message(f"  {target.desc}")
         p_info(   f"  Total size: {col()}{ssize(total)}")
         p_info(   f"  Free space: {col()}{ssize(free)}")
-        p_info(   f"  Minimum free space: {col()}{ssize(min_free)}")
+        p_info(   f"  Available space: {col()}{ssize(avail)}")
+        p_info(   f"  Overhead: {col()}{ssize(overhead)}")
         p_info(   f"  Minimum total size: {col()}{ssize(min_size)} ({min_perc:.2f}%)")
         print()
+        if overhead > 1000000000:
+            p_warning("  Note: The selected partition has significant disk space overhead.")
+            p_message("  This is usually caused by APFS snapshots used by Time Machine, which")
+            p_message("  use up free disk space and prevent resizing the partition to a smaller")
+            p_message("  size. It can also be caused by having a pending macOS upgrade.")
+            print()
+            p_message("  If you want to resize your partition to a smaller size, please complete")
+            p_message("  any pending macOS upgrades and visit this link to learn how to manually")
+            p_message("  delete Time Machine snapshots:")
+            print()
+            p_plain( f"    {col(BLUE, BRIGHT)}https://alx.sh/tmcleanup{col()}")
+            print()
         p_question("Enter the new size for your existing partition:")
         p_message( "  You can enter a size such as '1GB', a fraction such as '50%',")
         p_message( "  or the word 'min' for the smallest allowable size.")
