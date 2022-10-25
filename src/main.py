@@ -317,7 +317,7 @@ class InstallerMain:
 
         pkg = None
         if self.osins.needs_firmware:
-            pkg = asahi_firmware.core.FWPackage("firmware.tar")
+            pkg = asahi_firmware.core.FWPackage("firmware.tar", "firmware.cpio")
             self.ins.collect_firmware(pkg)
             pkg.close()
             self.osins.firmware_package = pkg

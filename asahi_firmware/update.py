@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import pathlib, tempfile, subprocess
+import pathlib, tempfile, subprocess, os.path
 
 from .core import FWPackage
 from .wifi import WiFiFWCollection
@@ -7,12 +7,13 @@ from .bluetooth import BluetoothFWCollection
 from .multitouch import MultitouchFWCollection
 from .kernel import KernelFWCollection
 
-def update_firmware(source, dest, manifest):
+def update_firmware(source, dest):
     raw_fw = source.joinpath("all_firmware.tar.gz")
     if not raw_fw.exists():
         print(f"Could not find {raw_fw}")
     
-    pkg = FWPackage(dest)
+    pkg = FWPackage(os.path.join(dest, "firmware.tar"),
+                    os.path.join(dest, "firmware.cpio"))
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = pathlib.Path(tmpdir)
@@ -32,7 +33,7 @@ def update_firmware(source, dest, manifest):
 
     pkg.close()
 
-    pkg.save_manifest(manifest)
+    pkg.save_manifest(os.path.join(dest, "manifest.txt"))
 
 if __name__ == "__main__":
     import argparse
@@ -42,11 +43,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Update vendor firmware tarball')
     parser.add_argument('source', metavar='SOURCE', type=pathlib.Path,
                         help='path containing raw firmware')
-    parser.add_argument('dest', metavar='TARBALL', type=pathlib.Path,
-                        help='output vendor firmware tarball')
-    parser.add_argument('manifest', metavar='MANIFEST', type=pathlib.Path,
-                        help='output vendor firmware manifest')
+    parser.add_argument('dest', metavar='DEST', type=pathlib.Path,
+                        help='output path for vendor firmware')
     
     args = parser.parse_args()
 
-    update_firmware(args.source, args.dest, args.manifest)
+    update_firmware(args.source, args.dest)
