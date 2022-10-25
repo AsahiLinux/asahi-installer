@@ -199,6 +199,7 @@ class StubInstaller(PackageInstaller):
         self.extract_tree("Firmware/Manifests/restore/macOS Customer/", restore_bundle)
 
         copied = set()
+        self.kernel_path = None
         for key, val in identity["Manifest"].items():
             if key in ("BaseSystem", "OS", "Ap,SystemVolumeCanonicalMetadata"):
                 continue
@@ -209,6 +210,8 @@ class StubInstaller(PackageInstaller):
             if path.startswith("kernelcache."):
                 name = os.path.basename(path)
                 self.copy_idata.append((os.path.join(restore_bundle, name), name))
+                if self.kernel_path is None:
+                    self.kernel_path = os.path.join(restore_bundle, name)
             copied.add(path)
 
         self.flush_progress()
@@ -332,6 +335,9 @@ class StubInstaller(PackageInstaller):
         pkg.add_files(sorted(col.files()))
         logging.info("Collecting Multitouch firmware")
         col = MultitouchFWCollection("fud_firmware/")
+        pkg.add_files(sorted(col.files()))
+        logging.info("Collecting Kernel firmware")
+        col = KernelFWCollection(self.kernel_path)
         pkg.add_files(sorted(col.files()))
         logging.info("Making fallback firmware archive")
         subprocess.run(["tar", "czf", "all_firmware.tar.gz",
