@@ -329,7 +329,7 @@ class InstallerMain:
             p_message("delete the partitions manually and reinstall from scratch.")
             return True
 
-        self.dutil.remount_rw(self.osi.system)
+        self.dutil.remount_rw(self.ins.osi.system)
 
         # Unhide the SystemVersion, if hidden
         self.ins.prepare_for_bless()
@@ -342,7 +342,6 @@ class InstallerMain:
 
         self.ins.prepare_volume(self.part)
         self.ins.check_volume()
-        self.osi = self.ins.osi
         self.ins.install_files(self.cur_os)
 
         self.osins.partition_disk(self.part.name, total_size)
@@ -411,7 +410,7 @@ class InstallerMain:
             print()
             p_progress("Preparing the new OS for booting in Reduced Security mode...")
             try:
-                subprocess.run(["bputil", "-g", "-v", self.osi.vgid,
+                subprocess.run(["bputil", "-g", "-v", self.ins.osi.vgid,
                                 "-u", self.admin_user, "-p", self.admin_password], check=True)
                 break
             except subprocess.CalledProcessError:
@@ -428,7 +427,7 @@ class InstallerMain:
             p_progress("Setting the new OS as the default boot volume...")
             try:
                 subprocess.run(["bless", "--setBoot",
-                                "--device", "/dev/" + self.osi.sys_volume,
+                                "--device", "/dev/" + self.ins.osi.sys_volume,
                                 "--user", self.admin_user, "--stdinpass"],
                                input=self.admin_password.encode("utf-8"),
                                check=True)
@@ -441,7 +440,7 @@ class InstallerMain:
                     p_warning("Let's try a different way. Sorry, you'll have to type it in again.")
                     try:
                         subprocess.run(["bless", "--setBoot",
-                                        "--device", "/dev/" + self.osi.sys_volume,
+                                        "--device", "/dev/" + self.ins.osi.sys_volume,
                                         "--user", self.admin_user], check=True)
                         print()
                         return
@@ -460,7 +459,7 @@ class InstallerMain:
         bootpicker_works = sys_ver >= (12, 3)
         if not bootpicker_works and self.ipsw:
             bootpicker_works = sys_ver >= split_ver(self.ipsw.min_macos)
-        if is_1tr and self.osi.paired:
+        if is_1tr and self.ins.osi.paired:
             subprocess.run([self.ins.step2_sh], check=True)
             self.startup_disk(recovery=True, volume_blessed=True, reboot=True)
         elif is_recovery:
@@ -493,7 +492,7 @@ class InstallerMain:
         p_success( "Installation successful!")
         print()
         p_progress("Install information:")
-        p_info(   f"  APFS VGID: {col()}{self.osi.vgid}")
+        p_info(   f"  APFS VGID: {col()}{self.ins.osi.vgid}")
         if self.osins and self.osins.efi_part:
             p_info(f"  EFI PARTUUID: {col()}{self.osins.efi_part.uuid.lower()}")
         print()
