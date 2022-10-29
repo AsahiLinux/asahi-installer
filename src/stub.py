@@ -4,6 +4,7 @@ import osenum
 from asahi_firmware.wifi import WiFiFWCollection
 from asahi_firmware.bluetooth import BluetoothFWCollection
 from asahi_firmware.multitouch import MultitouchFWCollection
+from asahi_firmware.kernel import KernelFWCollection
 from util import *
 
 class StubInstaller(PackageInstaller):
