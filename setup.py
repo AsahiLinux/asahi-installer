@@ -9,4 +9,5 @@ setup(name='asahi_firmware',
       author_email='marcan@marcan.st',
       url='https://github.com/AsahiLinux/asahi-installer/',
       packages=['asahi_firmware'],
+      entry_points={"console_scripts": ["asahi-fwextract = asahi_firmware.update:main"]}
      )
