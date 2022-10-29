@@ -222,7 +222,8 @@ class InstallerMain:
         ipsw = self.choose_ipsw(template.get("supported_fw", None))
         logging.info(f"Chosen IPSW version: {ipsw.version}")
 
-        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo, ipsw)
+        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo)
+        self.ins.load_ipsw(ipsw)
         self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
         self.osins.load_package()
 
@@ -297,7 +298,8 @@ class InstallerMain:
 
         ipsw = self.choose_ipsw(template.get("supported_fw", None))
         logging.info(f"Chosen IPSW version: {ipsw.version}")
-        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo, ipsw)
+        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo)
+        self.ins.load_ipsw(ipsw)
 
         p_progress(f"Creating new stub macOS named {label}")
         logging.info(f"Creating stub macOS: {label}")
@@ -315,22 +317,22 @@ class InstallerMain:
         else:
             idx = list(choices.keys())[0]
 
-        self.part, self.osi = oses[int(idx)]
+        self.part, osi = oses[int(idx)]
 
         p_progress(f"Resuming installation into {self.part.name} ({self.part.label})")
+
+        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo)
+        if not self.ins.check_existing_install(osi):
+            p_error("The existing installation is missing files.")
+            p_message("This tool can only resume installations that completed the first")
+            p_message("stage of the installation process. If it was interrupted, please")
+            p_message("delete the partitions manually and reinstall from scratch.")
+            return True
 
         self.dutil.remount_rw(self.osi.system)
 
         # Unhide the SystemVersion, if hidden
-        cs = os.path.join(self.osi.system, "System/Library/CoreServices")
-        sv_path = os.path.join(cs, "SystemVersion.plist")
-        sv_dis_path = os.path.join(cs, "SystemVersion-disabled.plist")
-        if not os.path.exists(sv_path):
-            if not os.path.exists(sv_dis_path):
-                p_error("Could not find SystemVersion.plist.")
-                p_error("Cannot resume this installation.")
-                return False
-            os.rename(sv_dis_path, sv_path)
+        self.ins.prepare_for_bless()
 
         # Go for step2 again
         self.step2()
@@ -486,10 +488,7 @@ class InstallerMain:
 
     def step2_indirect(self):
         # Hide the new volume until step2 is done
-        cs = os.path.join(self.osi.system, "System/Library/CoreServices")
-        sv_path = os.path.join(cs, "SystemVersion.plist")
-        sv_dis_path = os.path.join(cs, "SystemVersion-disabled.plist")
-        os.rename(sv_path, sv_dis_path)
+        self.ins.prepare_for_step2()
 
         p_success( "Installation successful!")
         print()

@@ -8,15 +8,19 @@ from asahi_firmware.kernel import KernelFWCollection
 from util import *
 
 class StubInstaller(PackageInstaller):
-    def __init__(self, sysinfo, dutil, osinfo, ipsw_info):
+    def __init__(self, sysinfo, dutil, osinfo):
         super().__init__()
         self.dutil = dutil
         self.sysinfo = sysinfo
         self.osinfo = osinfo
-        self.install_version = ipsw_info.version.split(maxsplit=1)[0]
         self.ucache = None
         self.copy_idata = []
         self.stub_info = {}
+        self.ipsw = None
+        self.pkg = None
+
+    def load_ipsw(self, ipsw):
+        self.install_version = ipsw_info.version.split(maxsplit=1)[0]
 
         base = os.environ.get("IPSW_BASE", None)
         url = ipsw_info.url
@@ -102,6 +106,45 @@ class StubInstaller(PackageInstaller):
         logging.info(f"chflags {flags} {path}")
         subprocess.run(["chflags", flags, path], check=True)
 
+    def get_paths(self):
+        self.resources = os.path.join(self.osi.system, "Finish Installation.app/Contents/Resources")
+        self.step2_sh = os.path.join(self.resources, "step2.sh")
+        self.boot_obj_path = os.path.join(self.resources, "boot.bin")
+        self.iapm_path = os.path.join(self.osi.system, ".IAPhysicalMedia")
+        self.iapm_dis_path = os.path.join(self.osi.system, "IAPhysicalMedia-disabled.plist")
+        self.core_services = os.path.join(self.osi.system, "System/Library/CoreServices")
+        self.sv_path = os.path.join(self.core_services, "SystemVersion.plist")
+        self.sv_dis_path = os.path.join(self.core_services, "SystemVersion-disabled.plist")
+
+    def check_existing_install(self, osi):
+        self.osi = osi
+        self.get_paths()
+
+        if not os.path.exists(self.step2_sh):
+            logging.error("step2.sh is missing")
+            return False
+        if not os.path.exists(self.boot_obj_path):
+            logging.error("boot.bin is missing")
+            return False
+        if not any(os.path.exists(i) for i in (self.iapm_path, self.iapm_dis_path)):
+            logging.error(".IAPhysicalMedia is missing")
+            return False
+        if not any(os.path.exists(i) for i in (self.sv_path, self.sv_dis_path)):
+            logging.error("SystemVersion is missing")
+            return False
+
+        return True
+
+    def prepare_for_bless(self):
+        if not os.path.exists(self.sv_path):
+            os.replace(self.sv_dis_path, self.sv_path)
+
+    def prepare_for_step2(self):
+        if os.path.exists(self.sv_path):
+            os.replace(self.sv_path, self.sv_dis_path)
+        if not os.path.exists(self.iapm_path):
+            os.replace(self.iapm_dis_path, self.iapm_path)
+
     def install_files(self, cur_os):
         logging.info("StubInstaller.install_files()")
         logging.info(f"VGID: {self.osi.vgid}")
@@ -109,6 +152,8 @@ class StubInstaller(PackageInstaller):
 
         p_progress("Beginning stub OS install...")
         ipsw = self.pkg
+
+        self.get_paths()
 
         logging.info("Parsing metadata...")
 
@@ -258,14 +303,15 @@ class StubInstaller(PackageInstaller):
                           os.path.join(basesystem_path, "arm64eBaseSystem.dmg"))
         self.flush_progress()
 
-        self.systemversion_path = os.path.join(cs, "SystemVersion.plist")
-
         p_progress("Wrapping up...")
 
         logging.info("Writing SystemVersion.plist")
-        with open(self.systemversion_path, "wb") as fd:
+        with open(self.sv_path, "wb") as fd:
             plistlib.dump(sysver, fd)
-        self.copy_idata.append((self.systemversion_path, "SystemVersion.plist"))
+        self.copy_idata.append((self.sv_path, "SystemVersion.plist"))
+
+        if os.path.exists(self.sv_dis_path):
+            os.remove(self.sv_dis_path)
 
         logging.info("Copying Finish Installation.app")
         shutil.copytree("step2/Finish Installation.app",
@@ -273,17 +319,15 @@ class StubInstaller(PackageInstaller):
 
         logging.info("Writing step2.sh")
         step2_sh = open("step2/step2.sh").read().replace("##VGID##", self.osi.vgid)
-        resources = os.path.join(self.osi.system, "Finish Installation.app/Contents/Resources")
-        step2_sh_dst = os.path.join(resources, "step2.sh")
-        with open(step2_sh_dst, "w") as fd:
+        with open(self.step2_sh, "w") as fd:
             fd.write(step2_sh)
-        os.chmod(step2_sh_dst, 0o755)
-        self.step2_sh = step2_sh_dst
-        self.boot_obj_path = os.path.join(resources, "boot.bin")
+        os.chmod(self.step2_sh, 0o755)
 
         logging.info("Copying .IAPhysicalMedia")
-        shutil.copy("step2/IAPhysicalMedia.plist",
-                    os.path.join(self.osi.system, ".IAPhysicalMedia"))
+        shutil.copy("step2/IAPhysicalMedia.plist", self.iapm_path)
+
+        if os.path.exists(self.iapm_dis_path):
+            os.remove(self.iapm_dis_path)
 
         print()
         p_success("Stub OS installation complete.")
