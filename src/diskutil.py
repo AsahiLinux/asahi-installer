@@ -166,6 +166,10 @@ class DiskUtil:
         info = self.get("info", "-plist", target)
         return info["MountPoint"]
 
+    def remount_rw(self, target):
+        logging.info(f"DiskUtil.remount_rw({target})")
+        subprocess.run(["mount", "-u", "-w", target], check=True)
+
     def addVolume(self, container, name, **kwargs):
         args = []
         for k, v in kwargs.items():

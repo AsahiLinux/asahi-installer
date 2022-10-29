@@ -90,6 +90,9 @@ class InstallerMain:
         self.data = json.load(open("installer_data.json"))
         self.credentials_validated = False
         self.expert = False
+        self.ipsw = None
+        self.osins = None
+        self.osi = None
 
     def input(self):
         self.flush_input()
@@ -306,11 +309,42 @@ class InstallerMain:
 
         self.do_install(os_size)
 
+    def action_resume(self, oses):
+        choices = {str(i): f"{p.desc}\n      {str(o)}" for i, (p, o) in enumerate(oses)}
+
+        if len(choices) > 1:
+            print()
+            p_question("Choose an incomplete install to resume:")
+            idx = self.choice("Installed OS", choices)
+        else:
+            idx = list(choices.keys())[0]
+
+        self.part, self.osi = oses[int(idx)]
+
+        p_progress(f"Resuming installation into {self.part.name} ({self.part.label})")
+
+        self.dutil.remount_rw(self.osi.system)
+
+        # Unhide the SystemVersion, if hidden
+        cs = os.path.join(self.osi.system, "System/Library/CoreServices")
+        sv_path = os.path.join(cs, "SystemVersion.plist")
+        sv_dis_path = os.path.join(cs, "SystemVersion-disabled.plist")
+        if not os.path.exists(sv_path):
+            if not os.path.exists(sv_dis_path):
+                p_error("Could not find SystemVersion.plist.")
+                p_error("Cannot resume this installation.")
+                return False
+            os.rename(sv_dis_path, sv_path)
+
+        # Go for step2 again
+        self.step2()
+
     def do_install(self, total_size=None):
         p_progress(f"Installing stub macOS into {self.part.name} ({self.part.label})")
 
         self.ins.prepare_volume(self.part)
         self.ins.check_volume()
+        self.osi = self.ins.osi
         self.ins.install_files(self.cur_os)
 
         self.osins.partition_disk(self.part.name, total_size)
@@ -379,7 +413,7 @@ class InstallerMain:
             print()
             p_progress("Preparing the new OS for booting in Reduced Security mode...")
             try:
-                subprocess.run(["bputil", "-g", "-v", self.ins.osi.vgid,
+                subprocess.run(["bputil", "-g", "-v", self.osi.vgid,
                                 "-u", self.admin_user, "-p", self.admin_password], check=True)
                 break
             except subprocess.CalledProcessError:
@@ -396,7 +430,7 @@ class InstallerMain:
             p_progress("Setting the new OS as the default boot volume...")
             try:
                 subprocess.run(["bless", "--setBoot",
-                                "--device", "/dev/" + self.ins.osi.sys_volume,
+                                "--device", "/dev/" + self.osi.sys_volume,
                                 "--user", self.admin_user, "--stdinpass"],
                                input=self.admin_password.encode("utf-8"),
                                check=True)
@@ -409,7 +443,7 @@ class InstallerMain:
                     p_warning("Let's try a different way. Sorry, you'll have to type it in again.")
                     try:
                         subprocess.run(["bless", "--setBoot",
-                                        "--device", "/dev/" + self.ins.osi.sys_volume,
+                                        "--device", "/dev/" + self.osi.sys_volume,
                                         "--user", self.admin_user], check=True)
                         print()
                         return
@@ -424,7 +458,10 @@ class InstallerMain:
     def step2(self):
         is_1tr = self.sysinfo.boot_mode == "one true recoveryOS"
         is_recovery = "recoveryOS" in self.sysinfo.boot_mode
-        bootpicker_works = split_ver(self.sysinfo.macos_ver) >= split_ver(self.ipsw.min_macos)
+        sys_ver = split_ver(self.sysinfo.macos_ver)
+        bootpicker_works = sys_ver >= (12, 3)
+        if not bootpicker_works and self.ipsw:
+            bootpicker_works = sys_ver >= split_ver(self.ipsw.min_macos)
 
         if is_1tr and self.is_sfr_recovery and self.ipsw.paired_sfr:
             subprocess.run([self.ins.step2_sh], check=True)
@@ -454,15 +491,16 @@ class InstallerMain:
 
     def step2_indirect(self):
         # Hide the new volume until step2 is done
-        os.rename(self.ins.systemversion_path,
-                  self.ins.systemversion_path.replace("SystemVersion.plist",
-                                                      "SystemVersion-disabled.plist"))
+        cs = os.path.join(self.osi.system, "System/Library/CoreServices")
+        sv_path = os.path.join(cs, "SystemVersion.plist")
+        sv_dis_path = os.path.join(cs, "SystemVersion-disabled.plist")
+        os.rename(sv_path, sv_dis_path)
 
         p_success( "Installation successful!")
         print()
         p_progress("Install information:")
-        p_info(   f"  APFS VGID: {col()}{self.ins.osi.vgid}")
-        if self.osins.efi_part:
+        p_info(   f"  APFS VGID: {col()}{self.osi.vgid}")
+        if self.osins and self.osins.efi_part:
             p_info(f"  EFI PARTUUID: {col()}{self.osins.efi_part.uuid.lower()}")
         print()
         p_message( "To be able to boot your new OS, you will need to complete one more step.")
@@ -761,6 +799,7 @@ class InstallerMain:
         parts_free = []
         parts_empty_apfs = []
         parts_resizable = []
+        oses_incomplete = []
 
         for i, p in enumerate(self.parts):
             if p.type in ("Apple_APFS_ISC",):
@@ -822,6 +861,8 @@ class InstallerMain:
                 else:
                     state += " "
                 p_plain(f"    OS: [{state}] {os}")
+                if os.stub and not (os.bp and os.bp.get("coih", None)):
+                    oses_incomplete.append((p, os))
 
         print()
         p_plain(f"  [{b} ] = Booted OS, [{r} ] = Booted recovery, [{u} ] = Unknown")
@@ -835,6 +876,9 @@ class InstallerMain:
         actions = {}
 
         default = None
+        if oses_incomplete:
+            actions["p"] = "Resume an incomplete installation (reboot step)"
+            default = default or "p"
         if parts_free:
             actions["f"] = "Install an OS into free space"
             default = default or "f"
@@ -866,6 +910,8 @@ class InstallerMain:
         elif act == "m":
             p_error("Unimplemented")
             sys.exit(1)
+        elif act == "p":
+            return self.action_resume(oses_incomplete)
         elif act == "q":
             return False
 
