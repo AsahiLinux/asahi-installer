@@ -60,12 +60,6 @@ DEVICES = {
 }
 
 IPSW_VERSIONS = [
-    IPSW("12.1",
-         "12.1",
-         "iBoot-7429.61.2",
-         "21.3.52.0.0,0",
-         True,
-         "https://updates.cdn-apple.com/2021FCSWinter/fullrestores/002-42433/F3F6D5CD-67FE-449C-9212-F7409808B6C4/UniversalMac_12.1_21C52_Restore.ipsw"),
     # This is the special M2 version, it comes ahead so it isn't the default in expert mode
     IPSW("12.4",
          "12.1",
