@@ -23,6 +23,7 @@ class OSInfo:
     recovery: object = None
     rec_vgid: str = None
     bp: object = None
+    paired: bool = False
     admin_users: object = None
 
     def __str__(self):
@@ -207,6 +208,9 @@ class OSEnum:
             if b"##m1n1_ver##" in fuos:
                 osi.m1n1_ver = fuos.split(b"##m1n1_ver##")[1].split(b"\0")[0].decode("ascii")
                 logging.info(f"  m1n1 version found: {osi.m1n1_ver}")
+
+        if b": Paired" in bps:
+            osi.paired = True
 
         return osi
 
