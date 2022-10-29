@@ -13,6 +13,7 @@ M1N1="$PWD/m1n1"
 ARTWORK="$PWD/artwork"
 AFW="$PWD/asahi_firmware"
 SRC="$PWD/src"
+VENDOR="$PWD/vendor"
 DL="$PWD/dl"
 PACKAGE="$PWD/package"
 RELEASES="$PWD/releases"
@@ -64,9 +65,14 @@ mkdir -p "$PACKAGE/Frameworks/Python.framework"
 7z x -so "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | zcat | \
     cpio -i -D "$PACKAGE/Frameworks/Python.framework"
 
-echo "Slimming down Python..."
 
 cd "$PACKAGE/Frameworks/Python.framework/Versions/Current"
+
+echo "Copying vendored libffi into Python framework..."
+
+cp -P "$VENDOR"/libffi/* lib/
+
+echo "Slimming down Python..."
 
 rm -rf include share
 cd lib
@@ -76,6 +82,7 @@ rm -rf test ensurepip idlelib
 cd lib-dynload
 rm -f _test* _tkinter*
     
+
 echo "Copying certificates..."
 
 certs="$(python3 -c 'import certifi; print(certifi.where())')"
