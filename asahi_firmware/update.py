@@ -35,7 +35,7 @@ def update_firmware(source, dest):
 
     pkg.save_manifest(os.path.join(dest, "manifest.txt"))
 
-if __name__ == "__main__":
+def main():
     import argparse
     import logging
     logging.basicConfig()
@@ -49,3 +49,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     update_firmware(args.source, args.dest)
+
+if __name__ == "__main__":
+    main()
