@@ -122,7 +122,7 @@ class OSInstaller(PackageInstaller):
                 base = os.path.join(mountpoint, "vendorfw")
                 logging.info(f"Firmware -> {base}")
                 os.makedirs(base, exist_ok=True)
-                shutil.copy(self.firmware_package.path, os.path.join(base, "firmware.tar"))
+                shutil.copy(self.firmware_package.tar_path, os.path.join(base, "firmware.tar"))
                 shutil.copy(self.firmware_package.cpio_path, os.path.join(base, "firmware.cpio"))
                 self.firmware_package.save_manifest(os.path.join(base, "manifest.txt"))
             if part.get("copy_installer_data", False):
