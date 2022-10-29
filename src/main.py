@@ -317,7 +317,7 @@ class InstallerMain:
             if upgrade:
                 p_question("Choose an existing install to upgrade:")
             else:
-                p_question("Choose an incomplete install to resume:")
+                p_question("Choose an incomplete install to repair:")
             idx = self.choice("Installed OS", choices)
         else:
             idx = list(choices.keys())[0]
@@ -334,7 +334,7 @@ class InstallerMain:
 
         self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo)
         if not self.ins.check_existing_install(osi):
-            op = "upgrade" if upgrade else "resume"
+            op = "upgrade" if upgrade else "repair"
             p_error(   "The existing installation is missing files.")
             p_message(f"This tool can only {op} installations that completed the first")
             p_message( "stage of the installation process. If it was interrupted, please")
@@ -902,7 +902,7 @@ class InstallerMain:
 
         default = None
         if oses_incomplete:
-            actions["p"] = "Resume an incomplete installation (reboot step)"
+            actions["p"] = "Repair an incomplete installation"
             default = default or "p"
         if parts_free:
             actions["f"] = "Install an OS into free space"
@@ -934,9 +934,9 @@ class InstallerMain:
         elif act == "r":
             return self.action_resize(parts_resizable)
         elif act == "m":
-            return self.action_resume_or_upgrade(oses_upgradable, upgrade=True)
+            return self.action_repair_or_upgrade(oses_upgradable, upgrade=True)
         elif act == "p":
-            return self.action_resume_or_upgrade(oses_incomplete, upgrade=False)
+            return self.action_repair_or_upgrade(oses_incomplete, upgrade=False)
         elif act == "q":
             return False
 
