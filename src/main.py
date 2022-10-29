@@ -56,8 +56,8 @@ DEVICES = {
     "j316sap":  Device("12.0", False),  # MacBook Pro (16-inch, M1 Pro, 2021)
     "j375cap":  Device("12.3", False),  # Mac Studio (M1 Max, 2022)
     "j375dap":  Device("12.3", False),  # Mac Studio (M1 Ultra, 2022)
-    "j413ap":   Device("12.4", True),   # MacBook Air (M2, 2022)
-    "j493ap":   Device("12.4", True),   # MacBook Pro (13-inch, M2, 2022)
+    "j413ap":   Device("12.4", False),  # MacBook Air (M2, 2022)
+    "j493ap":   Device("12.4", False),  # MacBook Pro (13-inch, M2, 2022)
 }
 
 IPSW_VERSIONS = [
