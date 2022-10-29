@@ -3,7 +3,7 @@
 import os, os.path, shlex, subprocess, sys, time, termios, json, getpass
 from dataclasses import dataclass
 
-import system, osenum, stub, diskutil, osinstall, asahi_firmware
+import system, osenum, stub, diskutil, osinstall, asahi_firmware, m1n1
 from util import *
 
 PART_ALIGN = psize("1MiB")
@@ -89,6 +89,8 @@ class InstallerMain:
         self.ipsw = None
         self.osins = None
         self.osi = None
+        self.m1n1 = "boot/m1n1.bin"
+        self.m1n1_ver = m1n1.get_version(self.m1n1)
 
     def input(self):
         self.flush_input()
@@ -307,29 +309,57 @@ class InstallerMain:
 
         self.do_install(os_size)
 
-    def action_resume(self, oses):
+    def action_resume_or_upgrade(self, oses, upgrade):
         choices = {str(i): f"{p.desc}\n      {str(o)}" for i, (p, o) in enumerate(oses)}
 
         if len(choices) > 1:
             print()
-            p_question("Choose an incomplete install to resume:")
+            if upgrade:
+                p_question("Choose an existing install to upgrade:")
+            else:
+                p_question("Choose an incomplete install to resume:")
             idx = self.choice("Installed OS", choices)
         else:
             idx = list(choices.keys())[0]
 
         self.part, osi = oses[int(idx)]
 
-        p_progress(f"Resuming installation into {self.part.name} ({self.part.label})")
+        if upgrade:
+            p_progress(f"Upgrading installation {self.part.name} ({self.part.label})")
+            p_info(f"  Old m1n1 stage 1 version: {osi.m1n1_ver}")
+            p_info(f"  New m1n1 stage 1 version: {self.m1n1_ver}")
+            print()
+        else:
+            p_progress(f"Resuming installation into {self.part.name} ({self.part.label})")
 
         self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo)
         if not self.ins.check_existing_install(osi):
-            p_error("The existing installation is missing files.")
-            p_message("This tool can only resume installations that completed the first")
-            p_message("stage of the installation process. If it was interrupted, please")
-            p_message("delete the partitions manually and reinstall from scratch.")
-            return True
+            op = "upgrade" if upgrade else "resume"
+            p_error(   "The existing installation is missing files.")
+            p_message(f"This tool can only {op} installations that completed the first")
+            p_message( "stage of the installation process. If it was interrupted, please")
+            p_message( "delete the partitions manually and reinstall from scratch.")
+            return False
 
         self.dutil.remount_rw(self.ins.osi.system)
+
+        if upgrade:
+            # Note: we get the vars out of the boot.bin in the system volume instead of the
+            # actual installed fuOS. This is arguably the better option, since it allows
+            # users to fix their install using this functionality if they messed up the boot
+            # object.
+            vars = m1n1.extract_vars(self.ins.boot_obj_path)
+            if vars is None:
+                p_error("Could not get variables from the installed m1n1")
+                p_message(f"Path: {self.ins.boot_obj_path}")
+                return False
+
+            p_progress(f"Transferring m1n1 variables:")
+            for v in vars:
+                p_info(f"  {v}")
+
+            print()
+            m1n1.build(self.m1n1, self.ins.boot_obj_path, vars)
 
         # Unhide the SystemVersion, if hidden
         self.ins.prepare_for_bless()
@@ -792,6 +822,7 @@ class InstallerMain:
         parts_empty_apfs = []
         parts_resizable = []
         oses_incomplete = []
+        oses_upgradable = []
 
         for i, p in enumerate(self.parts):
             if p.type in ("Apple_APFS_ISC",):
@@ -853,7 +884,9 @@ class InstallerMain:
                 else:
                     state += " "
                 p_plain(f"    OS: [{state}] {os}")
-                if os.stub and not (os.bp and os.bp.get("coih", None)):
+                if os.stub and os.m1n1_ver and os.m1n1_ver != self.m1n1_ver:
+                    oses_upgradable.append((p, os))
+                elif os.stub and not (os.bp and os.bp.get("coih", None)):
                     oses_incomplete.append((p, os))
 
         print()
@@ -879,8 +912,9 @@ class InstallerMain:
         if parts_resizable:
             actions["r"] = "Resize an existing partition to make space for a new OS"
             default = default or "r"
-        if self.sysinfo.boot_mode == "one true recoveryOS" and False:
-            actions["m"] = "Upgrade bootloader of an existing OS"
+        if oses_upgradable:
+            actions["m"] = "Upgrade m1n1 on an existing OS"
+            default = default or "m"
 
         if not actions:
             p_error("No actions available on this system.")
@@ -900,10 +934,9 @@ class InstallerMain:
         elif act == "r":
             return self.action_resize(parts_resizable)
         elif act == "m":
-            p_error("Unimplemented")
-            sys.exit(1)
+            return self.action_resume_or_upgrade(oses_upgradable, upgrade=True)
         elif act == "p":
-            return self.action_resume(oses_incomplete)
+            return self.action_resume_or_upgrade(oses_incomplete, upgrade=False)
         elif act == "q":
             return False
 

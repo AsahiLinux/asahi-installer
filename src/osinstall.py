@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 import os, shutil, sys, stat, subprocess, urlcache, zipfile, logging
 
+import m1n1
 from util import *
 
 class OSInstaller(PackageInstaller):
@@ -138,8 +139,6 @@ class OSInstaller(PackageInstaller):
         next_object = self.template.get("next_object", None)
         logging.info(f"  Boot object: {boot_object}")
         logging.info(f"  Next object: {next_object}")
-        with open(os.path.join("boot", boot_object), "rb") as fd:
-            m1n1_data = fd.read()
 
         m1n1_vars = []
         if self.efi_part:
@@ -152,9 +151,6 @@ class OSInstaller(PackageInstaller):
         for i in m1n1_vars:
             logging.info(f"  {i}")
 
-        m1n1_data += b"".join(i.encode("ascii") + b"\n" for i in m1n1_vars) + b"\0\0\0\0"
-
-        with open(boot_obj_path, "wb") as fd:
-            fd.write(m1n1_data)
+        m1n1.build(os.path.join("boot", boot_object), boot_obj_path, m1n1_vars)
 
         logging.info(f"Built boot object at {boot_obj_path}")

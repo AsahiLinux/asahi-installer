@@ -2,6 +2,7 @@
 import os, os.path, plistlib, subprocess, logging
 from dataclasses import dataclass
 
+import m1n1
 from util import *
 
 UUID_SROS = "3D3287DE-280D-4619-AAAB-D97469CA9C71"
@@ -204,9 +205,8 @@ class OSEnum:
                                      osi.bp["nsih"],
                                      "System/Library/Caches/com.apple.kernelcaches",
                                      "kernelcache.custom." + coih)
-            fuos = open(fuos_path, "rb").read()
-            if b"##m1n1_ver##" in fuos:
-                osi.m1n1_ver = fuos.split(b"##m1n1_ver##")[1].split(b"\0")[0].decode("ascii")
+            osi.m1n1_ver = m1n1.get_version(fuos_path)
+            if osi.m1n1_ver:
                 logging.info(f"  m1n1 version found: {osi.m1n1_ver}")
 
         if b": Paired" in bps:
