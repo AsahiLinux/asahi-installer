@@ -16,10 +16,9 @@ class StubInstaller(PackageInstaller):
         self.ucache = None
         self.copy_idata = []
         self.stub_info = {}
-        self.ipsw = None
         self.pkg = None
 
-    def load_ipsw(self, ipsw):
+    def load_ipsw(self, ipsw_info):
         self.install_version = ipsw_info.version.split(maxsplit=1)[0]
 
         base = os.environ.get("IPSW_BASE", None)
