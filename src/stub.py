@@ -295,6 +295,9 @@ class StubInstaller(PackageInstaller):
         logging.info("StubInstaller.collect_firmware()")
 
         logging.info("Collecting FUD firmware")
+        if os.path.exists("fud_firmware"):
+            shutil.rmtree("fud_firmware")
+
         os.makedirs("fud_firmware", exist_ok=True)
         copied = set()
         for identity in self.all_identities:
@@ -304,6 +307,7 @@ class StubInstaller(PackageInstaller):
             device = identity["Info"]["DeviceClass"]
             if not device.endswith("ap"):
                 continue
+            logging.info(f"Collecting FUD firmware for device {device}")
             device = device[:-2]
             for key, val in identity["Manifest"].items():
                 if key in ("BaseSystem", "OS", "Ap,SystemVolumeCanonicalMetadata",
