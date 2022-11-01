@@ -208,9 +208,10 @@ class OSEnum:
                                      osi.bp["nsih"],
                                      "System/Library/Caches/com.apple.kernelcaches",
                                      "kernelcache.custom." + coih)
-            osi.m1n1_ver = m1n1.get_version(fuos_path)
-            if osi.m1n1_ver:
-                logging.info(f"  m1n1 version found: {osi.m1n1_ver}")
+            if os.path.exists(fuos_path):
+                osi.m1n1_ver = m1n1.get_version(fuos_path)
+                if osi.m1n1_ver:
+                    logging.info(f"  m1n1 version found: {osi.m1n1_ver}")
 
         if b": Paired" in bps:
             osi.paired = True
