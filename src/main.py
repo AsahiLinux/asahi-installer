@@ -65,7 +65,7 @@ IPSW_VERSIONS = [
          "12.1",
          "iBoot-7459.101.3",
          "21.6.81.2.0,0",
-         True,
+         False,
          "https://updates.cdn-apple.com/2022SpringFCS/fullrestores/012-17781/F045A95A-44B4-4BA9-8A8A-919ECCA2BB31/UniversalMac_12.4_21F2081_Restore.ipsw"),
     # For testing only
     IPSW("13.0",
