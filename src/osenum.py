@@ -96,6 +96,8 @@ class OSEnum:
         part.os = []
 
         ct = part.container
+        ct_name = ct.get("ContainerReference", None)
+
         by_role = {}
         by_device = {}
 
@@ -121,10 +123,23 @@ class OSEnum:
             if len(data) != 1 or len(system) != 1:
                 logging.info(f"  Weird VG: {vg['Volumes']}")
                 continue
+            data = data[0]["DeviceIdentifier"]
+            system = system[0]["DeviceIdentifier"]
 
-            volumes["Data"] = by_device[data[0]["DeviceIdentifier"]]
-            volumes["System"] = by_device[system[0]["DeviceIdentifier"]]
+            volumes["Data"] = by_device[data]
+            volumes["System"] = by_device[system]
+
             vgid = vg["APFSVolumeGroupUUID"]
+
+            if self.sysinfo.boot_uuid == vgid:
+                for volume in self.dutil.disk_parts[ct_name]["APFSVolumes"]:
+                    if "MountedSnapshots" not in volume:
+                        continue
+                    snapshots = volume["MountedSnapshots"]
+                    if volume["DeviceIdentifier"] == system and len(snapshots) == 1:
+                        volumes = dict(volumes)
+                        volumes["System"]["DeviceIdentifier"] = snapshots[0]["SnapshotBSD"]
+
             os = self.collect_os(part, volumes, vgid)
             logging.info(f" Found {os}")
             part.os.append(os)
