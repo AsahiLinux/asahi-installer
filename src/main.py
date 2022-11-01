@@ -993,6 +993,8 @@ class InstallerMain:
 
         if not actions:
             p_error("No actions available on this system.")
+            p_message("No partitions have enough free space to be resized, and there is")
+            p_message("nothing else to be done.")
             sys.exit(1)
 
         actions["q"] = "Quit without doing anything"
