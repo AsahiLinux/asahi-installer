@@ -67,6 +67,13 @@ IPSW_VERSIONS = [
          "21.6.81.2.0,0",
          True,
          "https://updates.cdn-apple.com/2022SpringFCS/fullrestores/012-17781/F045A95A-44B4-4BA9-8A8A-919ECCA2BB31/UniversalMac_12.4_21F2081_Restore.ipsw"),
+    # For testing only
+    IPSW("13.0",
+         "12.1",
+         "iBoot-8419.41.10",
+         "22.1.380.0.0,0",
+         True,
+         "https://updates.cdn-apple.com/2022FallFCS/fullrestores/012-92188/2C38BCD1-2BFF-4A10-B358-94E8E28BE805/UniversalMac_13.0_22A380_Restore.ipsw"),
     IPSW("12.3",
          "12.1",
          "iBoot-7459.101.2",
@@ -801,6 +808,7 @@ class InstallerMain:
         print()
         p_message("By default, this installer will hide certain advanced options that")
         p_message("are only useful for developers. You can enable expert mode to show them.")
+        p_message("Do not enable this unless you know what you are doing.")
         self.expert = self.yesno("Enable expert mode?")
         print()
 
