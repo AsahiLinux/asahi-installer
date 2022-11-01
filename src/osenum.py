@@ -23,6 +23,7 @@ class OSInfo:
     preboot: object = None
     recovery: object = None
     rec_vgid: str = None
+    preboot_vgid: str = None
     bp: object = None
     paired: bool = False
     admin_users: object = None
@@ -147,6 +148,7 @@ class OSEnum:
             logging.info(f"  Failed to mount Data (FileVault?)")
 
         rec_vgid = volumes["Recovery"]["APFSVolumeUUID"]
+        preboot_vgid = volumes["Preboot"]["APFSVolumeUUID"]
 
         stub = not os.path.exists(os.path.join(mounts["System"], "Library"))
 
@@ -161,7 +163,8 @@ class OSEnum:
                      data=mounts["Data"],
                      preboot=mounts["Preboot"],
                      recovery=mounts["Recovery"],
-                     rec_vgid=rec_vgid)
+                     rec_vgid=rec_vgid,
+                     preboot_vgid=preboot_vgid)
 
         for name in ("SystemVersion.plist", "SystemVersion-disabled.plist"):
             try:

@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 import plistlib, subprocess, sys, logging
 from dataclasses import dataclass
+from util import *
 
 @dataclass
 class Partition:
@@ -20,7 +21,7 @@ class DiskUtil:
     FREE_THRESHOLD = 16 * 1024 * 1024
     def __init__(self):
         self.verbose = "-v" in sys.argv
-    
+
     def action(self, *args, verbose=False):
         if verbose == 2:
             capture = False
@@ -100,6 +101,29 @@ class DiskUtil:
                 continue
         raise Exception("Could not find system disk")
 
+    def find_external_disks(self):
+        logging.info(f"DiskUtil.find_external_disks()")
+        disks = []
+        for name, dsk in self.disks.items():
+            try:
+                if dsk["VirtualOrPhysical"] == "Virtual":
+                    continue
+                if dsk["Internal"]:
+                    continue
+                if dsk["BusProtocol"] != "USB":
+                    continue
+                if not dsk["Writable"]:
+                    continue
+                if not dsk["WholeDisk"]:
+                    continue
+                if "usb-drd" not in dsk["DeviceTreePath"]:
+                    continue
+                disks.append(dsk)
+            except (KeyError, IndexError):
+                continue
+
+        return disks
+
     def get_partition_info(self, dev, refresh_apfs=False):
         logging.info(f"DiskUtil.get_partition_info({dev=!r}, {refresh_apfs=!r})")
         partinfo = self.get("info", "-plist", dev)
@@ -131,13 +155,21 @@ class DiskUtil:
         logging.debug(f"Partition {dev}: {part}")
         return part
 
+    def get_disk_usable_range(self, dskname):
+        # GPT overhead aligned to 4K
+        dsk = self.disk_parts[dskname]
+        start = 40 * 512
+        end = align_down(dsk["Size"] - 34 * 512, 4096)
+        return start, end
+
     def get_partitions(self, dskname):
         logging.info(f"DiskUtil.get_partitions({dskname!r})")
         dsk = self.disk_parts[dskname]
         parts = []
-        total_size = dsk["Size"]
-        p = 0
-        for dskpart in dsk["Partitions"]:
+
+        p, total_size = self.get_disk_usable_range(dskname)
+
+        for dskpart in dsk.get("Partitions", []):
             parts.append(self.get_partition_info(dskpart["DeviceIdentifier"]))
         parts.sort(key=lambda i: i.offset)
 
@@ -182,8 +214,39 @@ class DiskUtil:
             else:
                 raise
 
-    def addPartition(self, after, fs, label, size):
+    def partitionDisk(self, disk, fs, label, size):
+        logging.info(f"DiskUtil.wipe_disk({disk}, {fs}, {label}, {size}")
         size = str(size)
+        assert fs.lower() == "apfs"
+
+        # diskutil likes to "helpfully" create an EFI partition for us...
+        self.action("partitionDisk", disk, "1", "GPT", "free", "free", "0", verbose=True)
+
+        self.get_list()
+        parts = self.get_partitions(disk)
+        assert len(parts) == 2 # EFI and free
+        part = parts[0]
+
+        # So re-format it as APFS...
+        self.action("eraseVolume", fs, label, part.name)
+        # And then grow it to the right size
+        self.action("apfs", "resizeContainer", part.name, size)
+        # Yes, this is silly.
+
+        part = self.get_partition_info(part.name, refresh_apfs=(fs == "apfs"))
+        logging.info(f"New partition: {part!r}")
+        return part
+
+    def addPartition(self, after, fs, label, size):
+        logging.info(f"DiskUtil.addPartition({after}, {fs}, {label}, {size})")
+        size = str(size)
+
+        # diskutil can't create partitions on an empty disk...
+        if (after in self.disk_parts
+            and not self.disk_parts[after]["Partitions"]
+            and fs.lower() == "apfs"):
+            return self.partitionDisk(after, fs, label, size)
+
         self.action("addPartition", after, fs, label, size, verbose=True)
 
         disk = after.rsplit("s", 1)[0]

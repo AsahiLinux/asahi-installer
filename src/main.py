@@ -85,6 +85,8 @@ class InstallerMain:
         self.osi = None
         self.m1n1 = "boot/m1n1.bin"
         self.m1n1_ver = m1n1.get_version(self.m1n1)
+        self.sys_disk = None
+        self.cur_disk = None
 
     def input(self):
         self.flush_input()
@@ -225,6 +227,33 @@ class InstallerMain:
 
         self.do_install()
 
+    def action_wipe(self):
+        p_warning("This will wipe all data on the currently selected disk.")
+        p_warning("Are you sure you want to continue?")
+        if not self.yesno("Wipe my disk"):
+            return True
+
+        print()
+
+        template = self.choose_os()
+
+        self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
+        self.osins.load_package()
+
+        min_size = STUB_SIZE + self.osins.min_size
+        print()
+        p_message(f"Minimum required space for this OS: {ssize(min_size)}")
+
+        start, end = self.dutil.get_disk_usable_range(self.cur_disk)
+        os_size = self.get_os_size_and_info(end - start, min_size, template)
+
+        p_progress(f"Partitioning the whole disk ({self.cur_disk})")
+        self.part = self.dutil.partitionDisk(self.cur_disk, "apfs", self.osins.name, STUB_SIZE)
+
+        p_progress(f"Creating new stub macOS named {self.osins.name}")
+        logging.info(f"Creating stub macOS: {self.osins.name}")
+        self.do_install(os_size)
+
     def action_install_into_free(self, avail_free):
         template = self.choose_os()
 
@@ -256,6 +285,15 @@ class InstallerMain:
         print()
         p_message(f"Available free space: {ssize(free_part.size)}")
 
+        os_size = self.get_os_size_and_info(free_part.size, min_size, template)
+
+        p_progress(f"Creating new stub macOS named {self.osins.name}")
+        logging.info(f"Creating stub macOS: {self.osins.name}")
+        self.part = self.dutil.addPartition(free_part.name, "apfs", self.osins.name, STUB_SIZE)
+
+        self.do_install(os_size)
+
+    def get_os_size_and_info(self, free_size, min_size, template):
         os_size = None
         if self.osins.expandable:
             print()
@@ -263,25 +301,25 @@ class InstallerMain:
             p_message("  You can enter a size such as '1GB', a fraction such as '50%',")
             p_message("  the word 'min' for the smallest allowable size, or")
             p_message("  the word 'max' to use all available space.")
-            min_perc = 100 * min_size / free_part.size
+            min_perc = 100 * min_size / free_size
             while True:
                 os_size = self.get_size("New OS size", default="max",
-                                    min=min_size, max=free_part.size,
-                                    total=free_part.size)
+                                    min=min_size, max=free_size,
+                                    total=free_size)
                 if os_size is None:
                     continue
                 os_size = align_down(os_size, PART_ALIGN)
                 if os_size < min_size:
                     p_error(f"Size is too small, please enter a value > {ssize(min_size)} ({min_perc:.2f}%)")
                     continue
-                if os_size > free_part.size:
-                    p_error(f"Size is too large, please enter a value < {ssize(free_part.size)}")
+                if os_size > free_size:
+                    p_error(f"Size is too large, please enter a value < {ssize(free_size)}")
                     continue
                 break
 
             print()
             p_message(f"The new OS will be allocated {ssize(os_size)} of space,")
-            p_message(f"leaving {ssize(free_part.size - os_size)} of free space.")
+            p_message(f"leaving {ssize(free_size - os_size)} of free space.")
             os_size -= STUB_SIZE
 
         print()
@@ -296,12 +334,7 @@ class InstallerMain:
         logging.info(f"Chosen IPSW version: {ipsw.version}")
         self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo)
         self.ins.load_ipsw(ipsw)
-
-        p_progress(f"Creating new stub macOS named {label}")
-        logging.info(f"Creating stub macOS: {label}")
-        self.part = self.dutil.addPartition(free_part.name, "apfs", label, STUB_SIZE)
-
-        self.do_install(os_size)
+        return os_size
 
     def action_resume_or_upgrade(self, oses, upgrade):
         choices = {str(i): f"{p.desc}\n      {str(o)}" for i, (p, o) in enumerate(oses)}
@@ -422,6 +455,8 @@ class InstallerMain:
         os_list = self.data["os_list"]
         if not self.expert:
             os_list = [i for i in os_list if not i.get("expert", False)]
+        if self.cur_disk != self.sys_disk:
+            os_list = [i for i in os_list if i.get("external_boot", False)]
         p_question("Choose an OS to install:")
         idx = self.choice("OS", [i["name"] for i in os_list])
         os = os_list[idx]
@@ -736,6 +771,22 @@ class InstallerMain:
 
         return True
 
+    def action_select_disk(self):
+        choices = {"1": "Internal storage"}
+
+        for i, disk in enumerate(self.external_disks):
+            choices[str(i + 2)] = f"{disk['IORegistryEntryName']} ({ssize(disk['Size'])})"
+
+        print()
+        p_question("Choose a disk:")
+        idx = int(self.choice("Disk", choices))
+        if idx == 1:
+            self.cur_disk = self.sys_disk
+        else:
+            self.cur_disk = self.external_disks[idx - 2]["DeviceIdentifier"]
+
+        return True
+
     def main(self):
         print()
         p_message("Welcome to the Asahi Linux installer!")
@@ -803,13 +854,24 @@ class InstallerMain:
         p_progress("Collecting partition information...")
         self.dutil = diskutil.DiskUtil()
         self.dutil.get_info()
-        self.sysdsk = self.dutil.find_system_disk()
-        p_info(f"  System disk: {col()}{self.sysdsk}")
-        self.parts = self.dutil.get_partitions(self.sysdsk)
+        if self.sys_disk is None:
+            self.cur_disk = self.sys_disk = self.dutil.find_system_disk()
+
+        p_info(f"  System disk: {col()}{self.sys_disk}")
+
+        if self.expert:
+            self.external_disks = self.dutil.find_external_disks()
+        else:
+            self.external_disks = None
+
+        if self.external_disks:
+            p_info(f"  Found {len(self.external_disks)} external disk(s)")
+
+        self.parts = self.dutil.get_partitions(self.cur_disk)
         print()
 
         p_progress("Collecting OS information...")
-        self.osinfo = osenum.OSEnum(self.sysinfo, self.dutil, self.sysdsk)
+        self.osinfo = osenum.OSEnum(self.sysinfo, self.dutil, self.cur_disk)
         self.osinfo.collect(self.parts)
 
         parts_free = []
@@ -842,9 +904,14 @@ class InstallerMain:
                 p.desc = f"{p.type} ({ssize(p.size)})"
 
         print()
-        p_message(f"Partitions in system disk ({self.sysdsk}):")
+        if self.cur_disk == self.sys_disk:
+            t = "system"
+        else:
+            t = "external"
+        p_message(f"Partitions in {t} disk ({self.cur_disk}):")
 
-        self.cur_os = None
+        if self.cur_disk == self.sys_disk:
+            self.cur_os = None
         self.is_sfr_recovery = self.sysinfo.boot_vgid in (osenum.UUID_SROS, osenum.UUID_FROS)
         default_os = None
 
@@ -852,6 +919,8 @@ class InstallerMain:
         b = col(GREEN) + "B" + col()
         u = col(RED) + "?" + col()
         d = col(BRIGHT) + "*" + col()
+
+        is_gpt = self.dutil.disks[self.cur_disk]["Content"] == "GUID_partition_scheme"
 
         for i, p in enumerate(self.parts):
             if p.desc is None:
@@ -898,14 +967,20 @@ class InstallerMain:
         if oses_incomplete:
             actions["p"] = "Repair an incomplete installation"
             default = default or "p"
-        if parts_free:
+        if parts_free and is_gpt:
             actions["f"] = "Install an OS into free space"
             default = default or "f"
-        if parts_empty_apfs and False: # This feature is confusing, disable it for now
+        if parts_empty_apfs and is_gpt and False: # This feature is confusing, disable it for now
             actions["a"] = "Install an OS into an existing APFS container"
-        if parts_resizable:
+        if parts_resizable and is_gpt:
             actions["r"] = "Resize an existing partition to make space for a new OS"
             default = default or "r"
+        if self.cur_disk != self.sys_disk:
+            actions["w"] = "Wipe and install into the whole disk"
+            # Never make this default!
+        if self.external_disks:
+            actions["d"] = "Select another disk for installation"
+            default = default or "d"
         if oses_upgradable:
             actions["m"] = "Upgrade m1n1 on an existing OS"
             default = default or "m"
@@ -931,6 +1006,10 @@ class InstallerMain:
             return self.action_repair_or_upgrade(oses_upgradable, upgrade=True)
         elif act == "p":
             return self.action_repair_or_upgrade(oses_incomplete, upgrade=False)
+        elif act == "d":
+            return self.action_select_disk()
+        elif act == "w":
+            return self.action_wipe()
         elif act == "q":
             return False
 

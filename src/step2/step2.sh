@@ -4,6 +4,7 @@
 set -e
 
 VGID="##VGID##"
+PREBOOT="##PREBOOT##"
 
 self="$0"
 cd "${self%%step2.sh}"
@@ -100,6 +101,14 @@ done
 
 echo
 echo
+
+if [ -e "/System/Volumes/iSCPreboot/$VGID/boot" ]; then
+    # This is an external volume, and kmutil has a problem with trying to pick
+    # up the AdminUserRecoveryInfo.plist from the wrong place. Work around that.
+    diskutil mount "$PREBOOT"
+    preboot="$(diskutil info "$PREBOOT" | grep "Mount Point" | sed 's, *Mount Point: *,,')"
+    cp -R "$preboot/$VGID/var" "/System/Volumes/iSCPreboot/$VGID/"
+fi
 
 while ! kmutil configure-boot -c boot.bin --raw --entry-point 2048 --lowest-virtual-address 0 -v "$system_dir"; do
     echo
