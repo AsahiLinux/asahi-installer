@@ -417,7 +417,7 @@ class InstallerMain:
             pkg.close()
             self.osins.firmware_package = pkg
 
-        self.osins.install(self.ins.boot_obj_path)
+        self.osins.install(self.ins)
 
         for i in self.osins.idata_targets:
             self.ins.collect_installer_data(i)

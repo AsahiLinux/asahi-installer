@@ -114,6 +114,7 @@ class StubInstaller(PackageInstaller):
         self.core_services = os.path.join(self.osi.system, "System/Library/CoreServices")
         self.sv_path = os.path.join(self.core_services, "SystemVersion.plist")
         self.sv_dis_path = os.path.join(self.core_services, "SystemVersion-disabled.plist")
+        self.icon_path = os.path.join(self.osi.system, ".VolumeIcon.icns")
 
     def check_existing_install(self, osi):
         self.osi = osi
@@ -194,7 +195,7 @@ class StubInstaller(PackageInstaller):
         logging.info("Setting up System volume")
 
         self.extract("usr/standalone/bootcaches.plist", self.osi.system)
-        shutil.copy("logo.icns", os.path.join(self.osi.system, ".VolumeIcon.icns"))
+        shutil.copy("logo.icns", self.icon_path)
 
         cs = os.path.join(self.osi.system, "System/Library/CoreServices")
         os.makedirs(cs, exist_ok=True)

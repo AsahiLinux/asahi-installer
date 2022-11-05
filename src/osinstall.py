@@ -95,9 +95,13 @@ class OSInstaller(PackageInstaller):
 
             prev = info.name
 
-    def install(self, boot_obj_path):
+    def install(self, stub_ins):
         p_progress("Installing OS...")
         logging.info("OSInstaller.install()")
+
+        icon = self.template.get("icon", None)
+        if icon:
+            self.extract_file(icon, stub_ins.icon_path)
 
         for part, info in zip(self.template["partitions"], self.part_info):
             logging.info(f"Installing partition {part!r} -> {info.name}")
@@ -151,6 +155,6 @@ class OSInstaller(PackageInstaller):
         for i in m1n1_vars:
             logging.info(f"  {i}")
 
-        m1n1.build(os.path.join("boot", boot_object), boot_obj_path, m1n1_vars)
+        m1n1.build(os.path.join("boot", boot_object), stub_ins.boot_obj_path, m1n1_vars)
 
-        logging.info(f"Built boot object at {boot_obj_path}")
+        logging.info(f"Built boot object at {stub_ins.boot_obj_path}")
