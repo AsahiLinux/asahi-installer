@@ -343,7 +343,7 @@ class InstallerMain:
         self.ins.load_ipsw(ipsw)
         return os_size
 
-    def action_resume_or_upgrade(self, oses, upgrade):
+    def action_repair_or_upgrade(self, oses, upgrade):
         choices = {str(i): f"{p.desc}\n      {str(o)}" for i, (p, o) in enumerate(oses)}
 
         if len(choices) > 1:
