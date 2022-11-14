@@ -24,6 +24,15 @@ rm -rf "$PACKAGE"
 mkdir -p "$DL" "$PACKAGE" "$RELEASES" "$RELEASES_DEV"
 mkdir -p "$PACKAGE/bin"
 
+echo "Install brew dependencies..."
+for BREW_DEPENDENCY in "wget" "make" "llvm"; do
+    echo "Brew install $BREW_DEPENDENCY..."
+    if brew ls --versions "$BREW_DEPENDENCY"
+    then brew upgrade "$BREW_DEPENDENCY"
+    else brew install "$BREW_DEPENDENCY"
+    fi
+done
+
 echo "Determining version..."
 
 VER=$(git describe --always --dirty --tags)
