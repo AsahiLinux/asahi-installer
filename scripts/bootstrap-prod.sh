@@ -33,10 +33,10 @@ echo "  Downloading..."
 
 curl --no-progress-meter -L -o "$PKG" "$INSTALLER_BASE/$PKG"
 if ! curl --no-progress-meter -L -O "$INSTALLER_DATA"; then
-	echo "    Error downloading installer_data.json. GitHub might be blocked in your network."
-	echo "    Please consider using a VPN if you experience issues."
-	echo "    Trying workaround..."
-	curl --no-progress-meter -L -O "$INSTALLER_DATA_ALT"
+    echo "  Error downloading installer_data.json. GitHub might be blocked in your network."
+    echo "  Please consider using a VPN if you experience issues."
+    echo "  Trying workaround..."
+    curl --no-progress-meter -L -O "$INSTALLER_DATA_ALT"
 fi
 
 echo "  Extracting..."

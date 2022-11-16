@@ -8,7 +8,7 @@ export LANG=en_US.UTF-8
 export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 export INSTALLER_BASE=http://localhost:5000
-export INSTALLER_DATA=http://localhost:5000/data/installer_data.json
+export INSTALLER_DATA="${INSTALLER_BASE}"/data/installer_data.json
 export REPO_BASE=https://cdn.asahilinux.org
 PKG=installer.tar.gz
 
