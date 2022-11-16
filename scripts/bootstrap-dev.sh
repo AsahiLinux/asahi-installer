@@ -7,10 +7,10 @@ export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
-export VERSION_FLAG=https://cdn.asahilinux.org/installer-dev/latest
-export INSTALLER_BASE=https://cdn.asahilinux.org/installer-dev
-export INSTALLER_DATA=https://github.com/AsahiLinux/asahi-installer/raw/main/data/installer_data.json
 export REPO_BASE=https://cdn.asahilinux.org
+export INSTALLER_BASE="${REPO_BASE}"/installer-dev
+export VERSION_FLAG="${INSTALLER_BASE}"/latest
+export INSTALLER_DATA=https://github.com/AsahiLinux/asahi-installer/raw/main/data/installer_data.json
 
 #TMP="$(mktemp -d)"
 TMP=/tmp/asahi-install
