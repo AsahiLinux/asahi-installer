@@ -25,7 +25,7 @@ from builtins import str
 from enum import IntEnum
 from numbers import Number
 
-__version__ = "2.5.0"
+__version__ = "2.6.0"
 
 
 class Numbers(IntEnum):
@@ -42,6 +42,7 @@ class Numbers(IntEnum):
     PrintableString = 0x13
     IA5String = 0x16
     UTCTime = 0x17
+    GeneralizedTime = 0x18
     UnicodeString = 0x1e
 
 
@@ -83,17 +84,13 @@ class Encoder(object):
 
     def enter(self, nr, cls=None):  # type: (int, int) -> None
         """This method starts the construction of a constructed type.
-
         Args:
             nr (int): The desired ASN.1 type. Use ``Numbers`` enumeration.
-
             cls (int): This optional parameter specifies the class
                 of the constructed type. The default class to use is the
                 universal class. Use ``Classes`` enumeration.
-
         Returns:
             None
-
         Raises:
             `Error`
         """
@@ -119,22 +116,18 @@ class Encoder(object):
 
     def write(self, value, nr=None, typ=None, cls=None):  # type: (object, int, int, int) -> None
         """This method encodes one ASN.1 tag and writes it to the output buffer.
-
         Note:
             Normally, ``value`` will be the only parameter to this method.
             In this case Python-ASN1 will autodetect the correct ASN.1 type from
             the type of ``value``, and will output the encoded value based on this
             type.
-
         Args:
             value (any): The value of the ASN.1 tag to write. Python-ASN1 will
                 try to autodetect the correct ASN.1 type from the type of
                 ``value``.
-
             nr (int): If the desired ASN.1 type cannot be autodetected or is
                 autodetected wrongly, the ``nr`` parameter can be provided to
                 specify the ASN.1 type to be used. Use ``Numbers`` enumeration.
-
             typ (int): This optional parameter can be used to write constructed
                 types to the output by setting it to indicate the constructed
                 encoding type. In this case, ``value`` must already be valid ASN.1
@@ -142,14 +135,11 @@ class Encoder(object):
                 constructed types should be encoded though, see `Encoder.enter()`
                 and `Encoder.leave()` for the recommended way of doing this.
                 Use ``Types`` enumeration.
-
             cls (int): This parameter can be used to override the class of the
                 ``value``. The default class is the universal class.
                 Use ``Classes`` enumeration.
-
         Returns:
             None
-
         Raises:
             `Error`
         """
@@ -186,15 +176,12 @@ class Encoder(object):
         This method can be called multiple times, also during encoding.
         In the latter case the data that has been encoded so far is
         returned.
-
         Note:
             It is an error to call this method if the encoder is still
             constructing a constructed type, i.e. if `Encoder.enter()` has been
             called more times that `Encoder.leave()`.
-
         Returns:
             bytes: The DER encoded ASN.1 data.
-
         Raises:
             `Error`
         """
@@ -269,7 +256,8 @@ class Encoder(object):
             return self._encode_integer(value)
         if nr in (Numbers.OctetString, Numbers.PrintableString,
                   Numbers.UTF8String, Numbers.IA5String,
-                  Numbers.UnicodeString, Numbers.UTCTime):
+                  Numbers.UnicodeString, Numbers.UTCTime,
+                  Numbers.GeneralizedTime):
             return self._encode_octet_string(value)
         if nr == Numbers.BitString:
             return self._encode_bit_string(value)
@@ -373,17 +361,13 @@ class Decoder(object):
         This method may be called at any time to start a new decoding job.
         If this method is called while currently decoding another input, that
         decoding context is discarded.
-
         Note:
             It is not necessary to specify the encoding because the decoder
             assumes the input is in BER or DER format.
-
         Args:
             data (bytes): ASN.1 input, in BER or DER format, to be decoded.
-
         Returns:
             None
-
         Raises:
             `Error`
         """
@@ -397,20 +381,16 @@ class Decoder(object):
         subsequent `Decoder.read()` call would return) without updating the
         decoding offset. In case no more data is available from the input,
         this method returns ``None`` to signal end-of-file.
-
         This method is useful if you don't know whether the next tag will be a
         primitive or a constructed tag. Depending on the return value of `peek`,
         you would decide to either issue a `Decoder.read()` in case of a primitive
         type, or an `Decoder.enter()` in case of a constructed type.
-
         Note:
             Because this method does not advance the current offset in the input,
             calling it multiple times in a row will return the same value for all
             calls.
-
         Returns:
             `Tag`: The current ASN.1 tag.
-
         Raises:
             `Error`
         """
@@ -429,10 +409,8 @@ class Decoder(object):
         The offset in the input is increased so that the next `Decoder.read()`
         call will return the next tag. In case no more data is available from
         the input, this method returns ``None`` to signal end-of-file.
-
         Returns:
             `Tag`, value: The current ASN.1 tag and its value.
-
         Raises:
             `Error`
         """
@@ -450,7 +428,6 @@ class Decoder(object):
 
     def eof(self):  # type: () -> bool
         """Return True if we are at the end of input.
-
         Returns:
             bool: True if all input has been decoded, and False otherwise.
         """
@@ -459,11 +436,9 @@ class Decoder(object):
     def enter(self):  # type: () -> None
         """This method enters the constructed type that is at the current
         decoding offset.
-
         Note:
             It is an error to call `Decoder.enter()` if the to be decoded ASN.1 tag
             is not of a constructed type.
-
         Returns:
             None
         """
@@ -480,11 +455,9 @@ class Decoder(object):
     def leave(self):  # type: () -> None
         """This method leaves the last constructed type that was
         `Decoder.enter()`-ed.
-
         Note:
             It is an error to call `Decoder.leave()` if the current ASN.1 tag
             is not of a constructed type.
-
         Returns:
             None
         """
@@ -544,7 +517,9 @@ class Decoder(object):
             value = self._decode_null(bytes_data)
         elif nr == Numbers.ObjectIdentifier:
             value = self._decode_object_identifier(bytes_data)
-        elif nr in (Numbers.PrintableString, Numbers.IA5String, Numbers.UTF8String, Numbers.UTCTime):
+        elif nr in (Numbers.PrintableString, Numbers.IA5String,
+                    Numbers.UTF8String, Numbers.UTCTime,
+                    Numbers.GeneralizedTime):
             value = self._decode_printable_string(bytes_data)
         elif nr == Numbers.BitString:
             value = self._decode_bitstring(bytes_data)
