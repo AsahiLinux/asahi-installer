@@ -18,6 +18,10 @@ TMP=/tmp/asahi-install
 echo
 echo "Bootstrapping installer:"
 
+if [ -e "$TMP" ]; then
+    mv "$TMP" "$TMP-$(date +%Y%m%d-%H%M%S)"
+fi
+
 mkdir -p "$TMP"
 cd "$TMP"
 
