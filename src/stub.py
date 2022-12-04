@@ -249,6 +249,8 @@ class StubInstaller(PackageInstaller):
         for key, val in identity["Manifest"].items():
             if key in ("BaseSystem", "OS", "Ap,SystemVolumeCanonicalMetadata"):
                 continue
+            if key.startswith("Cryptex"):
+                continue
             path = val["Info"]["Path"]
             if path in copied:
                 continue
