@@ -454,6 +454,8 @@ class InstallerMain:
         if self.expert:
             p_question("Choose the macOS version to use for boot firmware:")
             p_plain("(If unsure, just press enter)")
+            p_warning("Picking a non-default option here is UNSUPPORTED and will BREAK YOUR SYSTEM.")
+            p_warning("DO NOT FILE BUGS. YOU HAVE BEEN WARNED.")
             idx = self.choice("Version", [i.version for i in avail], len(avail)-1)
         else:
             idx = len(avail)-1
