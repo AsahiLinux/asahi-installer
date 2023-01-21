@@ -29,7 +29,53 @@ def load_plist_xml(d):
 
     return plistlib.loads(ET.tostring(pl))
 
-def plist_to_bin(plist):
+LOAD_COMMAND_INIT_PAYLOAD = 0
+LOAD_COMMAND_SEND_BLOB = 1
+LOAD_COMMAND_SEND_CALIBRATION = 2
+
+def plist_to_bin_touchbar(plist):
+    def serialize(plist):
+        yield struct.pack("<4sI", b"Z2FW", 1)
+        for i in plist:
+            if i["Type"] == "Config":
+                init = i["Config"]["SPI Config"]["Init Payload"]
+                yield struct.pack("<II", LOAD_COMMAND_INIT_PAYLOAD, len(init))
+                yield init
+                realign = len(init) % 4
+                if realign != 0:
+                    yield bytes([0] * (4 - realign))
+        for i in plist:
+            pkt_len = 0
+            if i['Type'] == 'Binary':
+                payload = i['Payload']
+                pkt_len = 14 + len(payload)
+                yield struct.pack("<II", LOAD_COMMAND_SEND_BLOB, pkt_len)
+                addr = i['Address']
+                hdr = struct.pack("<HHI", 0x3001, (len(payload) + 3) // 4, addr)
+                yield hdr
+                yield struct.pack("<H", sum(hdr[2:]))
+                yield payload
+                checksum = sum(payload)
+                yield struct.pack("<I", checksum)
+            elif i['Type'] == 'Property':
+                yield struct.pack("<II", LOAD_COMMAND_SEND_CALIBRATION, i['Address'])
+            elif i['Type'] == 'RequestCalibration':
+                pkt_len = 2
+                yield struct.pack("<II", LOAD_COMMAND_SEND_BLOB, pkt_len)
+                yield struct.pack("<H", 0x1f01)
+            elif i['Type'] == 'ReadModifyWrite':
+                pkt_len = 16
+                yield struct.pack("<II", LOAD_COMMAND_SEND_BLOB, pkt_len)
+                data = struct.pack("<HIII", 0x1e33, i['Address'], i['Mask'], i['Value'])
+                yield data
+                yield struct.pack("<H", sum(data[2:]))
+            realign = pkt_len % 4
+            if realign != 0:
+                yield bytes([0] * (4 - realign))
+    return b"".join(serialize(plist))
+
+
+def plist_to_bin_trackpad(plist):
     iface_offset = None
 
     for i in plist:
@@ -123,6 +169,27 @@ def plist_to_bin(plist):
 
     return hdr + blob
 
+DEVICE_KIND_TRACKPAD = "trackpad"
+DEVICE_KIND_TOUCHBAR = "touchbar"
+DEVICE_KIND_UNKNOWN = "unknown"
+
+def device_key_to_kind(key):
+    if key.startswith("C1FD"):
+        return DEVICE_KIND_TRACKPAD
+    if key.startswith("C1FB"):
+        return DEVICE_KIND_TOUCHBAR
+    return DEVICE_KIND_UNKNOWN
+
+FIRMWARE_NAME_TEMPLATES = {
+    DEVICE_KIND_TRACKPAD: "apple/tpmtfw-%s.bin",
+    DEVICE_KIND_TOUCHBAR: "apple/dfrmtfw-%s.bin"
+}
+
+plist_to_bin = {
+    DEVICE_KIND_TRACKPAD: plist_to_bin_trackpad,
+    DEVICE_KIND_TOUCHBAR: plist_to_bin_touchbar
+}
+
 class MultitouchFWCollection(object):
     def __init__(self, source_path):
         self.fwfiles = []
@@ -155,18 +222,18 @@ class MultitouchFWCollection(object):
 
         collected = set()
         for key, val in plist.items():
-            # Touchpad firmwares only for now
-            if not key.startswith("C1FD"):
+            dev_kind = device_key_to_kind(key)
+            if dev_kind == DEVICE_KIND_UNKNOWN:
                 log.info(f"  Skipping {key}")
                 continue
 
             log.info(f"  Collecting {key}")
-            filename = f"apple/tpmtfw-{machine}.bin"
+            filename = FIRMWARE_NAME_TEMPLATES[dev_kind] % (machine)
 
             if filename in collected:
                 raise Exception(f"Tried to collect firmware {filename} twice!")
 
-            data = plist_to_bin(val)
+            data = plist_to_bin[dev_kind](val)
             fw = FWFile(filename, data)
             self.fwfiles.append((filename, fw))
 
@@ -175,4 +242,3 @@ class MultitouchFWCollection(object):
 
     def files(self):
         return self.fwfiles
-
