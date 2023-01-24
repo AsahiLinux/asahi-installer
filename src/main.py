@@ -728,6 +728,16 @@ class InstallerMain:
             print()
             p_plain( f"    {col(BLUE, BRIGHT)}https://alx.sh/tmcleanup{col()}")
             print()
+
+            if avail < 2 * PART_ALIGN:
+                p_warning("Not enough available space to resize. Please follow the instructions")
+                p_warning("above to continue.")
+                return False
+
+        if avail < 2 * PART_ALIGN:
+            p_warning("Not enough available space to resize.")
+            return False
+
         p_question("Enter the new size for your existing partition:")
         p_message( "  You can enter a size such as '1GB', a fraction such as '50%',")
         p_message( "  or the word 'min' for the smallest allowable size.")
