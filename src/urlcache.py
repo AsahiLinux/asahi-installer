@@ -41,7 +41,12 @@ class URLCache:
         req.add_header("Range", f"bytes={off}-{off+size-1}")
         fd = request.urlopen(req, timeout=self.TIMEOUT)
 
-        d = fd.read()
+        try:
+            d = fd.read()
+        except Exception as e:
+            logging.error(f"Request failed for {fd.url!r} range {off}-{off+size-1}")
+            logging.error(f"Response headers: {fd.headers.as_string()}")
+            raise
 
         self.spin = (self.spin + 1) % len(self.SPINNER)
         sys.stdout.write(f"\r{self.SPINNER[self.spin]} ")
