@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import os, sys, os.path, time, logging
+import os, sys, os.path, time, logging, random
 from dataclasses import dataclass
 
 from urllib import request
@@ -35,9 +35,12 @@ class URLCache:
         fd = request.urlopen(req)
         return int(fd.getheader("Content-length"))
 
-    def get_partial(self, off, size):
+    def get_partial(self, off, size, bypass_cache=False):
         #print("get_partial", off, size)
-        req = request.Request(self.url, method="GET")
+        url = self.url
+        if bypass_cache:
+            url += f"?{random.random()}"
+        req = request.Request(url, method="GET")
         req.add_header("Range", f"bytes={off}-{off+size-1}")
         fd = request.urlopen(req, timeout=self.TIMEOUT)
 
@@ -75,7 +78,7 @@ class URLCache:
         sleep = 1
         for retry in range(retries + 1):
             try:
-                data = self.get_partial(off, size)
+                data = self.get_partial(off, size, bypass_cache=(retry == retries))
             except Exception as e:
                 if retry == retries:
                     p_error(f"Exceeded maximum retries downloading data.")
