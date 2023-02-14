@@ -302,7 +302,7 @@ class StubInstaller(PackageInstaller):
         os.makedirs(basesystem_path, exist_ok=True)
 
         logging.info("Extracting arm64eBaseSystem.dmg")
-        self.extract_file(identity["Manifest"]["BaseSystem"]["Info"]["Path"],
+        self.copy_compress(identity["Manifest"]["BaseSystem"]["Info"]["Path"],
                           os.path.join(basesystem_path, "arm64eBaseSystem.dmg"))
         self.flush_progress()
 

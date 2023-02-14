@@ -1,5 +1,11 @@
 # SPDX-License-Identifier: MIT
-import re, logging, sys, os, stat, shutil
+import re, logging, sys, os, stat, shutil, struct, subprocess, zlib
+from ctypes import *
+
+lzfse = CDLL('libcompression.dylib')
+
+COMPRESSION_LZFSE = 0x801
+CHUNK_SIZE = 0x10000
 
 def ssize(v):
     suffixes = ["B", "KB", "MB", "GB", "TB"]
@@ -155,6 +161,49 @@ class PackageInstaller:
         if size is not None:
             sys.stdout.write("\033[3G100.00% ")
             sys.stdout.flush()
+
+    def copy_compress(self, src, path):
+        info = self.pkg.getinfo(src)
+        size = info.file_size
+        istream = self.pkg.open(src)
+        with open(path, 'wb'):
+            pass
+        num_chunks = (size + CHUNK_SIZE - 1) // CHUNK_SIZE
+        cur_pos = (num_chunks + 1) * 4
+        table = []
+        scratch = bytes(lzfse.compression_encode_scratch_buffer_size(COMPRESSION_LZFSE))
+        outbuf = bytes(CHUNK_SIZE)
+        with open(path + '/..namedfork/rsrc', 'wb') as res_fork:
+            res_fork.write(b'\0' * cur_pos)
+            for i in range(num_chunks):
+                table.append(cur_pos)
+                inbuf = istream.read(CHUNK_SIZE)
+                while 1:
+                    csize = lzfse.compression_encode_buffer(outbuf, len(outbuf), inbuf, len(inbuf), scratch, COMPRESSION_LZFSE)
+                    if csize == 0:
+                        outbuf = bytes(len(outbuf) * 2)
+                    else:
+                        break
+                res_fork.write(outbuf[:csize])
+                cur_pos += csize
+            table.append(cur_pos)
+            res_fork.seek(0)
+            for v in table:
+                res_fork.write(struct.pack('<I', v))
+        subprocess.run(["xattr", "-wx", "com.apple.decmpfs",
+                        "66706D630C000000" + "".join(f"{((size >> 8*i) & 0xff):02x}" for i in range(8)),
+                        path], check=True)
+        os.chflags(path, stat.UF_COMPRESSED)
+        crc = 0
+        with open(path, 'rb') as result_file:
+            while 1:
+                data = result_file.read(CHUNK_SIZE)
+                if len(data) == 0:
+                    break
+                crc = zlib.crc32(data, crc)
+        if crc != info.CRC:
+            raise Exception('Internal error: failed to compress file: crc mismatch')
+
 
     def extract_file(self, src, dest, optional=True):
         try:
