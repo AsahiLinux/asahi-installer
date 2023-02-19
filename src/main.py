@@ -37,10 +37,12 @@ class Device:
 
 CHIP_MIN_VER = {
     0x8103: "11.0",     # T8103, M1
+    0x8112: "12.4",     # T8112, M2
     0x6000: "12.0",     # T6000, M1 Pro
     0x6001: "12.0",     # T6001, M1 Max
     0x6002: "12.3",     # T6002, M1 Ultra
-    0x8112: "12.4",     # T8112, M2
+    0x6020: "13.2",     # T6020, M2 Pro
+    0x6021: "13.2",     # T6021, M2 Max
 }
 
 DEVICES = {
@@ -56,6 +58,12 @@ DEVICES = {
     "j375cap":  Device("12.3", False),  # Mac Studio (M1 Max, 2022)
     "j375dap":  Device("12.3", False),  # Mac Studio (M1 Ultra, 2022)
     "j413ap":   Device("12.4", False),  # MacBook Air (M2, 2022)
+    "j414cap":  Device("13.2", False),  # MacBook Pro (14-inch, M2 Max, 2023)
+    "j414sap":  Device("13.2", False),  # MacBook Pro (14-inch, M2 Pro, 2023)
+    "j416cap":  Device("13.2", False),  # MacBook Pro (16-inch, M2 Max, 2023)
+    "j416sap":  Device("13.2", False),  # MacBook Pro (16-inch, M2 Pro, 2023)
+    "j473ap":   Device("13.2", False),  # Mac mini (M2, 2023)
+    "j474sap":  Device("13.2", False),  # Mac mini (M2 Pro, 2023)
     "j493ap":   Device("12.4", False),  # MacBook Pro (13-inch, M2, 2022)
 }
 
