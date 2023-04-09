@@ -41,6 +41,8 @@ CHIP_MIN_VER = {
     0x6001: "12.0",     # T6001, M1 Max
     0x6002: "12.3",     # T6002, M1 Ultra
     0x8112: "12.4",     # T8112, M2
+    0x6020: "13.1",     # T6020, M2 Pro
+    0x6021: "13.1",     # T6021, M2 Max
 }
 
 DEVICES = {
@@ -57,6 +59,12 @@ DEVICES = {
     "j375dap":  Device("12.3", False),  # Mac Studio (M1 Ultra, 2022)
     "j413ap":   Device("12.4", False),  # MacBook Air (M2, 2022)
     "j493ap":   Device("12.4", False),  # MacBook Pro (13-inch, M2, 2022)
+    "j414cap":  Device("13.2", True),  # MacBook Pro (14-inch, M2 Max, 2023)
+    "j414sap":  Device("13.2", True),  # MacBook Pro (14-inch, M2 Pro, 2023)
+    "j416cap":  Device("13.2", True),  # MacBook Pro (16-inch, M2 Max, 2023)
+    "j416sap":  Device("13.2", True),  # MacBook Pro (16-inch, M2 Pro, 2023)
+    "j274ap":   Device("13.2", True),  # Mac mini (M2, 2023)
+    "j274ap":   Device("13.2", True),  # Mac mini (M2 Pro, 2023)
 }
 
 IPSW_VERSIONS = [
@@ -67,13 +75,12 @@ IPSW_VERSIONS = [
          "21.6.81.2.0,0",
          False,
          "https://updates.cdn-apple.com/2022SpringFCS/fullrestores/012-17781/F045A95A-44B4-4BA9-8A8A-919ECCA2BB31/UniversalMac_12.4_21F2081_Restore.ipsw"),
-    # For testing only
-    IPSW("13.0",
-         "12.1",
-         "iBoot-8419.41.10",
-         "22.1.380.0.0,0",
+    IPSW("13.2",
+         "13.0",
+         "iBoot-8419.80.7",
+         "22.4.49.0.0,0",
          True,
-         "https://updates.cdn-apple.com/2022FallFCS/fullrestores/012-92188/2C38BCD1-2BFF-4A10-B358-94E8E28BE805/UniversalMac_13.0_22A380_Restore.ipsw"),
+         "https://updates.cdn-apple.com/2023WinterFCS/fullrestores/032-35688/0350BB21-2B4B-4850-BF77-70B830283B28/UniversalMac_13.2_22D49_Restore.ipsw"),
     IPSW("12.3.1",
          "12.1",
          "iBoot-7459.101.3",
