@@ -837,16 +837,8 @@ class InstallerMain:
         print()
         self.chip_min_ver = CHIP_MIN_VER.get(self.sysinfo.chip_id, None)
         self.device = DEVICES.get(self.sysinfo.device_class, None)
-        if not self.chip_min_ver or not self.device:
+        if not self.chip_min_ver or not self.device or (self.device.expert_only and not self.expert):
             p_error("This device is not supported yet!")
-            p_error("Please check out the Asahi Linux Blog for updates on device support:")
-            print()
-            p_error("   https://asahilinux.org/blog/")
-            print()
-            sys.exit(1)
-
-        if self.device.expert_only and not self.expert:
-            p_error("This device is in preliminary support and only available in expert mode.")
             p_error("Please check out the Asahi Linux Blog for updates on device support:")
             print()
             p_error("   https://asahilinux.org/blog/")
