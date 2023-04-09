@@ -6,7 +6,7 @@
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "asahi-plasma-20221122-4.zip",
-            "supported_fw": ["12.3", "12.3.1", "12.4"],
+            "supported_fw": ["12.3", "12.3.1", "12.4", "13.3"],
             "partitions": [
                 {
                     "name": "EFI",
@@ -33,7 +33,7 @@
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "asahi-base-20221122-4.zip",
-            "supported_fw": ["12.3", "12.3.1", "12.4"],
+            "supported_fw": ["12.3", "12.3.1", "12.4", "13.3"],
             "partitions": [
                 {
                     "name": "EFI",
