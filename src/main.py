@@ -63,8 +63,8 @@ DEVICES = {
     "j414sap":  Device("13.2", True),  # MacBook Pro (14-inch, M2 Pro, 2023)
     "j416cap":  Device("13.2", True),  # MacBook Pro (16-inch, M2 Max, 2023)
     "j416sap":  Device("13.2", True),  # MacBook Pro (16-inch, M2 Pro, 2023)
-    "j274ap":   Device("13.2", True),  # Mac mini (M2, 2023)
-    "j274ap":   Device("13.2", True),  # Mac mini (M2 Pro, 2023)
+    "j473ap":   Device("13.2", True),  # Mac mini (M2, 2023)
+    "j474sap":  Device("13.2", True),  # Mac mini (M2 Pro, 2023)
 }
 
 IPSW_VERSIONS = [
