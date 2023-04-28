@@ -727,12 +727,15 @@ class InstallerMain:
         p_info(   f"  Free space: {col()}{ssize(free)}")
         p_info(   f"  Available space: {col()}{ssize(avail)}")
         p_info(   f"  Overhead: {col()}{ssize(overhead)}")
-        p_info(   f"  Minimum total size: {col()}{ssize(min_size)} ({min_perc:.2f}%)")
+        p_info(   f"  Minimum new size: {col()}{ssize(min_size)} ({min_perc:.2f}%)")
         print()
         if overhead > 1000000000:
-            p_warning("  Note: The selected partition has significant disk space overhead.")
+            p_warning("  Warning: The selected partition has a large amount of overhead space.")
+            p_warning("  This prevents you from resizing the partition to a smaller size, even")
+            p_warning("  though macOS reports that space as free.")
+            print()
             p_message("  This is usually caused by APFS snapshots used by Time Machine, which")
-            p_message("  use up free disk space and prevent resizing the partition to a smaller")
+            p_message("  use up free disk space and block resizing the partition to a smaller")
             p_message("  size. It can also be caused by having a pending macOS upgrade.")
             print()
             p_message("  If you want to resize your partition to a smaller size, please complete")
@@ -743,12 +746,16 @@ class InstallerMain:
             print()
 
             if avail < 2 * PART_ALIGN:
-                p_warning("Not enough available space to resize. Please follow the instructions")
-                p_warning("above to continue.")
+                p_error("  Not enough available space to resize. Please follow the instructions")
+                p_error("  above to continue.")
                 return False
 
+            if not self.yesno("Continue anyway?"):
+                return False
+            print()
+
         if avail < 2 * PART_ALIGN:
-            p_warning("Not enough available space to resize.")
+            p_error("Not enough available space to resize.")
             return False
 
         p_question("Enter the new size for your existing partition:")
