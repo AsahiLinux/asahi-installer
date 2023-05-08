@@ -12,6 +12,8 @@ export INSTALLER_DATA=http://localhost:5000/data/installer_data.json
 export REPO_BASE=https://cdn.asahilinux.org
 PKG=installer.tar.gz
 
+export EXPERT=1
+
 #TMP="$(mktemp -d)"
 TMP=/tmp/asahi-install
 

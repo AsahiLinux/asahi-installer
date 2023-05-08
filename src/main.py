@@ -844,12 +844,15 @@ class InstallerMain:
         p_question("Press enter to continue.")
         self.input()
         print()
-        p_message("By default, this installer will hide certain advanced options that")
-        p_message("are only useful for Asahi Linux developers. You can enable expert mode")
-        p_message("to show them. Do not enable this unless you know what you are doing.")
-        p_message("Please do not file bugs if things go wrong in expert mode.")
-        self.expert = self.yesno("Enable expert mode?")
-        print()
+
+        self.expert = False
+        if os.environ.get("EXPERT", None):
+            p_message("By default, this installer will hide certain advanced options that")
+            p_message("are only useful for Asahi Linux developers. You can enable expert mode")
+            p_message("to show them. Do not enable this unless you know what you are doing.")
+            p_message("Please do not file bugs if things go wrong in expert mode.")
+            self.expert = self.yesno("Enable expert mode?")
+            print()
 
         p_progress("Collecting system information...")
         self.sysinfo = system.SystemInfo()

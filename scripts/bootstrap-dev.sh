@@ -12,6 +12,8 @@ export INSTALLER_BASE=https://cdn.asahilinux.org/installer-dev
 export INSTALLER_DATA=https://github.com/AsahiLinux/asahi-installer/raw/main/data/installer_data.json
 export REPO_BASE=https://cdn.asahilinux.org
 
+export EXPERT=1
+
 #TMP="$(mktemp -d)"
 TMP=/tmp/asahi-install
 
