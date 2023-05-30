@@ -48,6 +48,8 @@ class SystemInfo:
 
         bputil_info = b''
         for vgid in (self.boot_vgid, self.default_boot):
+            if not vgid:
+                continue
             try:
                 bputil_info = subprocess.run(["bputil", "-d", "-v",
                                               vgid],
@@ -58,7 +60,7 @@ class SystemInfo:
                 continue
 
         self.boot_mode = "Unknown"
-        # one of 'macOS', 'one true recoveryOS', 'recoveryOS'
+        # one of 'macOS', 'one true recoveryOS', 'recoveryOS'(?), 'ordinary recoveryOS'
         if b"Current OS environment: " in bputil_info:
             self.boot_mode = (bputil_info.split(b"Current OS environment: ")[1]
                               .split(b"\n")[0].decode("ascii"))
