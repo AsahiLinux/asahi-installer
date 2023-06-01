@@ -21,6 +21,9 @@ echo "VGID: $VGID"
 echo "System volume: $system_dir"
 echo
 
+BOLD="$(printf '\033[1m')"
+RST="$(printf '\033[m')"
+
 bputil -d -v "$VGID" >/tmp/bp.txt
 
 if ! grep -q ': Paired' /tmp/bp.txt; then
@@ -83,6 +86,14 @@ if ! grep -q 'one true recoveryOS' /tmp/bp.txt; then
     exit 1
 fi
 
+echo "You will see some messages advising you that you are changing the"
+echo "security level of your system. These changes apply only to your"
+echo "Asahi Linux install, and are necessary to install a third-party OS."
+echo
+echo "Apple Silicon platforms maintain a separate security level for each"
+echo "installed OS, and are designed to retain their security with mixed OSes."
+echo "${BOLD}The security level of your macOS install will not be affected.${RST}"
+echo
 echo "You will be prompted for login credentials two times."
 echo "Please enter your macOS credentials (for the macOS that you"
 echo "used to run the first step of the installation)."
