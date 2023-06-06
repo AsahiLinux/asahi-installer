@@ -431,7 +431,8 @@ class InstallerMain:
 
         pkg = None
         if self.osins.needs_firmware:
-            pkg = asahi_firmware.core.FWPackage("firmware.tar", "firmware.cpio")
+            os.makedirs("vendorfw", exist_ok=True)
+            pkg = asahi_firmware.core.FWPackage("vendorfw")
             self.ins.collect_firmware(pkg)
             pkg.close()
             self.osins.firmware_package = pkg

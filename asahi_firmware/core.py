@@ -21,18 +21,21 @@ class FWFile(object):
         return hash(self.sha)
 
 class FWPackage(object):
-    def __init__(self, tar_path, cpio_path):
+    def __init__(self, path):
         self.closed = False
-        self.tar_path = tar_path
-        self.cpio_path = cpio_path
-        self.tarfile = tarfile.open(tar_path, mode="w")
-        self.cpiofile = cpio.CPIO(cpio_path)
+        self.path = path
+        self.tar_path = os.path.join(path, "firmware.tar")
+        self.cpio_path = os.path.join(path, "firmware.cpio")
+        self.tarfile = tarfile.open(self.tar_path, mode="w")
+        self.cpiofile = cpio.CPIO(self.cpio_path)
         self.hashes = {}
         self.manifest = []
 
     def close(self):
         if self.closed:
             return
+
+        self.closed = True
 
         ti = tarfile.TarInfo("vendorfw/.vendorfw.manifest")
         ti.type = tarfile.REGTYPE
@@ -45,7 +48,10 @@ class FWPackage(object):
 
         self.tarfile.close()
         self.cpiofile.close()
-        self.closed = True
+
+        with open(os.path.join(self.path, "manifest.txt"), "w") as fd:
+            for i in self.manifest:
+                fd.write(i + "\n")
 
     def add_file(self, name, data):
         ti = tarfile.TarInfo(name)
@@ -73,11 +79,6 @@ class FWPackage(object):
     def add_files(self, it):
         for name, data in it:
             self.add_file(name, data)
-
-    def save_manifest(self, filename):
-        with open(filename, "w") as fd:
-            for i in self.manifest:
-                fd.write(i + "\n")
 
     def __del__(self):
         self.close()
