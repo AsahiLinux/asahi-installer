@@ -3,6 +3,10 @@ import tarfile, io, logging, os.path
 from hashlib import sha256
 from . import cpio
 
+UBOOT_FILES = set([
+    "asmedia/asm2214a-apple.bin"
+])
+
 class FWFile(object):
     def __init__(self, name, data):
         self.name = name
@@ -75,6 +79,12 @@ class FWPackage(object):
         if ti.linkname:
             ti.linkname = os.path.join("vendorfw", ti.linkname)
         self.cpiofile.addfile(ti, fd)
+
+        if name in UBOOT_FILES:
+            path = os.path.join(self.path, "u-boot", name)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "wb") as fd:
+                fd.write(data.data)
 
     def add_files(self, it):
         for name, data in it:
