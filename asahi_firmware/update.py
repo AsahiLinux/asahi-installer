@@ -12,8 +12,7 @@ def update_firmware(source, dest):
     if not raw_fw.exists():
         print(f"Could not find {raw_fw}")
     
-    pkg = FWPackage(os.path.join(dest, "firmware.tar"),
-                    os.path.join(dest, "firmware.cpio"))
+    pkg = FWPackage(dest)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = pathlib.Path(tmpdir)
@@ -32,8 +31,6 @@ def update_firmware(source, dest):
     pkg.add_files(sorted(col.files()))
 
     pkg.close()
-
-    pkg.save_manifest(os.path.join(dest, "manifest.txt"))
 
 def main():
     import argparse
