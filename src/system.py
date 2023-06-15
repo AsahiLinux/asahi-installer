@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import base64, plistlib, struct, subprocess, logging
+import base64, plistlib, struct, subprocess, logging, os
 
 from util import *
 
@@ -73,13 +73,7 @@ class SystemInfo:
         self.fsfr_ver, self.fsfr_build = self.get_version("/System/Volumes/iSCPreboot/SFR/fallback/SystemVersion.plist")
         self.sfr_full_ver = self.get_restore_version("/System/Volumes/iSCPreboot/SFR/current/RestoreVersion.plist")
 
-        self.login_user = None
-        consoleuser = subprocess.run(["scutil"],
-                                     input=b"show State:/Users/ConsoleUser\n",
-                                     stdout=subprocess.PIPE).stdout.strip()
-        if b"kCGSSessionUserNameKey : " in consoleuser:
-            self.login_user = (consoleuser.split(b"kCGSSessionUserNameKey : ")[1]
-                               .split(b"\n")[0].decode("ascii"))
+        self.login_user = os.environ.get("SUDO_USER")
 
     def get_nvram_data(self):
         nvram_data = subprocess.run(["nvram", "-p"],
