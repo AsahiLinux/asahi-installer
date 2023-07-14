@@ -75,3 +75,11 @@ def img4p_extract(data):
     decoder = asn1.Decoder()
     decoder.start(data)
     return decode_header(decoder)
+
+if __name__ == "__main__":
+    import sys
+
+    data = open(sys.argv[1], "rb").read()
+    name, raw = img4p_extract_compressed(data)
+    with open(sys.argv[2], "wb") as fd:
+        fd.write(raw)
