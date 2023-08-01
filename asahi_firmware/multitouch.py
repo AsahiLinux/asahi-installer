@@ -81,6 +81,8 @@ def plist_to_bin_trackpad(plist):
     for i in plist:
         if i["Type"] == "Config":
             for j in i["Config"]["Interface Config"]:
+                if "HIDRecorder Descriptor" in j.keys():
+                    continue
                 j["bInterfaceNumber"] = None
 
     def serialize(o):
