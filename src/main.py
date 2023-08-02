@@ -91,7 +91,7 @@ IPSW_VERSIONS = [
          "13.0",
          "iBoot-8422.141.2",
          "22.7.74.0.0,0",
-         True,
+         False,
          "https://updates.cdn-apple.com/2023SummerFCS/fullrestores/032-69606/D3E05CDF-E105-434C-A4A1-4E3DC7668DD0/UniversalMac_13.5_22G74_Restore.ipsw"),
 ]
 
