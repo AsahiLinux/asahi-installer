@@ -52,12 +52,15 @@ def decode_header(decoder):
 
     return name, data
 
-def img4p_extract_compressed(data):
+def img4p_extract(data):
     decoder = asn1.Decoder()
     decoder.start(data)
     name, cdata = decode_header(decoder)
 
     tag = decoder.peek()
+    if tag is None:
+        return name, cdata
+
     assert tag.nr == asn1.Numbers.Sequence
     assert tag.typ == asn1.Types.Constructed
     decoder.enter()
@@ -71,15 +74,10 @@ def img4p_extract_compressed(data):
 
     return name, decode_lzfse(cdata, raw_size)
 
-def img4p_extract(data):
-    decoder = asn1.Decoder()
-    decoder.start(data)
-    return decode_header(decoder)
-
 if __name__ == "__main__":
     import sys
 
     data = open(sys.argv[1], "rb").read()
-    name, raw = img4p_extract_compressed(data)
+    name, raw = img4p_extract(data)
     with open(sys.argv[2], "wb") as fd:
         fd.write(raw)
