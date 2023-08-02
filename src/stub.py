@@ -177,6 +177,7 @@ class StubInstaller(PackageInstaller):
         logging.info(f'Using OS build {identity["Info"]["BuildNumber"]} for {self.sysinfo.device_class}')
 
         self.all_identities = manifest["BuildIdentities"]
+        self.identity = identity
         manifest["BuildIdentities"] = [identity]
 
         self.stub_info.update({
@@ -348,7 +349,7 @@ class StubInstaller(PackageInstaller):
 
         os.makedirs("fud_firmware", exist_ok=True)
         copied = set()
-        for identity in self.all_identities:
+        for identity in [self.identity]:
             if (identity["Info"]["RestoreBehavior"] != "Erase" or
                 identity["Info"]["Variant"] != "macOS Customer"):
                 continue
