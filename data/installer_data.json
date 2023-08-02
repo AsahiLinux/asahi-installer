@@ -6,7 +6,7 @@
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "asahi-plasma-20230606-1.zip",
-            "supported_fw": ["12.3", "12.3.1", "12.4", "13.3"],
+            "supported_fw": ["12.3", "12.3.1", "12.4"],
             "partitions": [
                 {
                     "name": "EFI",
@@ -33,7 +33,7 @@
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "asahi-base-20230606-1.zip",
-            "supported_fw": ["12.3", "12.3.1", "12.4", "13.3"],
+            "supported_fw": ["12.3", "12.3.1", "12.4"],
             "partitions": [
                 {
                     "name": "EFI",
@@ -60,6 +60,7 @@
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "uefi-only-20230606-1.zip",
+            "supported_fw": ["12.3", "12.3.1", "12.4"],
             "partitions": [
                 {
                     "name": "EFI",
