@@ -75,12 +75,6 @@ IPSW_VERSIONS = [
          "21.6.81.2.0,0",
          False,
          "https://updates.cdn-apple.com/2022SpringFCS/fullrestores/012-17781/F045A95A-44B4-4BA9-8A8A-919ECCA2BB31/UniversalMac_12.4_21F2081_Restore.ipsw"),
-    IPSW("13.3",
-         "13.0",
-         "iBoot-8422.100.650",
-         "22.5.252.0.0,0",
-         True,
-         "https://updates.cdn-apple.com/2023WinterSeed/fullrestores/002-75537/8250FA0E-0962-46D6-8A90-57A390B9FFD7/UniversalMac_13.3_22E252_Restore.ipsw"),
     IPSW("12.3.1",
          "12.1",
          "iBoot-7459.101.3",
@@ -93,6 +87,12 @@ IPSW_VERSIONS = [
          "21.5.230.0.0,0",
          False,
          "https://updates.cdn-apple.com/2022SpringFCS/fullrestores/071-08757/74A4F2A1-C747-43F9-A22A-C0AD5FB4ECB6/UniversalMac_12.3_21E230_Restore.ipsw"),
+    IPSW("13.5",
+         "13.0",
+         "iBoot-8422.141.2",
+         "22.7.74.0.0,0",
+         True,
+         "https://updates.cdn-apple.com/2023SummerFCS/fullrestores/032-69606/D3E05CDF-E105-434C-A4A1-4E3DC7668DD0/UniversalMac_13.5_22G74_Restore.ipsw"),
 ]
 
 class InstallerMain:
