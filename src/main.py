@@ -454,6 +454,8 @@ class InstallerMain:
                  and split_ver(ipsw.min_sfr) <= sys_sfr
                  and (not ipsw.expert_only or self.expert)]
 
+        minver.sort(key=lambda ipsw: split_ver(ipsw.version))
+
         if not avail:
             p_error("Your system firmware is too old.")
             p_error(f"Please upgrade to macOS {minver[0].version} or newer.")
