@@ -26,7 +26,7 @@ class KernelFWCollection(object):
 
         with open(kern_path, "rb") as fd:
             im4p = fd.read()
-        name, kernel = img4p_extract_compressed(im4p)
+        name, kernel = img4p_extract(im4p)
 
         for fwf in extract_asmedia(kernel):
             self.fwfiles.append((fwf.name, fwf))
