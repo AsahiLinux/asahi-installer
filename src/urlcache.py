@@ -112,6 +112,7 @@ class URLCache:
                     raise
                 p_warning(f"Error downloading data ({e}), retrying... ({retry + 1}/{retries})")
                 time.sleep(sleep)
+                self.con = None
                 sleep += 1
                 # Retry in smaller chunks
                 self.readahead = self.MIN_READAHEAD
