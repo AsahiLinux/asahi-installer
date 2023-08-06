@@ -2,7 +2,8 @@
 import os, sys, os.path, time, logging, random
 from dataclasses import dataclass
 
-from urllib import request
+from urllib import parse
+from http.client import HTTPSConnection, HTTPConnection
 from util import *
 
 @dataclass
@@ -19,42 +20,68 @@ class URLCache:
     SPINNER = "/-\\|"
 
     def __init__(self, url):
-        self.url = url
+        self.url = parse.urlparse(url)
+        self.con = None
         self.size = self.get_size()
         self.p = 0
         self.cache = {}
         self.blocks_read = 0
+        self.bytes_read = 0
         self.readahead = self.MAX_READAHEAD
         self.spin = 0
+
+    def get_con(self):
+        if self.con is not None:
+            return self.con
+
+        if ":" in self.url.netloc:
+            host, port = self.url.netloc.split(":")
+            port = int(port)
+        else:
+            host, port = self.url.netloc, None
+
+        if self.url.scheme == "http":
+            self.con = HTTPConnection(host, port, timeout=self.TIMEOUT)
+        elif self.url.scheme == "https":
+            self.con = HTTPSConnection(host, port, timeout=self.TIMEOUT)
+        else:
+            raise Exception(f"Unsupported scheme {self.url.scheme}")
+
+        return self.con
 
     def seekable(self):
         return True
 
     def get_size(self):
-        req = request.Request(self.url, method="HEAD")
-        fd = request.urlopen(req)
-        return int(fd.getheader("Content-length"))
+        con = self.get_con()
+        con.request("HEAD", self.url.path, headers={"Connection":" keep-alive"})
+        res = con.getresponse()
+        res.read()
+        return int(res.getheader("Content-length"))
 
     def get_partial(self, off, size, bypass_cache=False):
-        #print("get_partial", off, size)
-        url = self.url
+        path = self.url.path
         if bypass_cache:
-            url += f"?{random.random()}"
-        req = request.Request(url, method="GET")
-        req.add_header("Range", f"bytes={off}-{off+size-1}")
-        fd = request.urlopen(req, timeout=self.TIMEOUT)
+            path += f"?{random.random()}"
 
         try:
-            d = fd.read()
+            con = self.get_con()
+            con.request("GET", path, headers={
+                "Connection": "keep-alive",
+                "Range": f"bytes={off}-{off+size-1}",
+            })
+            res = con.getresponse()
+            d = res.read()
         except Exception as e:
-            logging.error(f"Request failed for {fd.url!r} range {off}-{off+size-1}")
-            logging.error(f"Response headers: {fd.headers.as_string()}")
+            logging.error(f"Request failed for {self.url!r} range {off}-{off+size-1}")
+            logging.error(f"Response headers: {res.headers.as_string()}")
             raise
 
         self.spin = (self.spin + 1) % len(self.SPINNER)
         sys.stdout.write(f"\r{self.SPINNER[self.spin]} ")
         sys.stdout.flush()
         self.blocks_read += 1
+        self.bytes_read += len(d)
 
         return d
 
