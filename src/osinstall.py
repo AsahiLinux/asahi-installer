@@ -37,7 +37,8 @@ class OSInstaller(PackageInstaller):
         if not package:
             return
 
-        package = os.environ.get("REPO_BASE", ".") + "/os/" + package
+        if not package.startswith("http"):
+            package = os.environ.get("REPO_BASE", ".") + "/os/" + package
 
         logging.info(f"OS package URL: {package}")
         if package.startswith("http"):
