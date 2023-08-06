@@ -2,7 +2,10 @@
 import re, logging, sys, os, stat, shutil, struct, subprocess, zlib, time
 from ctypes import *
 
-lzfse = CDLL('libcompression.dylib')
+if sys.platform == 'darwin':
+    lzfse = CDLL('libcompression.dylib')
+else:
+    lzfse = None
 
 COMPRESSION_LZFSE = 0x801
 CHUNK_SIZE = 0x10000
