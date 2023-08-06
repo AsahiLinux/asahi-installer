@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import re, logging, sys, os, stat, shutil, struct, subprocess, zlib
+import re, logging, sys, os, stat, shutil, struct, subprocess, zlib, time
 from ctypes import *
 
 lzfse = CDLL('libcompression.dylib')
@@ -146,10 +146,13 @@ class PackageInstaller:
     def fdcopy(self, sfd, dfd, size=None):
         BLOCK = 128 * 1024 * 1024
         copied = 0
+        bps = 0
+        st = time.time()
+        self.ucache.bytes_read = 0
         while True:
             if size is not None:
                 prog = copied / size * 100
-                sys.stdout.write(f"\033[3G{prog:6.2f}% ")
+                sys.stdout.write(f"\033[3G{prog:6.2f}% ({ssize(bps)}/s)")
                 sys.stdout.flush()
                 self.printed_progress = True
             d = sfd.read(BLOCK)
@@ -157,6 +160,7 @@ class PackageInstaller:
                 break
             dfd.write(d)
             copied += len(d)
+            bps = self.ucache.bytes_read / (time.time() - st)
 
         if size is not None:
             sys.stdout.write("\033[3G100.00% ")
