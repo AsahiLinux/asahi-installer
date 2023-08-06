@@ -102,6 +102,7 @@ class OSInstaller(PackageInstaller):
         icon = self.template.get("icon", None)
         if icon:
             self.extract_file(icon, stub_ins.icon_path)
+            self.flush_progress()
 
         for part, info in zip(self.template["partitions"], self.part_info):
             logging.info(f"Installing partition {part!r} -> {info.name}")
