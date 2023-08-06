@@ -174,9 +174,16 @@ class URLCache:
 
 if __name__ == "__main__":
     import sys, zipfile
+    from util import PackageInstaller
 
     url = sys.argv[1]
-    zf = zipfile.ZipFile(URLCache(url))
+    ucache = URLCache(url)
+    zf = zipfile.ZipFile(ucache)
+
+    pi = PackageInstaller()
+    pi.ucache = ucache
+    pi.pkg = zf
+
     for f in zf.infolist():
         print(f)
 
@@ -184,4 +191,4 @@ if __name__ == "__main__":
         dn = os.path.dirname(i)
         if dn:
             os.makedirs(dn, exist_ok=True)
-        open(i,"wb").write(zf.open(i).read())
+        pi.extract_file(i, i, False)
