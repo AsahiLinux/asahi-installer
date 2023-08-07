@@ -1044,7 +1044,7 @@ if __name__ == "__main__":
         logging.info(f"  {var}={os.environ.get(var, None)}")
 
     try:
-        installer_version = open("version.tag", "r").read()
+        installer_version = open("version.tag", "r").read().strip()
         logging.info(f"Version: {installer_version}")
         InstallerMain(installer_version).main()
     except KeyboardInterrupt:
