@@ -1036,7 +1036,7 @@ if __name__ == "__main__":
     logging.info("Startup")
 
     logging.info("Environment:")
-    for var in ("INSTALLER_BASE", "INSTALLER_DATA", "REPO_BASE", "IPSW_BASE"):
+    for var in ("INSTALLER_BASE", "INSTALLER_DATA", "REPO_BASE", "IPSW_BASE", "EXPERT", "REPORT", "REPORT_TAG"):
         logging.info(f"  {var}={os.environ.get(var, None)}")
 
     try:
