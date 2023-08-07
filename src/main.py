@@ -544,28 +544,17 @@ class InstallerMain:
         is_1tr = self.sysinfo.boot_mode == "one true recoveryOS"
         is_recovery = "recoveryOS" in self.sysinfo.boot_mode
         sys_ver = split_ver(self.sysinfo.macos_ver)
-        bootpicker_works = sys_ver >= (12, 3)
-        if not bootpicker_works and self.ipsw:
-            bootpicker_works = sys_ver >= split_ver(self.ipsw.min_macos)
         if is_1tr and self.ins.osi.paired:
             subprocess.run([self.ins.step2_sh], check=True)
-            self.startup_disk(recovery=True, volume_blessed=True, reboot=True)
+            self.bless()
+            self.step2_completed()
         elif is_recovery:
             self.set_reduced_security()
-            self.startup_disk(recovery=True, volume_blessed=True)
-            self.step2_indirect()
-        elif bootpicker_works:
-            self.startup_disk()
+            self.bless()
             self.step2_indirect()
         else:
-            assert False # should never happen, we don't give users the option
-
-    def step2_1tr_direct(self):
-        self.startup_disk_recovery()
-        subprocess.run([self.ins.step2_sh], check=True)
-
-    def step2_ros_indirect(self):
-        self.startup_disk_recovery()
+            self.bless()
+            self.step2_indirect()
 
     def flush_input(self):
         try:
@@ -573,7 +562,7 @@ class InstallerMain:
         except:
             pass
 
-    def step2_indirect(self):
+    def install_info(self):
         # Hide the new volume until step2 is done
         self.ins.prepare_for_step2()
 
@@ -584,6 +573,23 @@ class InstallerMain:
         if self.osins and self.osins.efi_part:
             p_info(f"  EFI PARTUUID: {col()}{self.osins.efi_part.uuid.lower()}")
         print()
+
+    def step2_completed(self):
+        self.install_info()
+
+        print()
+        time.sleep(2)
+        p_prompt( "Press enter to reboot the system.")
+        self.input()
+        time.sleep(1)
+        os.system("shutdown -r now")
+
+    def step2_indirect(self):
+        # Hide the new volume until step2 is done
+        self.ins.prepare_for_step2()
+
+        self.install_info()
+
         p_message( "To be able to boot your new OS, you will need to complete one more step.")
         p_warning( "Please read the following instructions carefully. Failure to do so")
         p_warning( "will leave your new installation in an unbootable state.")
@@ -620,50 +626,6 @@ class InstallerMain:
         self.input()
         time.sleep(1)
         os.system("shutdown -h now")
-
-    def startup_disk(self, recovery=False, volume_blessed=False, reboot=False):
-        if split_ver(self.sysinfo.macos_ver) >= (12, 3):
-            # Rejoice!
-            return self.bless()
-
-        print()
-        p_message(f"When the Startup Disk screen appears, choose '{self.part.label}', then click Restart.")
-        if not volume_blessed:
-            p_message( "You will have to authenticate yourself.")
-        print()
-        p_prompt( "Press enter to continue.")
-        self.input()
-
-        if recovery:
-            args = ["/System/Applications/Utilities/Startup Disk.app/Contents/MacOS/Startup Disk"]
-        else:
-            os.system("killall -9 'System Preferences' 2>/dev/null")
-            os.system("killall -9 storagekitd 2>/dev/null")
-            time.sleep(0.5)
-            args = ["sudo", "-u", self.sysinfo.login_user,
-                    "open", "-b", "com.apple.systempreferences",
-                    "/System/Library/PreferencePanes/StartupDisk.prefPane"]
-
-        sd = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        if not recovery:
-            # Sometimes this doesn't open the right PrefPane and we need to do it twice (?!)
-            sd.wait()
-            time.sleep(0.5)
-            sd = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        cur_vol = self.sysinfo.default_boot
-
-        # This race is tight... I hate this.
-        if not reboot:
-            while self.sysinfo.default_boot == cur_vol:
-                self.sysinfo.get_nvram_data()
-
-            if recovery:
-                sd.kill()
-            else:
-                os.system("killall -9 StartupDiskPrefPaneService 'System Preferences' 2>/dev/null")
-                sd.wait()
-
-            print()
 
     def get_min_free_space(self, p):
         if p.os and any(os.version for os in p.os) and not self.expert:
