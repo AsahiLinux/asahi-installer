@@ -147,7 +147,7 @@ class PackageInstaller:
         self.pkg.extract(src, dest)
 
     def fdcopy(self, sfd, dfd, size=None):
-        BLOCK = 128 * 1024 * 1024
+        BLOCK = 16 * 1024 * 1024
         copied = 0
         bps = 0
         st = time.time()
