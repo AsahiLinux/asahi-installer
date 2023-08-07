@@ -180,11 +180,20 @@ class PackageInstaller:
         table = []
         scratch = bytes(lzfse.compression_encode_scratch_buffer_size(COMPRESSION_LZFSE))
         outbuf = bytes(CHUNK_SIZE)
+        st = time.time()
+        self.ucache.bytes_read = 0
+        copied = 0
         with open(path + '/..namedfork/rsrc', 'wb') as res_fork:
             res_fork.write(b'\0' * cur_pos)
             for i in range(num_chunks):
                 table.append(cur_pos)
                 inbuf = istream.read(CHUNK_SIZE)
+                copied += len(inbuf)
+                prog = copied / size * 100
+                bps = self.ucache.bytes_read / (time.time() - st)
+                sys.stdout.write(f"\033[3G{prog:6.2f}% ({ssize(bps)}/s)")
+                sys.stdout.flush()
+                self.printed_progress = True
                 while 1:
                     csize = lzfse.compression_encode_buffer(outbuf, len(outbuf), inbuf, len(inbuf), scratch, COMPRESSION_LZFSE)
                     if csize == 0:
@@ -211,6 +220,8 @@ class PackageInstaller:
         if crc != info.CRC:
             raise Exception('Internal error: failed to compress file: crc mismatch')
 
+        sys.stdout.write("\033[3G100.00% ")
+        sys.stdout.flush()
 
     def extract_file(self, src, dest, optional=True):
         try:
