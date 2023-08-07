@@ -12,6 +12,8 @@ export INSTALLER_BASE=https://cdn.asahilinux.org/installer
 export INSTALLER_DATA=https://github.com/AsahiLinux/asahi-installer/raw/prod/data/installer_data.json
 export INSTALLER_DATA_ALT=https://alx.sh/installer_data.json
 export REPO_BASE=https://cdn.asahilinux.org
+export REPORT=https://stats.asahilinux.org/report
+export REPORT_TAG=alx-prod
 
 #TMP="$(mktemp -d)"
 TMP=/tmp/asahi-install

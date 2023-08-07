@@ -11,6 +11,8 @@ export VERSION_FLAG=https://cdn.asahilinux.org/installer-dev/latest
 export INSTALLER_BASE=https://cdn.asahilinux.org/installer-dev
 export INSTALLER_DATA=https://github.com/AsahiLinux/asahi-installer/raw/main/data/installer_data.json
 export REPO_BASE=https://cdn.asahilinux.org
+export REPORT=https://stats.asahilinux.org/report
+export REPORT_TAG=alx-dev
 
 export EXPERT=1
 
