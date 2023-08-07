@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: MIT
-import os, os.path, shlex, subprocess, sys, time, termios, json, getpass
+import os, os.path, shlex, subprocess, sys, time, termios, json, getpass, reporting
 from dataclasses import dataclass
 
 import system, osenum, stub, diskutil, osinstall, asahi_firmware, m1n1
@@ -100,7 +100,8 @@ IPSW_VERSIONS = [
 ]
 
 class InstallerMain:
-    def __init__(self):
+    def __init__(self, version):
+        self.version = version
         self.data = json.load(open("installer_data.json"))
         self.credentials_validated = False
         self.expert = False
@@ -441,7 +442,7 @@ class InstallerMain:
             self.ins.collect_installer_data(i)
             shutil.copy("installer.log", os.path.join(i, "installer.log"))
 
-        self.step2()
+        self.step2(report=True)
 
     def choose_ipsw(self, supported_fw=None):
         sys_iboot = split_ver(self.sysinfo.sys_firmware)
@@ -540,21 +541,21 @@ class InstallerMain:
         self.credentials_validated = True
         print()
 
-    def step2(self):
+    def step2(self, report=False):
         is_1tr = self.sysinfo.boot_mode == "one true recoveryOS"
         is_recovery = "recoveryOS" in self.sysinfo.boot_mode
         sys_ver = split_ver(self.sysinfo.macos_ver)
         if is_1tr and self.ins.osi.paired:
             subprocess.run([self.ins.step2_sh], check=True)
             self.bless()
-            self.step2_completed()
+            self.step2_completed(report)
         elif is_recovery:
             self.set_reduced_security()
             self.bless()
-            self.step2_indirect()
+            self.step2_indirect(report)
         else:
             self.bless()
-            self.step2_indirect()
+            self.step2_indirect(report)
 
     def flush_input(self):
         try:
@@ -562,7 +563,7 @@ class InstallerMain:
         except:
             pass
 
-    def install_info(self):
+    def install_info(self, report):
         # Hide the new volume until step2 is done
         self.ins.prepare_for_step2()
 
@@ -574,8 +575,11 @@ class InstallerMain:
             p_info(f"  EFI PARTUUID: {col()}{self.osins.efi_part.uuid.lower()}")
         print()
 
-    def step2_completed(self):
-        self.install_info()
+        if report:
+            reporting.report(self)
+
+    def step2_completed(self, report=False):
+        self.install_info(report)
 
         print()
         time.sleep(2)
@@ -584,11 +588,11 @@ class InstallerMain:
         time.sleep(1)
         os.system("shutdown -r now")
 
-    def step2_indirect(self):
+    def step2_indirect(self, report=False):
         # Hide the new volume until step2 is done
         self.ins.prepare_for_step2()
 
-        self.install_info()
+        self.install_info(report)
 
         p_message( "To be able to boot your new OS, you will need to complete one more step.")
         p_warning( "Please read the following instructions carefully. Failure to do so")
@@ -1042,7 +1046,7 @@ if __name__ == "__main__":
     try:
         installer_version = open("version.tag", "r").read()
         logging.info(f"Version: {installer_version}")
-        InstallerMain().main()
+        InstallerMain(installer_version).main()
     except KeyboardInterrupt:
         print()
         logging.info("KeyboardInterrupt")

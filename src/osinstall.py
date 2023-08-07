@@ -15,6 +15,7 @@ class OSInstaller(PackageInstaller):
         self.ucache = None
         self.efi_part = None
         self.idata_targets = []
+        self.install_size = self.min_size
 
     @property
     def default_os_name(self):
@@ -63,6 +64,7 @@ class OSInstaller(PackageInstaller):
             expand_size = 0
         else:
             expand_size = total_size - self.min_size
+            self.install_size = total_size
             assert expand_size >= 0
 
         for part in self.template["partitions"]:

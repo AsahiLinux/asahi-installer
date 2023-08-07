@@ -150,6 +150,10 @@ class DiskUtil:
         logging.debug(f"Partition {dev}: {part}")
         return part
 
+    def get_disk_size(self, dskname):
+        dsk = self.disk_parts[dskname]
+        return dsk["Size"]
+
     def get_disk_usable_range(self, dskname):
         # GPT overhead aligned to 4K
         dsk = self.disk_parts[dskname]
