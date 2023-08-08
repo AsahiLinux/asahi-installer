@@ -31,6 +31,14 @@ class URLCache:
         self.readahead = self.MAX_READAHEAD
         self.spin = 0
 
+    def close_connection(self):
+        if self.con is not None:
+            try:
+                self.con.close()
+            except Exception:
+                pass
+            self.con = None
+
     def get_con(self):
         if self.con is not None:
             return self.con
@@ -115,7 +123,7 @@ class URLCache:
                     raise
                 p_warning(f"Error downloading data ({e}), retrying... ({retry + 1}/{retries})")
                 time.sleep(sleep)
-                self.con = None
+                self.close_connection()
                 sleep += 1
                 # Retry in smaller chunks
                 self.readahead = self.MIN_READAHEAD

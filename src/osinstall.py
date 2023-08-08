@@ -102,6 +102,9 @@ class OSInstaller(PackageInstaller):
         p_progress("Installing OS...")
         logging.info("OSInstaller.install()")
 
+        # Force a reconnect, since the connection is likely to have timed out
+        self.ucache.close_connection()
+
         icon = self.template.get("icon", None)
         if icon:
             self.extract_file(icon, stub_ins.icon_path)
