@@ -125,8 +125,9 @@ class URLCache:
                 time.sleep(sleep)
                 self.close_connection()
                 sleep += 1
-                # Retry in smaller chunks
-                self.readahead = self.MIN_READAHEAD
+                # Retry in smaller chunks after a couple errors
+                if retry > 0:
+                    self.readahead = self.MIN_READAHEAD
                 size = min(size, self.readahead * self.BLOCKSIZE)
             else:
                 break
