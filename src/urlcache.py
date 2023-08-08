@@ -20,6 +20,7 @@ class URLCache:
     SPINNER = "/-\\|"
 
     def __init__(self, url):
+        self.url_str = url
         self.url = parse.urlparse(url)
         self.con = None
         self.size = self.get_size()
@@ -64,6 +65,7 @@ class URLCache:
         if bypass_cache:
             path += f"?{random.random()}"
 
+        res = None
         try:
             con = self.get_con()
             con.request("GET", path, headers={
@@ -73,8 +75,9 @@ class URLCache:
             res = con.getresponse()
             d = res.read()
         except Exception as e:
-            logging.error(f"Request failed for {self.url!r} range {off}-{off+size-1}")
-            logging.error(f"Response headers: {res.headers.as_string()}")
+            logging.error(f"Request failed for {self.url_str} range {off}-{off+size-1}")
+            if res is not None:
+                logging.error(f"Response headers: {res.headers.as_string()}")
             raise
 
         self.spin = (self.spin + 1) % len(self.SPINNER)
