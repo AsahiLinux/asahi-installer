@@ -397,6 +397,7 @@ class StubInstaller(PackageInstaller):
         subprocess.run(["tar", "czf", "all_firmware.tar.gz",
                         "fud_firmware",
                         "-C", "recovery/usr/share", "firmware",
+                        "-C", "../../usr/sbin", "appleh13camerad",
                        ], check=True)
         self.copy_idata.append(("all_firmware.tar.gz", "all_firmware.tar.gz"))
         logging.info("Detaching recovery ramdisk")
