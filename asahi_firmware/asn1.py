@@ -231,7 +231,7 @@ class Encoder(object):
             self._emit(bytes([val]))
 
     def _emit_length(self, length):  # type: (int) -> None
-        """Emit length octects."""
+        """Emit length octets."""
         if length < 128:
             self._emit_length_short(length)
         else:

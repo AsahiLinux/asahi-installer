@@ -65,7 +65,7 @@ class BluetoothFWCollection(object):
             return None
         chip, stepping = match.groups()
 
-        # board type is either preceeded by PCIE_macOS or by PCIE
+        # board type is either preceded by PCIE_macOS or by PCIE
         try:
             pcie_offset = fname.index("PCIE")
         except:
