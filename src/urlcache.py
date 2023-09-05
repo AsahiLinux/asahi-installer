@@ -62,11 +62,19 @@ class URLCache:
         return True
 
     def get_size(self):
-        con = self.get_con()
-        con.request("HEAD", self.url.path, headers={"Connection":" keep-alive"})
-        res = con.getresponse()
-        res.read()
-        return int(res.getheader("Content-length"))
+        for i in range(10):
+            con = self.get_con()
+            con.request("HEAD", self.url.path, headers={"Connection":" keep-alive"})
+            res = con.getresponse()
+            res.read()
+            loc = res.getheader("Location", None)
+            if loc is not None:
+                self.url = parse.urlparse(loc)
+                self.con = None
+                continue
+            return int(res.getheader("Content-length"))
+
+        raise Exception("Maximum number of redirects reached")
 
     def get_partial(self, off, size, bypass_cache=False):
         path = self.url.path
