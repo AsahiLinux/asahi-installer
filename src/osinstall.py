@@ -98,6 +98,23 @@ class OSInstaller(PackageInstaller):
 
             prev = info.name
 
+    def download_extras(self):
+        p_progress("Downloading extra files...")
+        logging.info("OSInstaller.download_extras()")
+
+        mountpoint = self.dutil.mount(self.efi_part.name)
+        dest = os.path.join(mountpoint, "asahi", "extras")
+        os.makedirs(dest, exist_ok=True)
+
+        count = len(self.template["extras"])
+        for i, url in enumerate(self.template["extras"]):
+            base = os.path.basename(url)
+            p_plain(f"  Downloading {base} ({i + 1}/{count})...")
+            ucache = urlcache.URLCache(url)
+            data = ucache.read()
+            with open(os.path.join(dest, base), "wb") as fd:
+                fd.write(data)
+
     def install(self, stub_ins):
         p_progress("Installing OS...")
         logging.info("OSInstaller.install()")
@@ -139,6 +156,10 @@ class OSInstaller(PackageInstaller):
                 data_path = os.path.join(mountpoint, "asahi")
                 os.makedirs(data_path, exist_ok=True)
                 self.idata_targets.append(data_path)
+
+        if "extras" in self.template:
+            assert self.efi_part is not None
+            self.download_extras()
 
         p_progress("Preparing to finish installation...")
 
