@@ -5,7 +5,7 @@ set -e
 
 cd "$(dirname "$0")"
 
-PYTHON_VER=3.9.6
+PYTHON_VER=3.11.5
 PYTHON_PKG=python-$PYTHON_VER-macos11.pkg
 PYTHON_URI="https://www.python.org/ftp/python/$PYTHON_VER/$PYTHON_PKG"
 
