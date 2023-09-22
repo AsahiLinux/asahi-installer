@@ -120,7 +120,8 @@ class OSInstaller(PackageInstaller):
         logging.info("OSInstaller.install()")
 
         # Force a reconnect, since the connection is likely to have timed out
-        self.ucache.close_connection()
+        if self.ucache is not None:
+            self.ucache.close_connection()
 
         icon = self.template.get("icon", None)
         if icon:
