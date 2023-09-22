@@ -697,7 +697,7 @@ class InstallerMain:
         p_info(   f"  Overhead: {col()}{ssize(overhead)}")
         p_info(   f"  Minimum new size: {col()}{ssize(min_size)} ({min_perc:.2f}%)")
         print()
-        if overhead > 1000000000:
+        if overhead > 16_000_000_000:
             p_warning("  Warning: The selected partition has a large amount of overhead space.")
             p_warning("  This prevents you from resizing the partition to a smaller size, even")
             p_warning("  though macOS reports that space as free.")
