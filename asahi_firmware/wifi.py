@@ -31,6 +31,7 @@ class WiFiFWCollection(object):
         "txt": "txt",
         "clmb": "clm_blob",
         "txcb": "txcap_blob",
+        "sig": "sig",
     }
     DIMS = ["C", "s", "P", "M", "V", "m", "A"]
     def __init__(self, source_path):
