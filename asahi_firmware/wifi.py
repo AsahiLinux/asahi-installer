@@ -142,7 +142,7 @@ class WiFiFWCollection(object):
 if __name__ == "__main__":
     col = WiFiFWCollection(sys.argv[1])
     if len(sys.argv) > 2:
-        from . import FWPackage
+        from .core import FWPackage
 
         pkg = FWPackage(sys.argv[2])
         pkg.add_files(sorted(col.files()))
