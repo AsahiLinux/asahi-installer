@@ -10,6 +10,11 @@ BluetoothChip = namedtuple(
     "BluetoothChip", ("chip", "stepping", "board_type", "vendor")
 )
 
+# 13.5 is missing PTBs for these. 4388B0 probably never shipped to end users here.
+INCOMPLETE_CHIPS = set([
+    ('4388', 'b0', 'apple,tokara'),
+    ('4388', 'b0', 'apple,amami'),
+])
 
 class BluetoothFWCollection(object):
     VENDORMAP = {
@@ -47,7 +52,7 @@ class BluetoothFWCollection(object):
                 continue
 
             if self.fwfiles[chip][idx] is not None:
-                log.warning(f"duplicate entry for {chip}: {self.fwfiles[chip][idx].name} and now {fname + ext}")
+                log.warning(f"duplicate entry for {chip}: {self.fwfiles[chip][idx].name} and now {fname}")
                 continue
 
             path = os.path.join(source_path, fname)
@@ -72,10 +77,16 @@ class BluetoothFWCollection(object):
             log.warning(f"Can't find board type in {fname}")
             return None
 
-        if fname[pcie_offset + 1] == "macOS":
-            board_type = fname[pcie_offset + 2]
-        else:
-            board_type = fname[pcie_offset + 1]
+        bt_offset = pcie_offset + 1
+        if fname[bt_offset] == "macOS":
+            bt_offset += 1
+
+        # 4388 has this extra prefix, meh
+        if fname[bt_offset] == "Willamette":
+            bt_offset += 1
+
+        board_type = fname[bt_offset]
+
         for i in self.STRIP_SUFFIXES:
             board_type = board_type.rstrip(i)
         board_type = "apple," + board_type.lower()
@@ -107,7 +118,8 @@ class BluetoothFWCollection(object):
                 yield fname_base + ".bin", bin
 
             if ptb is None:
-                log.warning(f"no ptb for {chip}")
+                if (chip.chip, chip.stepping, chip.board_type) not in INCOMPLETE_CHIPS:
+                    log.warning(f"no ptb for {chip}")
                 continue
             else:
                 yield fname_base + ".ptb", ptb
