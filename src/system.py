@@ -74,12 +74,13 @@ class SystemInfo:
         self.sfr_full_ver = self.get_restore_version("/System/Volumes/iSCPreboot/SFR/current/RestoreVersion.plist")
 
         self.login_user = None
-        consoleuser = subprocess.run(["scutil"],
-                                     input=b"show State:/Users/ConsoleUser\n",
-                                     stdout=subprocess.PIPE).stdout.strip()
-        if b"kCGSSessionUserNameKey : " in consoleuser:
-            self.login_user = (consoleuser.split(b"kCGSSessionUserNameKey : ")[1]
-                               .split(b"\n")[0].decode("ascii"))
+        scout = subprocess.run(["scutil"], input=b"show State:/Users/ConsoleUser\n",
+                               stdout=subprocess.PIPE).stdout.strip()
+        for line in scout.split(b"\n"):
+            if b"kCGSSessionUserNameKey : " in line:
+                consoleuser = line.split(b"kCGSSessionUserNameKey : ")[1].decode("ascii")
+                if consoleuser != "_mbsetupuser":
+                    self.login_user = consoleuser
 
     def get_nvram_data(self):
         nvram_data = subprocess.run(["nvram", "-p"],
