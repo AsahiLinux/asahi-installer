@@ -131,24 +131,3 @@ class ISPFWCollection(object):
     def files(self):
         return self.fwfiles
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(prog="isp-extract", description='Extract ISP sensor calibration files')
-    parser.add_argument('--input', help='path to appleh13camerad', default="appleh13camerad")
-    parser.add_argument('--outdir', help='output directory prefix', default="/tmp/isp-extract")
-    parser.add_argument('--install', help='install files (requires root)', action='store_true')
-    args = parser.parse_args()
-
-    files = isp_extract(args.input)
-
-    if (args.install):
-        if (platform.system() != "Linux"):
-            raise RuntimeError("isp-extract: You can only install on linux")
-        if (os.geteuid() != 0):
-            raise RuntimeError("isp-extract: You must be root to install")
-        outdir = os.path.join(ISP_INSTALL_PREFIX, ISP_DIRNAME)
-    else:
-        outdir = os.path.join(args.outdir, ISP_DIRNAME)
-
-    os.makedirs(outdir, exist_ok=True)
-    for fname, dat in files:
-        open(os.path.join(outdir, fname), "wb").write(dat)
