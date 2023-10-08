@@ -100,15 +100,15 @@ class ISPFWCollection(object):
             dat = data[offset:offset + size]
             sensor_name = f"{setfile.sensor:x}_{setfile.name}"
 
-            logging.info(f"isp-extract: {found + 1}/{ISP_SETFILE_COUNT}: Found sensor {sensor_name} data at offset {offset:#x}")
+            log.info(f"isp-extract: {found + 1}/{ISP_SETFILE_COUNT}: Found sensor {sensor_name} data at offset {offset:#x}")
             yield FWFile(f"apple/isp_{setfile.name}.dat", dat)
 
             found += 1
 
         if found != ISP_SETFILE_COUNT:
-            raise ValueError(f"isp-extract: Found {found}/{ISP_SETFILE_COUNT} calibration files. Please report this bug.")
-
-        logging.info(f"isp-extract: Found all {found}/{ISP_SETFILE_COUNT} sensor calibration files!")
+            log.warn(f"isp-extract: Found {found}/{ISP_SETFILE_COUNT} calibration files.")
+        else:
+            log.info(f"isp-extract: Found all {found}/{ISP_SETFILE_COUNT} sensor calibration files!")
 
     def load(self, source_path):
         if os.path.isdir(source_path):
