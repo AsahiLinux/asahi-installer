@@ -5,8 +5,8 @@
             "default_os_name": "Asahi Linux",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "asahi-plasma-20230606-1.zip",
-            "supported_fw": ["12.3", "12.3.1", "12.4"],
+            "package": "asahi-plasma-20231012-1.zip",
+            "supported_fw": ["12.3", "12.3.1", "12.4", "13.5"],
             "partitions": [
                 {
                     "name": "EFI",
@@ -32,8 +32,8 @@
             "default_os_name": "Asahi Linux",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "asahi-base-20230606-1.zip",
-            "supported_fw": ["12.3", "12.3.1", "12.4"],
+            "package": "asahi-base-20231012-1.zip",
+            "supported_fw": ["12.3", "12.3.1", "12.4", "13.5"],
             "partitions": [
                 {
                     "name": "EFI",
@@ -59,8 +59,8 @@
             "default_os_name": "UEFI boot",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "uefi-only-20230606-1.zip",
-            "supported_fw": ["12.3", "12.3.1", "12.4"],
+            "package": "uefi-only-20231012-1.zip",
+            "supported_fw": ["12.3", "12.3.1", "12.4", "13.5"],
             "partitions": [
                 {
                     "name": "EFI",
