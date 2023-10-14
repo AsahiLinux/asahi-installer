@@ -18,7 +18,7 @@ MIN_FREE = psize("1GB")
 # 2.5GB stub + 5GB OS + 0.5GB EFI = 8GB, round up to 10GB
 MIN_INSTALL_FREE = psize("10GB")
 
-MIN_MACOS_VERSION = "12.3"
+MIN_MACOS_VERSION = "13.5"
 MIN_MACOS_VERSION_EXPERT = "12.3"
 
 @dataclass
