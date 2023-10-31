@@ -847,15 +847,32 @@ class InstallerMain:
         if self.sysinfo.sfr_full_ver != self.sysinfo.sros_full_ver:
             p_error("Mismatched System Firmware / System Recovery detected!")
             print()
-            p_error("Critical bugs in Apple's update process introduced in macOS Sonoma 14.0 and")
-            p_error("macOS Ventura 13.6 can cause your System Recovery to not be updated properly.")
-            p_error("It is not safe to install a new OS on this computer until this is resolved.")
-            p_error("Please apply all macOS updates available and try again. If the problem remains,")
-            p_error("you will have to wait until Apple fixes their buggy update process.")
+            p_warning("Critical bugs in Apple's update process introduced in macOS Sonoma 14.0 and")
+            p_warning("macOS Ventura 13.6 can cause your System Recovery to not be updated properly.")
+            p_warning("It is not safe to install a new OS on this computer until this is resolved.")
+            p_warning("Please apply all macOS updates available and try again. If the problem remains,")
+            p_warning("you will have to wait until Apple fixes their buggy update process.")
             print()
-            p_error("More information:")
-            p_error("https://github.com/AsahiLinux/docs/wiki/macOS-Sonoma-Boot-Failures")
+            p_warning("More information:")
             print()
+            p_plain( f"    {col(BLUE, BRIGHT)}https://github.com/AsahiLinux/docs/wiki/macOS-Sonoma-Boot-Failures{col()}")
+            print()
+            if (self.sysinfo.device_class in PROMOTION_DEVICES and
+                split_ver(self.sysinfo.sfr_ver) > split_ver(BUGGY_SFR_MIN)):
+                hz = self.sysinfo.get_refresh_rate()
+                if hz != "120.00Hz":
+                    p_error(f"{col(BLINK)}CRITICAL WARNING: {col(NBLINK)}You have a ProMotion display machine set to a display refresh")
+                    p_error("other than 120Hz / ProMotion mode.")
+                    print()
+                    p_error("You MUST change this to ProMotion mode IMMEDIATELY. Your machine is currently")
+                    p_error("unable to use System RecoveryOS, which is a very dangerous situation.")
+                    p_error("This is a critical Apple bug.")
+                else:
+                    p_warning(f"{col(BLINK)}WARNING:{col(NBLINK)} You have a ProMotion display machine. Your display refresh is set to")
+                    p_warning("ProMotion mode. DO NOT CHANGE THIS TO ANY OTHER MODE. Doing so would make your")
+                    p_warning("System RecoveryOS stop working, which is a very dangerous situation.")
+                    p_warning("This is a critical Apple bug.")
+                print()
             sys.exit(1)
 
         if (self.sysinfo.device_class in PROMOTION_DEVICES and

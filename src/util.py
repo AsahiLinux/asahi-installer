@@ -72,6 +72,8 @@ WHITE     = 37
 
 BRIGHT    = 1
 DIM       = 2
+BLINK     = 5
+NBLINK    = 25
 NORMAL    = 22
 RESET_ALL = 0
 
