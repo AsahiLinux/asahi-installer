@@ -21,6 +21,9 @@ MIN_INSTALL_FREE = psize("10GB")
 MIN_MACOS_VERSION = "13.5"
 MIN_MACOS_VERSION_EXPERT = "12.3"
 
+# Apple...
+BUGGY_SFR_MIN = "14.0"
+
 @dataclass
 class IPSW:
     version: str
@@ -44,6 +47,21 @@ CHIP_MIN_VER = {
     0x6020: "13.1",     # T6020, M2 Pro
     0x6021: "13.1",     # T6021, M2 Max
     0x6022: "13.4",     # T6022, M2 Ultra
+}
+
+PROMOTION_DEVICES = {
+    "j314cap",
+    "j314sap",
+    "j316cap",
+    "j316sap",
+    "j414cap",
+    "j414sap",
+    "j416cap",
+    "j416sap",
+    "j514cap", # Speculative
+    "j514sap",
+    "j516cap",
+    "j516sap",
 }
 
 DEVICES = {
@@ -825,6 +843,47 @@ class InstallerMain:
         self.sysinfo = system.SystemInfo()
         self.sysinfo.show()
         print()
+
+        if self.sysinfo.sfr_full_ver != self.sysinfo.sros_full_ver:
+            p_error("Mismatched System Firmware / System Recovery detected!")
+            print()
+            p_error("Critical bugs in Apple's update process introduced in macOS Sonoma 14.0 and")
+            p_error("macOS Ventura 13.6 can cause your System Recovery to not be updated properly.")
+            p_error("It is not safe to install a new OS on this computer until this is resolved.")
+            p_error("Please apply all macOS updates available and try again. If the problem remains,")
+            p_error("you will have to wait until Apple fixes their buggy update process.")
+            print()
+            p_error("More information:")
+            p_error("https://github.com/AsahiLinux/docs/wiki/macOS-Sonoma-Boot-Failures")
+            print()
+            sys.exit(1)
+
+        if (self.sysinfo.device_class in PROMOTION_DEVICES and
+            split_ver(self.sysinfo.sfr_ver) > split_ver(BUGGY_SFR_MIN)):
+            p_warning( "WARNING: You have a MacBook Pro with a ProMotion display, and you have")
+            p_warning(f"System Firmware version {BUGGY_SFR_MIN} or newer. These firmware versions are")
+            p_warning( "buggy and will NOT correctly boot older versions of macOS, nor Asahi Linux,")
+            p_warning( "if the display is configured for a refresh rate other than ProMotion (120Hz).")
+            print()
+            hz = self.sysinfo.get_refresh_rate()
+            p_info(f"  Current refresh rate: {col()}{hz}")
+            print()
+            if hz != "120.00Hz":
+                p_error("Your display is not set to ProMotion mode (120 Hz). Please change your")
+                p_error("display refresh rate to ProMotion mode in System Settings and try again.")
+                print()
+                p_error("It is not safe to multi-boot with a non-ProMotion refresh rate until")
+                p_error("Apple fixes this bug.")
+                print()
+                sys.exit(1)
+
+            p_warning("You are currently using ProMotion mode. You may continue the install")
+            p_warning("but you MUST NOT change the refresh rate until Apple fixes this bug.")
+            p_warning("There is nothing we can do on our end. Proceed at your own risk.")
+            print()
+            if not self.yesno("Continue anyway?"):
+                sys.exit(0)
+
         self.chip_min_ver = CHIP_MIN_VER.get(self.sysinfo.chip_id, None)
         self.device = DEVICES.get(self.sysinfo.device_class, None)
         if not self.chip_min_ver or not self.device or (self.device.expert_only and not self.expert):

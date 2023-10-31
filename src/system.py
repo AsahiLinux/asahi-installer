@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import base64, plistlib, struct, subprocess, logging
+import base64, plistlib, struct, subprocess, logging, json
 
 from util import *
 
@@ -82,6 +82,17 @@ class SystemInfo:
                 if consoleuser != "_mbsetupuser":
                     self.login_user = consoleuser
 
+        self.sros_full_ver = "0"
+
+        base = "/System/Volumes/iSCPreboot/SystemRecovery"
+        for p in os.listdir(base):
+            try:
+                v = self.get_restore_version(os.path.join(base, p, "RestoreVersion.plist"))
+            except Exception:
+                continue
+            if split_ver(v) > split_ver(self.sros_full_ver):
+                self.sros_full_ver = v
+
     def get_nvram_data(self):
         nvram_data = subprocess.run(["nvram", "-p"],
                                     stdout=subprocess.PIPE, check=True).stdout
@@ -129,12 +140,13 @@ class SystemInfo:
         p_info(f"  Default boot VGID: {col()}{self.default_boot}")
         p_info(f"  Boot mode: {col()}{self.boot_mode}")
         p_info(f"  OS version: {col()}{self.macos_ver} ({self.macos_build})")
-        p_info(f"  SFR version: {col()}{self.sfr_full_ver}")
-        p_info(f"  System rOS version: {col()}{self.sfr_ver} ({self.sfr_build})")
+        p_info(f"  Main firmware version: {col()}{self.sfr_ver} ({self.sfr_build})")
         if self.fsfr_ver:
-            p_info(f"  Fallback rOS version: {col()}{self.fsfr_ver} ({self.fsfr_build})")
+            p_info(f"  Fallback firmware version: {col()}{self.fsfr_ver} ({self.fsfr_build})")
         else:
-            p_info(f"  No Fallback rOS")
+            p_info(f"  No Fallback System Firmware / rOS")
+        p_info(f"  SFR version: {col()}{self.sfr_full_ver}")
+        p_info(f"  SystemRecovery version: {col()}{self.sros_full_ver}")
         p_info(f"  Login user: {col()}{self.login_user}")
 
     def get_child(self, obj, name):
@@ -155,3 +167,16 @@ class SystemInfo:
     def get_int(self, val):
         return struct.unpack("<I", val)[0]
 
+    def get_refresh_rate(self):
+        j = subprocess.run(["system_profiler", "SPDisplaysDataType", "-json"],
+                           stdout=subprocess.PIPE, check=True).stdout
+
+        main_display = None
+        for a in json.loads(j)["SPDisplaysDataType"]:
+            for disp in a.get("spdisplays_ndrvs", []):
+                if disp["_name"] != "Color LCD":
+                    continue
+                assert main_display is None
+                main_display = disp
+
+        return main_display["_spdisplays_resolution"].split()[-1]
