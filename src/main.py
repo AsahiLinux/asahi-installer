@@ -849,7 +849,7 @@ class InstallerMain:
 
             hz = self.sysinfo.get_refresh_rate()
 
-            if split_ver(self.sysinfo.sros_full_ver) < split_ver(BUGGY_SFR_MIN):
+            if split_ver(self.sysinfo.sros_ver) < split_ver(BUGGY_SFR_MIN):
                 p_error("Mismatched System Firmware / System Recovery detected!")
                 print()
                 p_warning("You have a machine with a ProMotion display, with a System Firmware version")
@@ -879,6 +879,9 @@ class InstallerMain:
                     p_warning(f"{col(BLINK)}WARNING:{col(NBLINK)} Your display refresh is set to ProMotion mode.")
                     p_warning("DO NOT CHANGE THIS TO ANY OTHER MODE. Doing so would make your System RecoveryOS")
                     p_warning("stop working, which is a very dangerous situation. This is a critical Apple bug.")
+                    print()
+                    p_warning("Please update to the next version of macOS as soon as it is available, which")
+                    p_warning("should roll forward to the next System RecoveryOS version and clear the danger.")
                     print()
                 p_warning("You may continue the install, but you MUST NOT change the refresh rate until")
                 p_warning("Apple fixes this bug. Doing so would break your system. Proceed at your own")

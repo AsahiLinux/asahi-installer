@@ -83,6 +83,8 @@ class SystemInfo:
                     self.login_user = consoleuser
 
         self.sros_full_ver = "0"
+        self.sros_ver = None
+        self.sros_build = None
 
         base = "/System/Volumes/iSCPreboot/SystemRecovery"
         for p in os.listdir(base):
@@ -92,6 +94,7 @@ class SystemInfo:
                 continue
             if split_ver(v) > split_ver(self.sros_full_ver):
                 self.sros_full_ver = v
+                self.sros_ver, self.sros_build = self.get_version(os.path.join(base, p, "SystemVersion.plist"))
 
     def get_nvram_data(self):
         nvram_data = subprocess.run(["nvram", "-p"],
@@ -146,7 +149,7 @@ class SystemInfo:
         else:
             p_info(f"  No Fallback System Firmware / rOS")
         p_info(f"  SFR version: {col()}{self.sfr_full_ver}")
-        p_info(f"  SystemRecovery version: {col()}{self.sros_full_ver}")
+        p_info(f"  SystemRecovery version: {col()}{self.sros_full_ver} ({self.sros_ver} {self.sros_build})")
         p_info(f"  Login user: {col()}{self.login_user}")
 
     def get_child(self, obj, name):
