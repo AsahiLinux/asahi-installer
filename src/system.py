@@ -183,4 +183,7 @@ class SystemInfo:
                 assert main_display is None
                 main_display = disp
 
+        if main_display is None:
+            return "(Unknown or off)"
+
         return main_display["_spdisplays_resolution"].split()[-1]
