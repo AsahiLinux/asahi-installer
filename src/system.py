@@ -83,18 +83,19 @@ class SystemInfo:
                     self.login_user = consoleuser
 
         self.sros_full_ver = "0"
-        self.sros_ver = None
-        self.sros_build = None
+        self.sros_ver = "0"
+        self.sros_build = "(unknown)"
 
         base = "/System/Volumes/iSCPreboot/SystemRecovery"
-        for p in os.listdir(base):
-            try:
-                v = self.get_restore_version(os.path.join(base, p, "RestoreVersion.plist"))
-            except Exception:
-                continue
-            if split_ver(v) > split_ver(self.sros_full_ver):
-                self.sros_full_ver = v
-                self.sros_ver, self.sros_build = self.get_version(os.path.join(base, p, "SystemVersion.plist"))
+        if os.path.exists(base):
+            for p in os.listdir(base):
+                try:
+                    v = self.get_restore_version(os.path.join(base, p, "RestoreVersion.plist"))
+                except Exception:
+                    continue
+                if split_ver(v) > split_ver(self.sros_full_ver):
+                    self.sros_full_ver = v
+                    self.sros_ver, self.sros_build = self.get_version(os.path.join(base, p, "SystemVersion.plist"))
 
     def get_nvram_data(self):
         nvram_data = subprocess.run(["nvram", "-p"],
