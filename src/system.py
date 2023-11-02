@@ -13,6 +13,10 @@ class SystemInfo:
 
         self.ioreg = plistlib.loads(result.stdout)
 
+        result = subprocess.run(["ioreg", "-alp", "IOService"],
+                                stdout=subprocess.PIPE, check=True)
+        self.ioservice = plistlib.loads(result.stdout)
+
         for dt in self.ioreg["IORegistryEntryChildren"]:
             if dt.get("IOObjectClass", None) == "IOPlatformExpertDevice":
                 break
@@ -172,18 +176,33 @@ class SystemInfo:
         return struct.unpack("<I", val)[0]
 
     def get_refresh_rate(self):
-        j = subprocess.run(["system_profiler", "SPDisplaysDataType", "-json"],
-                           stdout=subprocess.PIPE, check=True).stdout
+        machine = self.ioservice["IORegistryEntryChildren"][0]
+        for i in machine["IORegistryEntryChildren"]:
+            if i["IORegistryEntryName"] == "AppleARMPE":
+                armpe = i
+                break
+        else:
+            return None
+        for i in armpe["IORegistryEntryChildren"]:
+            if i["IORegistryEntryName"] == "arm-io":
+                armio = i
+                break
+        else:
+            return None
+        for i in armio["IORegistryEntryChildren"][0]["IORegistryEntryChildren"]:
+            if i["IORegistryEntryName"] == "disp0":
+                disp0 = i
+                break
+        else:
+            return None
 
-        main_display = None
-        for a in json.loads(j)["SPDisplaysDataType"]:
-            for disp in a.get("spdisplays_ndrvs", []):
-                if disp["_name"] != "Color LCD":
-                    continue
-                assert main_display is None
-                main_display = disp
+        props = disp0["IORegistryEntryChildren"][0]
 
-        if main_display is None:
-            return "(Unknown or off)"
+        if "TimingElements" not in props:
+            return None
 
-        return main_display["_spdisplays_resolution"].split()[-1]
+        te = {i["ID"]:i for i in props["TimingElements"]}
+        te_id = props["DPTimingModeId"]
+        refresh = te[te_id]["VerticalAttributes"]["SyncRate"] / 65536.0
+
+        return refresh

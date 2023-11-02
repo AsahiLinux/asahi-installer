@@ -848,6 +848,12 @@ class InstallerMain:
             split_ver(self.sysinfo.sfr_ver) >= split_ver(BUGGY_SFR_MIN)):
 
             hz = self.sysinfo.get_refresh_rate()
+            if hz is None:
+                p_error("Could not check ProMotion display status")
+                print("This probably means your laptop lid is closed. Please open it and try again.")
+                print("(You're going to have to use the power button soon anyway!)")
+                print()
+                sys.exit(1)
 
             if split_ver(self.sysinfo.sros_ver) < split_ver(BUGGY_SFR_MIN):
                 p_error("Mismatched System Firmware / System Recovery detected!")
@@ -862,10 +868,10 @@ class InstallerMain:
                 p_plain( f"    {col(BLUE, BRIGHT)}https://github.com/AsahiLinux/docs/wiki/macOS-Sonoma-Boot-Failures{col()}")
                 print()
 
-                p_info(f"  Current refresh rate: {col()}{hz}")
+                p_info(f"  Current refresh rate: {col()}{hz} Hz")
                 print()
 
-                if hz != "120.00Hz":
+                if hz != 120.0:
                     p_error(f"{col(BLINK)}CRITICAL ERROR: {col(NBLINK)}Your display refresh rate is set to")
                     p_error("something other than 120Hz / ProMotion mode.")
                     print()
@@ -896,9 +902,9 @@ class InstallerMain:
                 p_warning( "buggy and will NOT correctly boot older versions of macOS, nor Asahi Linux,")
                 p_warning( "if the display is configured for a refresh rate other than ProMotion (120Hz).")
                 print()
-                p_info(f"  Current refresh rate: {col()}{hz}")
+                p_info(f"  Current refresh rate: {col()}{hz} Hz")
                 print()
-                if hz != "120.00Hz":
+                if hz != 120.0:
                     p_error("Your display is not set to ProMotion mode (120 Hz). Please change your")
                     p_error("display refresh rate to ProMotion mode in System Settings and try again.")
                     print()
