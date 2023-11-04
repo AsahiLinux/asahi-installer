@@ -6,7 +6,10 @@ from ctypes import *
 __all__ = ["img4p_extract_compressed", "img4p_extract"]
 
 def decode_lzfse_liblzfse(cdata, raw_size):
-    lzfse = CDLL("liblzfse.so")
+    try:
+        lzfse = CDLL("liblzfse.so.1")
+    except OSError:
+        lzfse = CDLL("liblzfse.so")
 
     dest = create_string_buffer(raw_size)
     decoded = lzfse.lzfse_decode_buffer(dest, raw_size, cdata, len(cdata), None)
