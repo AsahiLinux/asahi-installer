@@ -31,6 +31,7 @@ class IPSW:
     min_iboot: str
     min_sfr: str
     expert_only: bool
+    devices: list
     url: str
 
 @dataclass
@@ -97,24 +98,28 @@ IPSW_VERSIONS = [
          "iBoot-7459.121.3",
          "21.6.81.2.0,0",
          False,
+         {"j413ap", "j493ap"},
          "https://updates.cdn-apple.com/2022SpringFCS/fullrestores/012-17781/F045A95A-44B4-4BA9-8A8A-919ECCA2BB31/UniversalMac_12.4_21F2081_Restore.ipsw"),
     IPSW("12.3.1",
          "12.1",
          "iBoot-7459.101.3",
          "21.5.258.0.0,0",
          False,
+         None,
          "https://updates.cdn-apple.com/2022SpringFCS/fullrestores/002-79219/851BEDF0-19DB-4040-B765-0F4089D1530D/UniversalMac_12.3.1_21E258_Restore.ipsw"),
     IPSW("12.3",
          "12.1",
          "iBoot-7459.101.2",
          "21.5.230.0.0,0",
          False,
+         None,
          "https://updates.cdn-apple.com/2022SpringFCS/fullrestores/071-08757/74A4F2A1-C747-43F9-A22A-C0AD5FB4ECB6/UniversalMac_12.3_21E230_Restore.ipsw"),
     IPSW("13.5",
          "13.0",
          "iBoot-8422.141.2",
          "22.7.74.0.0,0",
          False,
+         None,
          "https://updates.cdn-apple.com/2023SummerFCS/fullrestores/032-69606/D3E05CDF-E105-434C-A4A1-4E3DC7668DD0/UniversalMac_13.5_22G74_Restore.ipsw"),
 ]
 
@@ -471,7 +476,8 @@ class InstallerMain:
         device_min = split_ver(self.device.min_ver)
         minver = [ipsw for ipsw in IPSW_VERSIONS
                  if split_ver(ipsw.version) >= max(chip_min, device_min)
-                 and (supported_fw is None or ipsw.version in supported_fw)]
+                 and (supported_fw is None or ipsw.version in supported_fw)
+                 and (ipsw.devices is None or self.sysinfo.device_class in ipsw.devices)]
         avail = [ipsw for ipsw in minver
                  if split_ver(ipsw.min_iboot) <= sys_iboot
                  and split_ver(ipsw.min_macos) <= sys_macos
