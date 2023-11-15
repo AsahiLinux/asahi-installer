@@ -18,6 +18,7 @@ class StubInstaller(PackageInstaller):
         self.copy_idata = []
         self.stub_info = {}
         self.pkg = None
+        self.is_ota = False
 
     def load_ipsw(self, ipsw_info):
         self.install_version = ipsw_info.version.split(maxsplit=1)[0]
@@ -27,7 +28,14 @@ class StubInstaller(PackageInstaller):
         if base:
             url = base + "/" + os.path.split(url)[-1]
 
-        logging.info(f"IPSW URL: {url}")
+        if not url.endswith(".ipsw"):
+            self.is_ota = True
+
+        if self.is_ota:
+            logging.info(f"OTA URL: {url}")
+        else:
+            logging.info(f"IPSW URL: {url}")
+
         if url.startswith("http"):
             p_progress("Downloading macOS OS package info...")
             self.ucache = urlcache.URLCache(url)
@@ -146,30 +154,47 @@ class StubInstaller(PackageInstaller):
         if not os.path.exists(self.iapm_path):
             os.replace(self.iapm_dis_path, self.iapm_path)
 
+    def path(self, path):
+        if not self.is_ota:
+            return path
+
+        if path.startswith("BootabilityBundle"):
+            return os.path.join("AssetData", "Restore", path)
+        else:
+            return os.path.join("AssetData", "boot", path)
+
+    def open(self, path):
+        return self.pkg.open(self.path(path))
+
     def install_files(self, cur_os):
         logging.info("StubInstaller.install_files()")
         logging.info(f"VGID: {self.osi.vgid}")
         logging.info(f"OS info: {self.osi}")
 
         p_progress("Beginning stub OS install...")
-        ipsw = self.pkg
-
         self.get_paths()
 
         logging.info("Parsing metadata...")
 
-        sysver = plistlib.load(ipsw.open("SystemVersion.plist"))
-        manifest = plistlib.load(ipsw.open("BuildManifest.plist"))
-        bootcaches = plistlib.load(ipsw.open("usr/standalone/bootcaches.plist"))
+        sysver = plistlib.load(self.open("SystemVersion.plist"))
+        manifest = plistlib.load(self.open("BuildManifest.plist"))
+        bootcaches = plistlib.load(self.open("usr/standalone/bootcaches.plist"))
         self.flush_progress()
+
+        if self.is_ota:
+            variant = "macOS Customer Software Update"
+            behavior = "Update"
+        else:
+            variant = "macOS Customer"
+            behavior = "Erase"
 
         self.manifest = manifest
         for identity in manifest["BuildIdentities"]:
             if (identity["ApBoardID"] != f'0x{self.sysinfo.board_id:02X}' or
                 identity["ApChipID"] != f'0x{self.sysinfo.chip_id:04X}' or
                 identity["Info"]["DeviceClass"] != self.sysinfo.device_class or
-                identity["Info"]["RestoreBehavior"] != "Erase" or
-                identity["Info"]["Variant"] != "macOS Customer"):
+                identity["Info"]["RestoreBehavior"] != behavior or
+                identity["Info"]["Variant"] != variant):
                 continue
             break
         else:
@@ -244,12 +269,13 @@ class StubInstaller(PackageInstaller):
         self.extract_file("BootabilityBundle/Restore/Firmware/Bootability.dmg.trustcache",
                           os.path.join(restore_bundle, "Bootability/Bootability.trustcache"))
 
-        self.extract_tree("Firmware/Manifests/restore/macOS Customer/", restore_bundle)
+        self.extract_tree(f"Firmware/Manifests/restore/{variant}/", restore_bundle)
 
         copied = set()
         self.kernel_path = None
         for key, val in identity["Manifest"].items():
-            if key in ("BaseSystem", "OS", "Ap,SystemVolumeCanonicalMetadata"):
+            if key in ("BaseSystem", "OS", "Ap,SystemVolumeCanonicalMetadata",
+                       "RestoreRamDisk", "RestoreTrustCache"):
                 continue
             if key.startswith("Cryptex"):
                 continue
@@ -303,8 +329,12 @@ class StubInstaller(PackageInstaller):
         os.makedirs(basesystem_path, exist_ok=True)
 
         logging.info("Extracting arm64eBaseSystem.dmg")
-        self.copy_compress(identity["Manifest"]["BaseSystem"]["Info"]["Path"],
-                          os.path.join(basesystem_path, "arm64eBaseSystem.dmg"))
+        if self.is_ota:
+            self.copy_recompress("AssetData/payloadv2/basesystem_patches/arm64eBaseSystem.dmg",
+                                 os.path.join(basesystem_path, "arm64eBaseSystem.dmg"))
+        else:
+            self.copy_compress(identity["Manifest"]["BaseSystem"]["Info"]["Path"],
+                               os.path.join(basesystem_path, "arm64eBaseSystem.dmg"))
         self.flush_progress()
 
         p_progress("Wrapping up...")

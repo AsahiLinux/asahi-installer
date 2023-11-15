@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import re, logging, sys, os, stat, shutil, struct, subprocess, zlib, time
+import re, logging, sys, os, stat, shutil, struct, subprocess, zlib, time, hashlib, lzma
 from ctypes import *
 
 if sys.platform == 'darwin':
@@ -131,10 +131,53 @@ def input_prompt(*args):
     logging.info(f"INPUT: {val!r}")
     return val
 
+class PBZX:
+    def __init__(self, istream, osize):
+        self.istream = istream
+        self.osize = osize
+        self.buf = b""
+        self.p = 0
+        self.total_read = 0
+
+        hdr = istream.read(12)
+        magic, blocksize = struct.unpack(">4sQ", hdr)
+        assert magic == b"pbzx"
+
+    def read(self, size):
+        if (len(self.buf) - self.p) >= size:
+            d = self.buf[self.p:self.p + size]
+            self.p += len(d)
+            return d
+
+        bp = [self.buf[self.p:]]
+        self.p = 0
+
+        avail = len(bp[0])
+        while avail < size and self.total_read < self.osize:
+            hdr = self.istream.read(16)
+            if not hdr:
+                raise Exception("End of compressed data but more expected")
+
+            uncompressed_size, compressed_size = struct.unpack(">QQ", hdr)
+            blk = self.istream.read(compressed_size)
+            if uncompressed_size != compressed_size:
+                blk = lzma.decompress(blk, format=lzma.FORMAT_XZ)
+            bp.append(blk)
+            avail += len(blk)
+            self.total_read += len(blk)
+
+        self.buf = b"".join(bp)
+        d = self.buf[self.p:self.p + size]
+        self.p += len(d)
+        return d
+
 class PackageInstaller:
     def __init__(self):
         self.verbose = "-v" in sys.argv
         self.printed_progress = False
+
+    def path(self, path):
+        return path
 
     def flush_progress(self):
         if self.ucache and self.ucache.flush_progress():
@@ -145,8 +188,10 @@ class PackageInstaller:
             self.printed_progress = False
 
     def extract(self, src, dest):
-        logging.info(f"  {src} -> {dest}/")
-        self.pkg.extract(src, dest)
+        dest_path = os.path.join(dest, src)
+        dest_dir = os.path.split(dest_path)[0]
+        os.makedirs(dest_dir, exist_ok=True)
+        self.extract_file(src, dest_path)
 
     def fdcopy(self, sfd, dfd, size=None):
         BLOCK = 16 * 1024 * 1024
@@ -171,10 +216,24 @@ class PackageInstaller:
             sys.stdout.write("\033[3G100.00% ")
             sys.stdout.flush()
 
+    def copy_recompress(self, src, path):
+        # For BXDIFF50 stuff in OTA images
+        bxstream = self.pkg.open(src)
+        assert bxstream.read(8) == b"BXDIFF50"
+        bxstream.read(8)
+        size, csize, zxsize = struct.unpack("<3Q", bxstream.read(24))
+        assert csize == 0
+        sha1 = bxstream.read(20)
+        istream = PBZX(bxstream, size)
+        self.stream_compress(istream, size, path, sha1=sha1)
+
     def copy_compress(self, src, path):
         info = self.pkg.getinfo(src)
         size = info.file_size
         istream = self.pkg.open(src)
+        self.stream_compress(istream, size, path, crc=info.CRC)
+
+    def stream_compress(self, istream, size, path, crc=None, sha1=None):
         with open(path, 'wb'):
             pass
         num_chunks = (size + CHUNK_SIZE - 1) // CHUNK_SIZE
@@ -212,20 +271,39 @@ class PackageInstaller:
                         "66706D630C000000" + "".join(f"{((size >> 8*i) & 0xff):02x}" for i in range(8)),
                         path], check=True)
         os.chflags(path, stat.UF_COMPRESSED)
-        crc = 0
-        with open(path, 'rb') as result_file:
-            while 1:
-                data = result_file.read(CHUNK_SIZE)
-                if len(data) == 0:
-                    break
-                crc = zlib.crc32(data, crc)
-        if crc != info.CRC:
-            raise Exception('Internal error: failed to compress file: crc mismatch')
+
+        if sha1 is not None:
+            sha = hashlib.sha1()
+            with open(path, 'rb') as result_file:
+                while 1:
+                    data = result_file.read(CHUNK_SIZE)
+                    if len(data) == 0:
+                        break
+                    sha.update(data)
+            if sha.digest() != sha1:
+                raise Exception('Internal error: failed to recompress file: SHA1 mismatch')
+        elif crc is not None:
+            calc_crc = 0
+            with open(path, 'rb') as result_file:
+                while 1:
+                    data = result_file.read(CHUNK_SIZE)
+                    if len(data) == 0:
+                        break
+                    calc_crc = zlib.crc32(data, calc_crc)
+            if crc != calc_crc:
+                raise Exception('Internal error: failed to compress file: crc mismatch')
+        else:
+            raise Exception("No checksum available")
 
         sys.stdout.write("\033[3G100.00% ")
         sys.stdout.flush()
 
-    def extract_file(self, src, dest, optional=True):
+    def extract_file(self, src, dest, optional=False):
+        src = self.path(src)
+        self._extract_file(src, dest, optional)
+
+    def _extract_file(self, src, dest, optional=False):
+        logging.info(f"  {src} -> {dest}")
         try:
             info = self.pkg.getinfo(src)
             with self.pkg.open(src) as sfd, \
@@ -235,10 +313,12 @@ class PackageInstaller:
         except KeyError:
             if not optional:
                 raise
+            logging.info(f"    (SKIPPED)")
         if self.verbose:
             self.flush_progress()
 
     def extract_tree(self, src, dest):
+        src = self.path(src)
         if src[-1] != "/":
             src += "/"
         logging.info(f"  {src}* -> {dest}")
@@ -264,7 +344,7 @@ class PackageInstaller:
                     os.unlink(destpath)
                 os.symlink(link, destpath)
             else:
-                self.extract_file(name, destpath)
+                self._extract_file(name, destpath)
 
             if self.verbose:
                 self.flush_progress()
