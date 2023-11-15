@@ -630,7 +630,7 @@ class InstallerMain:
         print()
         p_message( "When the system shuts down, follow these steps:")
         print()
-        p_message( "1. Wait 15 seconds for the system to fully shut down.")
+        p_message( "1. Wait 25 seconds for the system to fully shut down.")
         p_message(f"2. Press and {col(BRIGHT, YELLOW)}hold{col()}{col(BRIGHT)} down the power button to power on the system.")
         p_warning( "   * It is important that the system be fully powered off before this step,")
         p_warning( "     and that you press and hold down the button once, not multiple times.")
