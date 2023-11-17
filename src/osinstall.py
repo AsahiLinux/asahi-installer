@@ -114,7 +114,7 @@ class OSInstaller(PackageInstaller):
             data = ucache.read()
             with open(os.path.join(dest, base), "wb") as fd:
                 fd.write(data)
-            self.flush_progress()
+            ucache.flush_progress()
 
     def install(self, stub_ins):
         p_progress("Installing OS...")
