@@ -861,7 +861,7 @@ class InstallerMain:
                 print()
                 sys.exit(1)
 
-            if split_ver(self.sysinfo.sros_ver) < split_ver(BUGGY_SFR_MIN):
+            if split_ver(self.sysinfo.sros_ver) < split_ver(BUGGY_SFR_MIN) and not self.expert:
                 p_error("Mismatched System Firmware / System Recovery detected!")
                 print()
                 p_warning("You have a machine with a ProMotion display, with a System Firmware version")
