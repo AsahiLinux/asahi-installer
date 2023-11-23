@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import base64, plistlib, struct, subprocess, logging, json
+import base64, plistlib, struct, subprocess, logging
 
 from util import *
 

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import re, logging, sys, os, stat, shutil, struct, subprocess, zlib, time, hashlib, lzma
+import re, logging, sys, os, stat, struct, subprocess, zlib, time, hashlib, lzma
 from ctypes import *
 
 if sys.platform == 'darwin':

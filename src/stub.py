@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: MIT
-import os, os.path, plistlib, shutil, sys, stat, subprocess, urlcache, zipfile, logging, json
-import osenum
+import os, os.path, plistlib, shutil, subprocess, urlcache, zipfile, logging, json
 from asahi_firmware.wifi import WiFiFWCollection
 from asahi_firmware.bluetooth import BluetoothFWCollection
 from asahi_firmware.multitouch import MultitouchFWCollection

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 import xml.etree.ElementTree as ET
-import plistlib, base64, struct, os, logging
+import plistlib, struct, os, logging
 from .img4 import img4p_extract
 from .core import FWFile
 
