@@ -35,7 +35,6 @@ def get_logs(start, process):
                         "--start", f"@{start_ts}", "--style", "json",
                         "--timezone", "utc"],
                        capture_output=True, check=True)
-    l = json.loads(p.stdout)
     for entry in json.loads(p.stdout):
         ts = entry["timestamp"].replace("+0000", "+00:00")
         dt = datetime.datetime.fromisoformat(ts)
