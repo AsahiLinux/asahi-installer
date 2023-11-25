@@ -3,7 +3,7 @@
 import os, os.path, shlex, subprocess, sys, time, termios, json, getpass, reporting
 from dataclasses import dataclass
 
-import system, osenum, stub, diskutil, osinstall, asahi_firmware, m1n1
+import system, osenum, stub, diskutil, osinstall, asahi_firmware, m1n1, bugs
 from util import *
 
 PART_ALIGN = psize("1MiB")
@@ -20,9 +20,6 @@ MIN_INSTALL_FREE = psize("10GB")
 
 MIN_MACOS_VERSION = "13.5"
 MIN_MACOS_VERSION_EXPERT = "12.3"
-
-# Apple...
-BUGGY_SFR_MIN = "14.0"
 
 @dataclass
 class IPSW:
@@ -48,21 +45,6 @@ CHIP_MIN_VER = {
     0x6020: "13.1",     # T6020, M2 Pro
     0x6021: "13.1",     # T6021, M2 Max
     0x6022: "13.4",     # T6022, M2 Ultra
-}
-
-PROMOTION_DEVICES = {
-    "j314cap",
-    "j314sap",
-    "j316cap",
-    "j316sap",
-    "j414cap",
-    "j414sap",
-    "j416cap",
-    "j416sap",
-    "j514cap", # Speculative
-    "j514sap",
-    "j516cap",
-    "j516sap",
 }
 
 DEVICES = {
@@ -850,77 +832,7 @@ class InstallerMain:
         self.sysinfo.show()
         print()
 
-        if (self.sysinfo.device_class in PROMOTION_DEVICES and
-            split_ver(self.sysinfo.sfr_ver) >= split_ver(BUGGY_SFR_MIN)):
-
-            hz = self.sysinfo.get_refresh_rate()
-            if hz is None:
-                p_error("Could not check ProMotion display status")
-                print("This probably means your laptop lid is closed. Please open it and try again.")
-                print("(You're going to have to use the power button soon anyway!)")
-                print()
-                sys.exit(1)
-
-            if split_ver(self.sysinfo.sros_ver) < split_ver(BUGGY_SFR_MIN) and not self.expert:
-                p_error("Mismatched System Firmware / System Recovery detected!")
-                print()
-                p_warning("You have a machine with a ProMotion display, with a System Firmware version")
-                p_warning("newer than 14.0 and a System Recovery version older than 14.0. Due to a")
-                p_warning("critical Apple bug, this combination can lead to an unbootable system under")
-                p_warning("certain conditions.")
-                print()
-                p_error("Given the complexity of the issue, we cannot detect whether this install is")
-                p_error("safe or could render your machine unbootable as a side-effect of the")
-                p_error("installation process. This is out of our control, as the fault lies entirely")
-                p_error("in Apple's code (which is involved in the install process).")
-                print()
-                p_error("We cannot continue with the install. Sorry. You will have to wait for Apple")
-                p_error("to fix this properly in a future update. We promise we tried everything we")
-                p_error("could to find a safe way to proceed, but Apple's haphazard updates and changes")
-                p_error("in response to this bug made the situation so complicated we had to give up")
-                p_error("until they fix it properly.")
-                print()
-                p_plain( f"    {col(BLUE, BRIGHT)}https://github.com/AsahiLinux/docs/wiki/macOS-Sonoma-Boot-Failures{col()}")
-                print()
-                p_plain("If you have another Mac handy, doing a DFU \"Revive\" using Apple Configurator")
-                p_plain("from the other machine may put your machine into a safer state that allows us")
-                p_plain("to continue with the installation.")
-                print()
-                sys.exit(1)
-            else:
-                p_warning( "WARNING: You have a MacBook Pro with a ProMotion display, and you have")
-                p_warning(f"System Firmware version {BUGGY_SFR_MIN} or newer. These firmware versions are")
-                p_warning( "buggy and will NOT correctly boot older versions of macOS, nor Asahi Linux,")
-                p_warning( "if the display is configured for a refresh rate other than ProMotion (120Hz).")
-                print()
-                p_info(f"  Current refresh rate: {col()}{hz} Hz")
-                print()
-                if hz != 120.0:
-                    p_error("Your display is not set to ProMotion mode (120 Hz). Please change your")
-                    p_error("display refresh rate to ProMotion mode in System Settings and try again.")
-                    print()
-                    p_error("It is not safe to multi-boot with a non-ProMotion refresh rate until")
-                    p_error("Apple fixes this bug.")
-                    print()
-                    sys.exit(1)
-
-                p_warning("It is possible for your machine to be in a silently broken state, which")
-                p_warning("will cause it to boot to a black during the installation. We have no way")
-                p_warning("to reliably know ahead of time whether this will happen.")
-                print()
-                p_warning("If you have never changed your display refresh rate away from ProMotion")
-                p_warning("mode, you should be safe. If you indeed get stuck with a black screen")
-                p_warning("after the boot logo, you must follow these steps:")
-                print()
-                p_plain("  1. Fully shut down the machine by holding down the power button for 20 sec")
-                p_plain("  2. QUICKLY press, release, and press and hold the power button")
-                print()
-                p_warning("This will allow you to get into the boot picker and boot into macOS again.")
-                p_warning("In this case, installing Asahi Linux will not be possible for you until")
-                p_warning("Apple fully fixes this mess.")
-                print()
-                if not self.yesno("Continue anyway?"):
-                    sys.exit(0)
+        bugs.run_checks(self)
 
         self.chip_min_ver = CHIP_MIN_VER.get(self.sysinfo.chip_id, None)
         self.device = DEVICES.get(self.sysinfo.device_class, None)
