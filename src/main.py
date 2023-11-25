@@ -239,7 +239,7 @@ class InstallerMain:
         self.admin_password = getpass.getpass(f'Password for {self.admin_user}: ')
 
     def action_install_into_container(self, avail_parts):
-        template = self.choose_os()
+        template, fde = self.choose_os()
 
         containers = {str(i): p.desc for i,p in enumerate(self.parts) if p in avail_parts}
 
@@ -253,7 +253,7 @@ class InstallerMain:
 
         self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo)
         self.ins.load_ipsw(ipsw)
-        self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
+        self.osins = osinstall.OSInstaller(self.dutil, self.data, template, fde)
         self.osins.load_package()
 
         self.do_install()
@@ -266,9 +266,9 @@ class InstallerMain:
 
         print()
 
-        template = self.choose_os()
+        template, fde = self.choose_os()
 
-        self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
+        self.osins = osinstall.OSInstaller(self.dutil, self.data, template, fde)
         self.osins.load_package()
 
         min_size = STUB_SIZE + self.osins.min_size
@@ -286,9 +286,9 @@ class InstallerMain:
         self.do_install(os_size)
 
     def action_install_into_free(self, avail_free):
-        template = self.choose_os()
+        template, fde = self.choose_os()
 
-        self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
+        self.osins = osinstall.OSInstaller(self.dutil, self.data, template, fde)
         self.osins.load_package()
 
         min_size = STUB_SIZE + self.osins.min_size
@@ -498,7 +498,10 @@ class InstallerMain:
         idx = self.choice("OS", [i["name"] for i in os_list])
         os = os_list[idx]
         logging.info(f"Chosen OS: {os['name']}")
-        return os
+        fde = False
+        if os.get("supports_fde", False) or True:
+            fde = self.yesno("Enable disk encryption?")
+        return (os, fde)
 
     def set_reduced_security(self):
         while True:
