@@ -1,7 +1,7 @@
 {
     "os_list": [
         {
-            "name": "Fedora Linux 39 with KDE Plasma",
+            "name": "Fedora Asahi Remix 39 with KDE Plasma",
             "default_os_name": "Fedora Linux with KDE Plasma",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
@@ -40,7 +40,7 @@
             ]
         },
         {
-            "name": "Fedora Linux 39 with GNOME",
+            "name": "Fedora Asahi Remix 39 with GNOME",
             "default_os_name": "Fedora Linux with GNOME",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
@@ -79,7 +79,7 @@
             ]
         },
         {
-            "name": "Fedora Linux 39 Server",
+            "name": "Fedora Asahi Remix 39 Server",
             "default_os_name": "Fedora Linux Server",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
@@ -114,7 +114,7 @@
             ]
         },
         {
-            "name": "Fedora Linux 39 Minimal",
+            "name": "Fedora Asahi Remix 39 Minimal",
             "default_os_name": "Fedora Linux Minimal",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
