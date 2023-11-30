@@ -6,6 +6,8 @@ BUGGY_SFR_MIN = "14.0"
 
 ALLOWED_MACOS_MIN = "14.1.1"
 
+SAFE_MACOS_RVERSION_MIN = "23.3.55.5.2" # 14.2 beta 4
+
 PROMOTION_DEVICES = {
     "j314cap",
     "j314sap",
@@ -95,9 +97,10 @@ def sadness(sysinfo):
         p_error("successfully complete an Asahi Linux installation, as it cannot boot older")
         p_error("versions of macOS Recovery in this state.")
     print()
-    p_error("We cannot continue with the install. Sorry. You will have to wait for Apple")
-    p_error("to fix this properly in a future update. This bug is entirely outside of our")
-    p_error("control and there is no easy workaround at this time.")
+    p_error("Apple have deployed a fix for this issue in macOS 14.2 beta 4. To install")
+    p_error("Asahi Linux, you must upgrade to this version or later. If you do not wish")
+    p_error("to use a beta version of macOS, you will have to wait until the 14.2 final")
+    p_error("release is out.")
     print()
     p_plain("More information:")
     print()
@@ -116,9 +119,15 @@ def you_are_safe(main):
 
 def run_checks(main):
     if main.sysinfo.device_class not in PROMOTION_DEVICES:
+        logging.info("bugs: Not a ProMotion device")
         return
 
     if split_ver(main.sysinfo.sfr_ver) < split_ver(BUGGY_SFR_MIN):
+        logging.info("bugs: SFR not updated beyond problem version")
+        return
+
+    if split_ver(main.sysinfo.macos_restore_ver) >= split_ver(SAFE_MACOS_RVERSION_MIN):
+        logging.info("bugs: macOS is new enough to guarantee safety")
         return
 
     p_progress("Checking whether your machine is affected by critical Apple bugs...")
