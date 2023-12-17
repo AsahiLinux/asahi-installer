@@ -47,6 +47,8 @@ wget -Nc "$PYTHON_URI"
 
 echo "Building m1n1..."
 
+# Do it twice in case of build system shenanigans with versions
+make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
 make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
 
 echo "Copying files..."
