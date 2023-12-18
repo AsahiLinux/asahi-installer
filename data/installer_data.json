@@ -151,6 +151,7 @@
         {
             "name": "Arch Linux ARM (not recommended)",
             "default_os_name": "Arch Linux ARM",
+            "expert": true,
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "asahi-base-20231012-1.zip",
@@ -178,6 +179,7 @@
         {
             "name": "UEFI environment only (m1n1 + U-Boot + ESP)",
             "default_os_name": "UEFI boot",
+            "expert": true,
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "uefi-only-20231012-1.zip",
