@@ -19,7 +19,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0xf0c28f4e",
+                    "volume_id": "0x6f2de0d9",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
@@ -58,7 +58,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0xeb2d1a44",
+                    "volume_id": "0x6c1b4427",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
@@ -93,7 +93,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0xda149712",
+                    "volume_id": "0x5cf10496",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
@@ -128,7 +128,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0xd81aa0bd",
+                    "volume_id": "0x567c919b",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
