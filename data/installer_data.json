@@ -27,7 +27,7 @@
                 {
                     "name": "Boot",
                     "type": "Linux",
-                    "size": "1048576000B",
+                    "size": "1073741824B",
                     "image": "boot.img"
                 },
                 {
@@ -66,7 +66,7 @@
                 {
                     "name": "Boot",
                     "type": "Linux",
-                    "size": "1048576000B",
+                    "size": "1073741824B",
                     "image": "boot.img"
                 },
                 {
@@ -101,7 +101,7 @@
                 {
                     "name": "Boot",
                     "type": "Linux",
-                    "size": "1048576000B",
+                    "size": "1073741824B",
                     "image": "boot.img"
                 },
                 {
@@ -136,7 +136,7 @@
                 {
                     "name": "Boot",
                     "type": "Linux",
-                    "size": "1048576000B",
+                    "size": "1073741824B",
                     "image": "boot.img"
                 },
                 {
