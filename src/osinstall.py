@@ -85,9 +85,11 @@ class OSInstaller(PackageInstaller):
                 self.efi_part = info
             self.part_info.append(info)
             if fmt == "fat":
+                # Clean up invalid characters in FAT
+                name_clean = name.translate(str.maketrans("", "", "*?/\\|,;:+=<>[]\""))
                 p_plain("  Formatting as FAT...")
                 args = ["newfs_msdos", "-F", "32",
-                        "-v", name[:11]]
+                        "-v", name_clean[:11]]
                 if "volume_id" in part:
                     args.extend(["-I", part["volume_id"]])
                 args.append(f"/dev/r{info.name}")
