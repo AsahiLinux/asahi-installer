@@ -179,10 +179,9 @@
         {
             "name": "UEFI environment only (m1n1 + U-Boot + ESP)",
             "default_os_name": "UEFI boot",
-            "expert": true,
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "uefi-only-20231012-1.zip",
+            "package": "uefi-only-20231220-1.zip",
             "supported_fw": ["12.3", "12.3.1", "12.4", "13.5"],
             "partitions": [
                 {
