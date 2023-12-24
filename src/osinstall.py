@@ -6,7 +6,7 @@ from util import *
 
 class OSInstaller(PackageInstaller):
     PART_ALIGNMENT = 1024 * 1024
-    def __init__(self, dutil, data, template):
+    def __init__(self, dutil, data, template, fde):
         super().__init__()
         self.dutil = dutil
         self.data = data
@@ -16,6 +16,7 @@ class OSInstaller(PackageInstaller):
         self.efi_part = None
         self.idata_targets = []
         self.install_size = self.min_size
+        self.fde = fde
 
     @property
     def default_os_name(self):
@@ -131,6 +132,7 @@ class OSInstaller(PackageInstaller):
             self.extract_file(icon, stub_ins.icon_path)
             self.flush_progress()
 
+        raw_images = []
         for part, info in zip(self.template["partitions"], self.part_info):
             logging.info(f"Installing partition {part!r} -> {info.name}")
             image = part.get("image", None)
@@ -160,10 +162,35 @@ class OSInstaller(PackageInstaller):
                 data_path = os.path.join(mountpoint, "asahi")
                 os.makedirs(data_path, exist_ok=True)
                 self.idata_targets.append(data_path)
+            if not (source or part.get("copy_firmware", False) or part.get("copy_installer_data", False)):
+                raw_images.append(info.name)
 
         if "extras" in self.template:
             assert self.efi_part is not None
             self.download_extras()
+
+        if self.fde:
+            p_progress("Encrypting OS image ...")
+            args = [
+                "./encryptor/qemu-system-aarch64",
+                "-nographic",
+                "-L", "./encryptor/qemu/",
+                "-chardev", "stdio,id=term0",
+                "-serial", "chardev:term0",
+                "-cpu", "host",
+                "-smp", "cpus=8,sockets=1,cores=8,threads=1",
+                "-machine", "virt",
+                "-accel", "hvf",
+                "-m", "4096",
+                "-kernel", "./encryptor/vmlinuz-virt",
+                "-initrd", "./encryptor/initramfs",
+                "-device", "virtio-rng-pci",
+                "-monitor", "/dev/null",
+                "-append", "quiet"
+            ]
+            for i, name in enumerate(raw_images):
+                args.extend(["-drive", f"if=virtio,format=raw,index={i + 1},file=/dev/{name}"])
+            subprocess.run(args, check=True)
 
         p_progress("Preparing to finish installation...")
 
