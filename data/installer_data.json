@@ -7,7 +7,7 @@
             "next_object": "m1n1/boot.bin",
             "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-39-kde-202312191235.zip",
             "icon": "fedora.icns",
-            "supported_fw": ["12.3", "12.3.1", "12.4", "13.5"],
+            "supported_fw": ["12.3", "12.3.1", "13.5"],
             "extras": [
                 "https://codecs.fedoraproject.org/openh264/39/aarch64/os/Packages/g/gstreamer1-plugin-openh264-1.22.1-1.fc39.aarch64.rpm",
                 "https://codecs.fedoraproject.org/openh264/39/aarch64/os/Packages/m/mozilla-openh264-2.3.1-2.fc39.aarch64.rpm",
@@ -46,7 +46,7 @@
             "next_object": "m1n1/boot.bin",
             "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-39-gnome-202312191235.zip",
             "icon": "fedora.icns",
-            "supported_fw": ["12.3", "12.3.1", "12.4", "13.5"],
+            "supported_fw": ["12.3", "12.3.1", "13.5"],
             "extras": [
                 "https://codecs.fedoraproject.org/openh264/39/aarch64/os/Packages/g/gstreamer1-plugin-openh264-1.22.1-1.fc39.aarch64.rpm",
                 "https://codecs.fedoraproject.org/openh264/39/aarch64/os/Packages/m/mozilla-openh264-2.3.1-2.fc39.aarch64.rpm",
@@ -85,7 +85,7 @@
             "next_object": "m1n1/boot.bin",
             "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-39-server-202312191235.zip",
             "icon": "fedora.icns",
-            "supported_fw": ["12.3", "12.3.1", "12.4", "13.5"],
+            "supported_fw": ["12.3", "12.3.1", "13.5"],
             "extras": {},
             "partitions": [
                 {
@@ -120,7 +120,7 @@
             "next_object": "m1n1/boot.bin",
             "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-39-minimal-202312191235.zip",
             "icon": "fedora.icns",
-            "supported_fw": ["12.3", "12.3.1", "12.4", "13.5"],
+            "supported_fw": ["12.3", "12.3.1", "13.5"],
             "extras": {},
             "partitions": [
                 {
@@ -155,7 +155,7 @@
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "asahi-base-20231012-1.zip",
-            "supported_fw": ["12.3", "12.3.1", "12.4", "13.5"],
+            "supported_fw": ["12.3", "12.3.1", "13.5"],
             "partitions": [
                 {
                     "name": "EFI",
@@ -182,7 +182,7 @@
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "uefi-only-20231220-1.zip",
-            "supported_fw": ["12.3", "12.3.1", "12.4", "13.5"],
+            "supported_fw": ["12.3", "12.3.1", "13.5"],
             "partitions": [
                 {
                     "name": "EFI",
