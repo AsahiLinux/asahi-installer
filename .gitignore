@@ -7,3 +7,6 @@ latest
 *.egg-info
 build
 dist
+*.xcuserstate
+*/.DS_Store
+*.xcuserstate
