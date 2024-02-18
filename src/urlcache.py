@@ -50,9 +50,25 @@ class URLCache:
             host, port = self.url.netloc, None
 
         if self.url.scheme == "http":
-            self.con = HTTPConnection(host, port, timeout=self.TIMEOUT)
+            http_proxy = os.getenv('HTTP_PROXY') or os.getenv('http_proxy')
+            if http_proxy:
+                proxy_url = parse.urlparse(http_proxy)
+                if proxy_url.scheme != "http":
+                    raise Exception(f"Unsupported scheme '{proxy_url.scheme}' for http proxy; only http proxy is supported.")
+                self.con = HTTPConnection(proxy_url.hostname, proxy_url.port or 80, timeout=self.TIMEOUT)
+                self.con.set_tunnel(host, port)
+            else:
+                self.con = HTTPConnection(host, port, timeout=self.TIMEOUT)
         elif self.url.scheme == "https":
-            self.con = HTTPSConnection(host, port, timeout=self.TIMEOUT)
+            https_proxy = os.getenv('HTTPS_PROXY') or os.getenv('https_proxy')
+            if https_proxy:
+                proxy_url = parse.urlparse(https_proxy)
+                if proxy_url.scheme != "http":
+                    raise Exception(f"Unsupported scheme '{proxy_url.scheme}' for https proxy; only http proxy is supported.")
+                self.con = HTTPSConnection(proxy_url.hostname, proxy_url.port or 80, timeout=self.TIMEOUT)
+                self.con.set_tunnel(host, port)
+            else:
+                self.con = HTTPSConnection(host, port, timeout=self.TIMEOUT)
         else:
             raise Exception(f"Unsupported scheme {self.url.scheme}")
 
