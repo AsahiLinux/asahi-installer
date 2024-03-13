@@ -5,7 +5,7 @@ set -e
 
 cd "$(dirname "$0")"
 
-PYTHON_VER=3.9.6
+PYTHON_VER=3.9.13
 PYTHON_PKG=python-$PYTHON_VER-macos11.pkg
 PYTHON_URI="https://www.python.org/ftp/python/$PYTHON_VER/$PYTHON_PKG"
 
@@ -43,7 +43,7 @@ echo "Downloading installer components..."
 
 cd "$DL"
 
-wget -Nc "$PYTHON_URI"
+curl "$PYTHON_URI" > "$PYTHON_PKG"
 
 echo "Building m1n1..."
 
