@@ -1,7 +1,7 @@
 __pycache__
 dl
 package
-installer.tar.gz
+*.tar.gz
 latest
 *.ipsw
 *.egg-info
