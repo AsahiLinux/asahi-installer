@@ -96,16 +96,8 @@ cd "$PACKAGE"
 
 echo "$VER" > version.tag
 
-if [ "$1" == "prod" ]; then
-    PKGFILE="$RELEASES/installer-$VER.tar.gz"
-    LATEST="$RELEASES/latest"
-elif [ "$1" == "dev" ]; then
-    PKGFILE="$RELEASES_DEV/installer-$VER.tar.gz"
-    LATEST="$RELEASES_DEV/latest"
-else
-    PKGFILE="../installer.tar.gz"
-    LATEST="../latest"
-fi
+PKGFILE="$RELEASES/installer-$VER.tar.gz"
+LATEST="$RELEASES/latest"
 
 tar czf "$PKGFILE" .
 echo "$VER" > "$LATEST"

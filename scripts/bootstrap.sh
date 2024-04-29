@@ -9,10 +9,10 @@ if true; then
     export LANG=en_US.UTF-8
     export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
-    export INSTALLER_BASE=http://localhost:5000
+    export VERSION_FLAG=http://localhost:5000/releases/latest
+    export INSTALLER_BASE=http://localhost:5000/releases
     export INSTALLER_DATA=http://localhost:5000/data/installer_data.json
     export REPO_BASE=https://cdn.asahilinux.org
-    PKG=installer.tar.gz
 
     export EXPERT=1
 
@@ -29,9 +29,16 @@ if true; then
     mkdir -p "$TMP"
     cd "$TMP"
 
+    echo "  Checking version..."
+
+    PKG_VER="$(curl --no-progress-meter -L "$VERSION_FLAG")"
+    echo "  Version: $PKG_VER"
+
+    PKG="installer-$PKG_VER.tar.gz"
+
     echo "  Downloading..."
 
-    curl --no-progress-meter -L -O "$INSTALLER_BASE/$PKG"
+    curl --no-progress-meter -L -o "$PKG" "$INSTALLER_BASE/$PKG"
     curl --no-progress-meter -L -O "$INSTALLER_DATA"
 
     echo "  Extracting..."
