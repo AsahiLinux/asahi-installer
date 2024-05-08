@@ -5,9 +5,13 @@
             "default_os_name": "Fedora Linux with KDE Plasma",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-kde-202405061600.zip",
+            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-kde-202405082147.zip",
             "icon": "fedora.icns",
-            "supported_fw": ["12.3", "12.3.1", "13.5"],
+            "supported_fw": [
+                "12.3",
+                "12.3.1",
+                "13.5"
+            ],
             "extras": [
                 "https://codecs.fedoraproject.org/openh264/40/aarch64/os/Packages/m/mozilla-openh264-2.4.0-2.fc40.aarch64.rpm",
                 "https://codecs.fedoraproject.org/openh264/40/aarch64/os/Packages/o/openh264-2.4.0-2.fc40.aarch64.rpm"
@@ -18,7 +22,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0x25ead233",
+                    "volume_id": "0x770ae00d",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
@@ -32,7 +36,7 @@
                 {
                     "name": "Root",
                     "type": "Linux",
-                    "size": "14232301568B",
+                    "size": "14233350144B",
                     "expand": true,
                     "image": "root.img"
                 }
@@ -43,9 +47,13 @@
             "default_os_name": "Fedora Linux with GNOME",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-gnome-202405061600.zip",
+            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-gnome-202405082147.zip",
             "icon": "fedora.icns",
-            "supported_fw": ["12.3", "12.3.1", "13.5"],
+            "supported_fw": [
+                "12.3",
+                "12.3.1",
+                "13.5"
+            ],
             "extras": [
                 "https://codecs.fedoraproject.org/openh264/40/aarch64/os/Packages/m/mozilla-openh264-2.4.0-2.fc40.aarch64.rpm",
                 "https://codecs.fedoraproject.org/openh264/40/aarch64/os/Packages/o/openh264-2.4.0-2.fc40.aarch64.rpm"
@@ -56,7 +64,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0x221e526f",
+                    "volume_id": "0x6b3c230b",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
@@ -81,9 +89,13 @@
             "default_os_name": "Fedora Linux Server",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-server-202405061600.zip",
+            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-server-202405082147.zip",
             "icon": "fedora.icns",
-            "supported_fw": ["12.3", "12.3.1", "13.5"],
+            "supported_fw": [
+                "12.3",
+                "12.3.1",
+                "13.5"
+            ],
             "extras": {},
             "partitions": [
                 {
@@ -91,7 +103,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0xd8dbe30",
+                    "volume_id": "0x53bd301b",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
@@ -116,9 +128,13 @@
             "default_os_name": "Fedora Linux Minimal",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-minimal-202405061600.zip",
+            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-minimal-202405082147.zip",
             "icon": "fedora.icns",
-            "supported_fw": ["12.3", "12.3.1", "13.5"],
+            "supported_fw": [
+                "12.3",
+                "12.3.1",
+                "13.5"
+            ],
             "extras": {},
             "partitions": [
                 {
@@ -126,7 +142,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0x9182b77",
+                    "volume_id": "0x50136bf6",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
@@ -153,7 +169,11 @@
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "asahi-base-20231012-1.zip",
-            "supported_fw": ["12.3", "12.3.1", "13.5"],
+            "supported_fw": [
+                "12.3",
+                "12.3.1",
+                "13.5"
+            ],
             "partitions": [
                 {
                     "name": "EFI",
@@ -180,7 +200,11 @@
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "uefi-only-20231220-1.zip",
-            "supported_fw": ["12.3", "12.3.1", "13.5"],
+            "supported_fw": [
+                "12.3",
+                "12.3.1",
+                "13.5"
+            ],
             "partitions": [
                 {
                     "name": "EFI",
