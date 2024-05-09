@@ -24,6 +24,13 @@ class OSInstaller(PackageInstaller):
     def min_size(self):
         return sum(self.align(psize(part["size"])) for part in self.template["partitions"])
     @property
+    def min_recommended_size(self):
+        if self.expandable:
+            # Allow for upgrades etc
+            return self.min_size * 2
+        else:
+            return self.min_size
+    @property
     def expandable(self):
         return any(part.get("expand", False) for part in self.template["partitions"])
     @property

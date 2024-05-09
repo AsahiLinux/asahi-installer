@@ -271,7 +271,7 @@ class InstallerMain:
         self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
         self.osins.load_package()
 
-        min_size = STUB_SIZE + self.osins.min_size
+        min_size = STUB_SIZE + (self.osins.min_size if self.expert else self.osins.min_recommended_size)
         print()
         p_message(f"Minimum required space for this OS: {ssize(min_size)}")
 
@@ -291,7 +291,7 @@ class InstallerMain:
         self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
         self.osins.load_package()
 
-        min_size = STUB_SIZE + self.osins.min_size
+        min_size = STUB_SIZE + (self.osins.min_size if self.expert else self.osins.min_recommended_size)
         print()
         p_message(f"Minimum required space for this OS: {ssize(min_size)}")
 
