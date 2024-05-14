@@ -9,11 +9,16 @@ PYTHON_VER=3.9.6
 PYTHON_PKG=python-$PYTHON_VER-macos11.pkg
 PYTHON_URI="https://www.python.org/ftp/python/$PYTHON_VER/$PYTHON_PKG"
 
+LIBFFI_VER=3.4.6
+LIBFFI_MANIFEST_URI="https://ghcr.io/v2/homebrew/core/libffi/manifests/$LIBFFI_VER"
+LIBFFI_BASE_URI="https://ghcr.io/v2/homebrew/core/libffi/blobs"
+LIBFFI_TARGET_OS="macOS 12.6"
+LIBFFI_PKG="libffi-$LIBFFI_VER-macos.tar.gz"
+
 M1N1="$PWD/m1n1"
 ARTWORK="$PWD/artwork"
 AFW="$PWD/asahi_firmware"
 SRC="$PWD/src"
-VENDOR="$PWD/vendor"
 DL="$PWD/dl"
 PACKAGE="$PWD/package"
 RELEASES="$PWD/releases"
@@ -43,7 +48,30 @@ echo "Downloading installer components..."
 
 cd "$DL"
 
+echo " - Python"
+
 wget -Nc "$PYTHON_URI"
+
+echo " - libffi"
+
+# get a JSON with an anonymous token
+token=$(curl -s "https://ghcr.io/token?service=ghcr.io&scope=repository%3Ahomebrew/core/go%3Apull" | jq -jr ".token")
+
+digest=$( \
+    curl -s \
+    -H "Authorization: Bearer ${token}" \
+    -H 'Accept: application/vnd.oci.image.index.v1+json' \
+    $LIBFFI_MANIFEST_URI \
+    | jq -r '[.manifests[] |
+            select(.platform.architecture == "arm64"
+            and .platform."os.version" == "'"$LIBFFI_TARGET_OS"'")
+        ] | first | .annotations."sh.brew.bottle.digest"' \
+)
+
+curl -L -o "$LIBFFI_PKG" \
+    -H "Authorization: Bearer ${token}" \
+    -H 'Accept: application/vnd.oci.image.index.v1+json' \
+    "$LIBFFI_BASE_URI/sha256:$digest"
 
 echo "Building m1n1..."
 
@@ -60,6 +88,11 @@ cp "$ARTWORK/logos/icns/AsahiLinux_logomark.icns" "$PACKAGE/logo.icns"
 mkdir -p "$PACKAGE/boot"
 cp "$M1N1/build/m1n1.bin" "$PACKAGE/boot"
 
+echo "Extracting libffi..."
+
+cd "$PACKAGE"
+tar xf "$DL/$LIBFFI_PKG"
+
 echo "Extracting Python framework..."
 
 mkdir -p "$PACKAGE/Frameworks/Python.framework"
@@ -70,9 +103,10 @@ mkdir -p "$PACKAGE/Frameworks/Python.framework"
 
 cd "$PACKAGE/Frameworks/Python.framework/Versions/Current"
 
-echo "Copying vendored libffi into Python framework..."
+echo "Moving in libffi..."
 
-cp -P "$VENDOR"/libffi/* lib/
+mv "$PACKAGE/libffi/$LIBFFI_VER/lib/"libffi*.dylib lib/
+rm -rf "$PACKAGE/libffi"
 
 echo "Slimming down Python..."
 
