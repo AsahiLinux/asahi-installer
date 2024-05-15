@@ -8,6 +8,7 @@ cd "$(dirname "$0")"
 PYTHON_VER=3.9.6
 PYTHON_PKG=python-$PYTHON_VER-macos11.pkg
 PYTHON_URI="https://www.python.org/ftp/python/$PYTHON_VER/$PYTHON_PKG"
+ENCRYPTOR_URI="https://github.com/WhatAmISupposedToPutHere/encryptor/releases/download/v0.1/encryptor.tar.gz"
 
 LIBFFI_VER=3.4.6
 LIBFFI_MANIFEST_URI="https://ghcr.io/v2/homebrew/core/libffi/manifests/$LIBFFI_VER"
@@ -51,6 +52,7 @@ cd "$DL"
 echo " - Python"
 
 wget -Nc "$PYTHON_URI"
+wget -Nc "$ENCRYPTOR_URI"
 
 echo " - libffi"
 
@@ -82,7 +84,7 @@ make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
 echo "Copying files..."
 
 cp -r "$SRC"/* "$PACKAGE/"
-rm "$PACKAGE/asahi_firmware"
+rm -r "$PACKAGE/asahi_firmware"
 cp -r "$AFW" "$PACKAGE/"
 cp "$ARTWORK/logos/icns/AsahiLinux_logomark.icns" "$PACKAGE/logo.icns"
 mkdir -p "$PACKAGE/boot"
@@ -117,7 +119,7 @@ cd python3.*
 rm -rf test ensurepip idlelib
 cd lib-dynload
 rm -f _test* _tkinter*
-    
+
 
 echo "Copying certificates..."
 
@@ -127,6 +129,8 @@ cp "$certs" "$PACKAGE/Frameworks/Python.framework/Versions/Current/etc/openssl/c
 echo "Packaging installer..."
 
 cd "$PACKAGE"
+
+tar xf "$DL/encryptor.tar.gz"
 
 echo "$VER" > version.tag
 
