@@ -4,9 +4,10 @@ from util import *
 
 BUGGY_SFR_MIN = "14.0"
 
-ALLOWED_MACOS_MIN = "14.1.1"
-
 SAFE_MACOS_RVERSION_MIN = "23.3.55.5.2" # 14.2 beta 4
+SAFE_MACOS_VERSION_MIN = "14.3"
+# Allow the recoveryOS we use
+ALLOWED_RECOVERYOS_VERSIONS = ("13.5",)
 
 PROMOTION_DEVICES = {
     "j314cap",
@@ -85,8 +86,16 @@ def run_checks(main):
         logging.info("bugs: SFR not updated beyond problem version")
         return
 
-    if split_ver(main.sysinfo.macos_restore_ver) >= split_ver(SAFE_MACOS_RVERSION_MIN):
+    if main.sysinfo.macos_restore_ver and split_ver(main.sysinfo.macos_restore_ver) >= split_ver(SAFE_MACOS_RVERSION_MIN):
         logging.info("bugs: macOS is new enough to guarantee safety")
+        return
+
+    if main.sysinfo.macos_ver and split_ver(main.sysinfo.macos_ver) >= split_ver(SAFE_MACOS_VERSION_MIN):
+        logging.info("bugs: macOS is new enough to guarantee safety")
+        return
+
+    if "recovery" in main.sysinfo.boot_mode and main.sysinfo.macos_ver in ALLOWED_RECOVERYOS_VERSIONS:
+        logging.info("bugs: allowlisted recoveryOS, assuming we're OK")
         return
 
     request_upgrade()
