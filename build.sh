@@ -81,20 +81,36 @@ else
         "$LIBFFI_BASE_URI/sha256:$digest"
 fi
 
-echo "Building m1n1..."
+if [ -r "$M1N1_STAGE1" ]; then
+    echo "Using '$M1N1_STAGE1' as m1n1 stage1"
+elif [ ! -r "$M1N1/Makefile" ]; then
+    echo "m1n1 missing, did you forget to update the submodules?"
+    exit 1
+else
+    echo "Building m1n1..."
 
-# Do it twice in case of build system shenanigans with versions
-make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
-make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
+    # Do it twice in case of build system shenanigans with versions
+    make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
+    make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
+
+    M1N1_STAGE1="$M1N1/build/m1n1.bin"
+fi
 
 echo "Copying files..."
 
 cp -r "$SRC"/* "$PACKAGE/"
 rm "$PACKAGE/asahi_firmware"
 cp -r "$AFW" "$PACKAGE/"
-cp "$ARTWORK/logos/icns/AsahiLinux_logomark.icns" "$PACKAGE/logo.icns"
+if [ -r "$LOGO" ]; then
+    cp "$LOGO" "$PACKAGE/logo.icns"
+elif [ ! -r "$ARTWORK/logos/icns/AsahiLinux_logomark.icns" ]; then
+    echo "artwork missing, did you forget to update the submodules?"
+    exit 1
+else
+    cp "$ARTWORK/logos/icns/AsahiLinux_logomark.icns" "$PACKAGE/logo.icns"
+fi
 mkdir -p "$PACKAGE/boot"
-cp "$M1N1/build/m1n1.bin" "$PACKAGE/boot"
+cp "$M1N1_STAGE1" "$PACKAGE/boot/m1n1.bin"
 
 echo "Extracting libffi..."
 
