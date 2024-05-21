@@ -353,6 +353,7 @@ class StubInstaller(PackageInstaller):
 
         logging.info("Writing step2.sh")
         step2_sh = open("step2/step2.sh").read()
+        step2_sh = step2_sh.replace("##DISTRO##", DISTRO)
         step2_sh = step2_sh.replace("##VGID##", self.osi.vgid)
         step2_sh = step2_sh.replace("##PREBOOT##", self.osi.preboot_vgid)
         with open(self.step2_sh, "w") as fd:
