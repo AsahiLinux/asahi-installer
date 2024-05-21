@@ -31,9 +31,7 @@ mkdir -p "$PACKAGE/bin"
 
 echo "Determining version..."
 
-VER=$(git describe --always --dirty --tags)
-
-echo "Version: $VER"
+[ -d .git ] && VER=$(git describe --always --dirty --tags)
 
 if [ -z "$VER" ]; then
     if [ -e version.tag ]; then
@@ -43,6 +41,8 @@ if [ -z "$VER" ]; then
         exit 1
     fi
 fi
+
+echo "Version: $VER"
 
 echo "Downloading installer components..."
 
