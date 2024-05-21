@@ -3,6 +3,7 @@
 
 set -e
 
+DISTRO="##DISTRO##"
 VGID="##VGID##"
 PREBOOT="##PREBOOT##"
 
@@ -15,7 +16,7 @@ os_name="${system_dir##*/}"
 # clear
 printf '\033[2J\033[H'
 
-echo "Asahi Linux installer (second step)"
+echo "$DISTRO installer (second step)"
 echo
 echo "VGID: $VGID"
 echo "System volume: $system_dir"
@@ -88,7 +89,7 @@ fi
 
 echo "You will see some messages advising you that you are changing the"
 echo "security level of your system. These changes apply only to your"
-echo "Asahi Linux install, and are necessary to install a third-party OS."
+echo "$DISTRO install, and are necessary to install a third-party OS."
 echo
 echo "Apple Silicon platforms maintain a separate security level for each"
 echo "installed OS, and are designed to retain their security with mixed OSes."
