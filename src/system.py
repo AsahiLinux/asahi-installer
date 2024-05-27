@@ -5,17 +5,18 @@ from util import *
 
 class SystemInfo:
     def __init__(self):
+        self.sanitize = bytes.maketrans(bytes(range(10)) + bytes(range(11, 32)), b"?" * 31)
         self.fetch()
 
     def fetch(self):
         result = subprocess.run(["ioreg", "-alp", "IODeviceTree"],
                                 stdout=subprocess.PIPE, check=True)
 
-        self.ioreg = plistlib.loads(result.stdout)
+        self.ioreg = plistlib.loads(self.sanitize_xml(result.stdout))
 
         result = subprocess.run(["ioreg", "-alp", "IOService"],
                                 stdout=subprocess.PIPE, check=True)
-        self.ioservice = plistlib.loads(result.stdout)
+        self.ioservice = plistlib.loads(self.sanitize_xml(result.stdout))
 
         for dt in self.ioreg["IORegistryEntryChildren"]:
             if dt.get("IOObjectClass", None) == "IOPlatformExpertDevice":
@@ -176,6 +177,11 @@ class SystemInfo:
 
     def get_int(self, val):
         return struct.unpack("<I", val)[0]
+
+    def sanitize_xml(self, s):
+        # IOReg sometimes outputs non-printable garbage in violation of the XML spec.
+        # Filter it out since we hopefully don't care about it.
+        return s.translate(self.sanitize)
 
     def get_refresh_rate(self):
         machine = self.ioservice["IORegistryEntryChildren"][0]
