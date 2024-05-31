@@ -28,6 +28,15 @@ class OSInfo:
     paired: bool = False
     admin_users: object = None
 
+    def update_admin_users(self):
+        try:
+            auri = plistlib.load(open(os.path.join(self.preboot, self.vgid,
+                                                   "var/db/AdminUserRecoveryInfo.plist"), "rb"))
+            self.admin_users = list(auri.keys())
+            logging.info(f"  Admin users: {self.admin_users}")
+        except:
+            logging.warning(f"  Failed to get AdminUserRecoveryInfo.plist")
+
     def __str__(self):
         if self.vgid == UUID_SROS:
             return f"recoveryOS v{self.version} [Primary recoveryOS]"
@@ -196,14 +205,7 @@ class OSEnum:
                 logging.info(f"    Not Found")
                 continue
 
-        try:
-            auri = plistlib.load(open(os.path.join(mounts["Preboot"], vgid,
-                                                   "var/db/AdminUserRecoveryInfo.plist"), "rb"))
-            osi.admin_users = list(auri.keys())
-            logging.info(f"  Admin users: {osi.admin_users}")
-        except:
-            logging.warning(f"  Failed to get AdminUserRecoveryInfo.plist")
-            pass
+        osi.update_admin_users()
 
         try:
             bps = self.bputil("-d", "-v", vgid)
