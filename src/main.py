@@ -225,7 +225,7 @@ class InstallerMain:
             print()
             p_info("These users are machine admins: {' '.join(self.cur_os.admin_users)}")
             print()
-            p_message("You have to be a machine admin to install Asahi Linux.")
+            p_message(f"You have to be a machine admin to install {DISTRO}.")
             sys.exit(1)
 
     def get_admin_credentials(self):
