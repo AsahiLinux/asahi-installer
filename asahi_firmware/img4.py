@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: MIT
 import sys
-from . import asn1
+try:
+    from . import asn1
+except ImportError:
+    import asn1
 from ctypes import *
 
 __all__ = ["img4p_extract_compressed", "img4p_extract"]
