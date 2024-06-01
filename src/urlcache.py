@@ -112,6 +112,9 @@ class URLCache:
                 logging.error(f"Response headers: {res.headers.as_string()}")
             raise
 
+        if not d:
+            raise Exception(f"Server returned no data for for {self.url_str} range {off}-{off+size-1}")
+
         self.spin = (self.spin + 1) % len(self.SPINNER)
         sys.stdout.write(f"\r{self.SPINNER[self.spin]} ")
         sys.stdout.flush()
