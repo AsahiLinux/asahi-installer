@@ -5,6 +5,12 @@
 if true; then
     set -e
 
+    if [ ! -e /System ]; then
+        echo "You appear to be running this script from Linux or another non-macOS system."
+        echo "Asahi Linux can only be installed from macOS (or recoveryOS)."
+        exit 1
+    fi
+
     export LC_ALL=en_US.UTF-8
     export LANG=en_US.UTF-8
     export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
