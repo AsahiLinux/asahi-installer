@@ -201,7 +201,8 @@ class PackageInstaller:
         copied = 0
         bps = 0
         st = time.time()
-        self.ucache.bytes_read = 0
+        if self.ucache:
+            self.ucache.bytes_read = 0
         while True:
             if size is not None:
                 prog = copied / size * 100
@@ -213,7 +214,8 @@ class PackageInstaller:
                 break
             dfd.write(d)
             copied += len(d)
-            bps = self.ucache.bytes_read / (time.time() - st)
+            if self.ucache:
+                bps = self.ucache.bytes_read / (time.time() - st)
 
         if size is not None:
             sys.stdout.write("\033[3G100.00% ")
@@ -245,8 +247,10 @@ class PackageInstaller:
         scratch = bytes(lzfse.compression_encode_scratch_buffer_size(COMPRESSION_LZFSE))
         outbuf = bytes(CHUNK_SIZE)
         st = time.time()
-        self.ucache.bytes_read = 0
+        if self.ucache:
+            self.ucache.bytes_read = 0
         copied = 0
+        bps = 0
         with open(path + '/..namedfork/rsrc', 'wb') as res_fork:
             res_fork.write(b'\0' * cur_pos)
             for i in range(num_chunks):
@@ -254,7 +258,8 @@ class PackageInstaller:
                 inbuf = istream.read(CHUNK_SIZE)
                 copied += len(inbuf)
                 prog = copied / size * 100
-                bps = self.ucache.bytes_read / (time.time() - st)
+                if self.ucache:
+                    bps = self.ucache.bytes_read / (time.time() - st)
                 sys.stdout.write(f"\033[3G{prog:6.2f}% ({ssize(bps)}/s)")
                 sys.stdout.flush()
                 self.printed_progress = True
