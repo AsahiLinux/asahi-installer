@@ -908,6 +908,7 @@ class InstallerMain:
         oses_upgradable = []
 
         for i, p in enumerate(self.parts):
+            p.index = i
             if p.type in ("Apple_APFS_ISC",):
                 continue
             if p.free:
@@ -977,6 +978,8 @@ class InstallerMain:
                 else:
                     state += " "
                 p_plain(f"    OS: [{state}] {os}")
+                if os.attached_partitions:
+                    p_plain(f"      Extra partitions: {' '.join('#' + str(i.index) for i in os.attached_partitions)}")
                 if os.stub and os.m1n1_ver and os.m1n1_ver != self.m1n1_ver:
                     oses_upgradable.append((p, os))
                 elif os.stub and not (os.bp and os.bp.get("coih", None)):

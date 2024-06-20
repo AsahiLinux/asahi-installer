@@ -27,6 +27,7 @@ class OSInfo:
     bp: object = None
     paired: bool = False
     admin_users: object = None
+    attached_partitions: list = None
 
     def update_admin_users(self):
         try:
@@ -74,6 +75,26 @@ class OSEnum:
                 self.collect_recovery(p)
             else:
                 self.collect_part(p)
+
+        for i, p in enumerate(parts):
+            if len(p.os) != 1:
+                continue
+            os = p.os[0]
+            if not os.stub:
+                continue
+            try:
+                efi = parts[i + 1]
+            except IndexError:
+                continue
+
+            if efi.type != "EFI":
+                continue
+            os.attached_partitions = [efi]
+            for j in range(i + 2, min(len(parts), i + 5)):
+                q = parts[j]
+                if q.type != "Linux Filesystem":
+                    continue
+                os.attached_partitions.append(q)
 
     def collect_recovery(self, part):
         logging.info(f"OSEnum.collect_recovery(part={part.name})")
