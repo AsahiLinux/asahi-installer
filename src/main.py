@@ -411,6 +411,7 @@ class InstallerMain:
             return False
 
         self.dutil.remount_rw(self.ins.osi.system)
+        self.ins.repair(self.cur_os)
 
         if upgrade:
             # Note: we get the vars out of the boot.bin in the system volume instead of the

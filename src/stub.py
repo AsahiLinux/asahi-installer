@@ -124,6 +124,7 @@ class StubInstaller(PackageInstaller):
         self.sv_path = os.path.join(self.core_services, "SystemVersion.plist")
         self.sv_dis_path = os.path.join(self.core_services, "SystemVersion-disabled.plist")
         self.icon_path = os.path.join(self.osi.system, ".VolumeIcon.icns")
+        self.pb_vgid = os.path.join(self.osi.preboot, self.osi.vgid)
 
     def check_existing_install(self, osi):
         self.osi = osi
@@ -165,6 +166,48 @@ class StubInstaller(PackageInstaller):
 
     def open(self, path):
         return self.pkg.open(self.path(path))
+
+    def copy_admin_users(self, cur_os):
+        logging.info("Copying admin users")
+
+        os.makedirs(os.path.join(self.pb_vgid, "var/db"), exist_ok=True)
+        admin_users = os.path.join(cur_os.preboot, cur_os.vgid, "var/db/AdminUserRecoveryInfo.plist")
+        tg_admin_users = os.path.join(self.pb_vgid, "var/db/AdminUserRecoveryInfo.plist")
+        if os.path.exists(tg_admin_users):
+            self.chflags("noschg", tg_admin_users)
+        shutil.copy(admin_users, tg_admin_users)
+
+        self.copy_idata.append((tg_admin_users, "AdminUserRecoveryInfo.plist"))
+
+        admin_users = plistlib.load(open(tg_admin_users, "rb"))
+        self.stub_info["admin_users"] = {}
+        for user, info in admin_users.items():
+            self.stub_info["admin_users"][user] = {
+                "uid": info["GeneratedUID"],
+                "real_name": info["RealName"],
+            }
+
+        # Stop macOS <12.0 bootability stufff from clobbering this file
+        self.chflags("schg", tg_admin_users)
+
+    def repair(self, cur_os):
+        self.get_paths()
+        self.copy_admin_users(cur_os)
+
+        if self.osi.attached_partitions:
+            logging.info("Found attached partitions")
+            efi_part = self.osi.attached_partitions[0]
+            if efi_part.type != "EFI":
+                logging.info("EFI partition not found")
+            else:
+                logging.info("EFI partition found")
+                mountpoint = self.dutil.mount(efi_part.name)
+                asahi = os.path.join(mountpoint, "asahi")
+                if os.path.exists(asahi):
+                    self.collect_installer_data(asahi, merge_stub_info=True)
+                    logging.info("Admin users updated in ESP")
+                else:
+                    logging.info("'asahi' dir not found in ESP")
 
     def install_files(self, cur_os):
         logging.info("StubInstaller.install_files()")
@@ -247,12 +290,11 @@ class StubInstaller(PackageInstaller):
         p_progress("Setting up Preboot volume...")
         logging.info("Setting up Preboot volume")
 
-        pb_vgid = os.path.join(self.osi.preboot, self.osi.vgid)
-        os.makedirs(pb_vgid, exist_ok=True)
+        os.makedirs(self.pb_vgid, exist_ok=True)
 
         bless2 = bootcaches["bless2"]
 
-        restore_bundle = os.path.join(pb_vgid, bless2["RestoreBundlePath"])
+        restore_bundle = os.path.join(self.pb_vgid, bless2["RestoreBundlePath"])
         os.makedirs(restore_bundle, exist_ok=True)
         restore_manifest = os.path.join(restore_bundle, "BuildManifest.plist")
         with open(restore_manifest, "wb") as fd:
@@ -292,25 +334,7 @@ class StubInstaller(PackageInstaller):
 
         self.flush_progress()
 
-        os.makedirs(os.path.join(pb_vgid, "var/db"), exist_ok=True)
-        admin_users = os.path.join(cur_os.preboot, cur_os.vgid, "var/db/AdminUserRecoveryInfo.plist")
-        tg_admin_users = os.path.join(pb_vgid, "var/db/AdminUserRecoveryInfo.plist")
-        if os.path.exists(tg_admin_users):
-            self.chflags("noschg", tg_admin_users)
-        shutil.copy(admin_users, tg_admin_users)
-
-        self.copy_idata.append((tg_admin_users, "AdminUserRecoveryInfo.plist"))
-
-        admin_users = plistlib.load(open(tg_admin_users, "rb"))
-        self.stub_info["admin_users"] = {}
-        for user, info in admin_users.items():
-            self.stub_info["admin_users"][user] = {
-                "uid": info["GeneratedUID"],
-                "real_name": info["RealName"],
-            }
-
-        # Stop macOS <12.0 bootability stufff from clobbering this file
-        self.chflags("schg", tg_admin_users)
+        self.copy_admin_users(cur_os)
 
         # This is a workaround for some screwiness in the macOS <12.0 bootability
         # code, which ends up putting the apticket in the wrong volume...
@@ -438,12 +462,19 @@ class StubInstaller(PackageInstaller):
         logging.info("Detaching recovery ramdisk")
         subprocess.run(["hdiutil", "detach", "-quiet", "recovery"])
 
-    def collect_installer_data(self, path):
+    def collect_installer_data(self, path, merge_stub_info=False):
         p_progress("Collecting installer data...")
         logging.info(f"Copying installer data to {path}")
 
         for src, name in self.copy_idata:
             shutil.copy(src, os.path.join(path, name))
 
+        if merge_stub_info:
+            with open(os.path.join(path, "stub_info.json"), "r") as fd:
+                stub_info = json.load(fd)
+            stub_info.update(self.stub_info)
+        else:
+            stub_info = self.stub_info
+
         with open(os.path.join(path, "stub_info.json"), "w") as fd:
-            json.dump(self.stub_info, fd)
+            json.dump(stub_info, fd)
