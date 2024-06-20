@@ -197,6 +197,8 @@ class PackageInstaller:
         self.extract_file(src, dest_path)
 
     def fdcopy(self, sfd, dfd, size=None):
+        if size is not None and size % (4 * 1024) != 0:
+            raise Exception("The size of the rootfs image file must be a multiple of 4KiB.")
         BLOCK = 16 * 1024 * 1024
         copied = 0
         bps = 0
