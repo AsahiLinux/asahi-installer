@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: MIT
-import struct, os, logging
+import os, logging
 from .img4 import img4p_extract
-from .core import FWFile
 from .asmedia import extract_asmedia
 
 log = logging.getLogger("asahi_firmware.kernel")
