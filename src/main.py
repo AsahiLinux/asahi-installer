@@ -535,7 +535,7 @@ class InstallerMain:
             p_progress("Setting the new OS as the default boot volume...")
             try:
                 subprocess.run(["bless", "--setBoot",
-                                "--device", "/dev/" + self.ins.osi.sys_volume,
+                                "--mount", self.ins.osi.system,
                                 "--user", self.admin_user, "--stdinpass"],
                                input=self.admin_password.encode("utf-8"),
                                check=True)
@@ -548,7 +548,7 @@ class InstallerMain:
                     p_warning("Let's try a different way. Sorry, you'll have to type it in again.")
                     try:
                         subprocess.run(["bless", "--setBoot",
-                                        "--device", "/dev/" + self.ins.osi.sys_volume,
+                                        "--mount", self.ins.osi.system,
                                         "--user", self.admin_user], check=True)
                         print()
                         return
