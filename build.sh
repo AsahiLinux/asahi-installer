@@ -99,7 +99,7 @@ fi
 echo "Copying files..."
 
 cp -r "$SRC"/* "$PACKAGE/"
-rm "$PACKAGE/asahi_firmware"
+rm -rf "$PACKAGE/asahi_firmware"
 cp -r "$AFW" "$PACKAGE/"
 if [ -r "$LOGO" ]; then
     cp "$LOGO" "$PACKAGE/logo.icns"
@@ -121,8 +121,10 @@ echo "Extracting Python framework..."
 
 mkdir -p "$PACKAGE/Frameworks/Python.framework"
 
+7z x -so "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | wc
+7z x -so "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | zcat | wc
 7z x -so "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | zcat | \
-    cpio -i -D "$PACKAGE/Frameworks/Python.framework"
+    (cd "$PACKAGE/Frameworks/Python.framework"; cpio -i)
 
 
 cd "$PACKAGE/Frameworks/Python.framework/Versions/Current"
