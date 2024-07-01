@@ -7,3 +7,5 @@ latest
 *.egg-info
 build
 dist
+releases/*
+
