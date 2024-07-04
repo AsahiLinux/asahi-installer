@@ -1,0 +1,101 @@
+name: Static Analysis
+
+on: [push, pull_request]
+
+jobs:
+  apple-bash:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Install Shfmt
+        run: sudo apt-get install -y shfmt
+
+      - name: Run ShellCheck
+        run: |
+          find . -name "*.sh" -print0 | xargs -0 shellcheck --shell=bash | tee shellcheck-output.txt || true
+        continue-on-error: true
+
+      - name: Upload ShellCheck results
+        uses: actions/upload-artifact@v4
+        with:
+          name: shellcheck-results
+          path: shellcheck-output.txt
+
+      - name: Run Shfmt
+        run: |
+          shfmt -d -i 2 -ci -sr -kp -s . | tee shfmt-output.txt || true
+        continue-on-error: true
+
+      - name: Upload Shfmt results
+        uses: actions/upload-artifact@v4
+        with:
+          name: shfmt-results
+          path: shfmt-output.txt
+
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 bandit
+
+      - name: Run Flake8
+        run: |
+          flake8 . --output-file=flake8-output.txt || true
+        continue-on-error: true
+
+      - name: Upload Flake8 results
+        uses: actions/upload-artifact@v4
+        with:
+          name: flake8-results
+          path: flake8-output.txt
+
+      - name: Run Bandit
+        run: |
+          bandit -r . -o bandit-output.txt -f txt || truefe
+        continue-on-error: true
+
+      - name: Upload Bandit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-results
+          path: bandit-output.txt
+
+  yamllint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install yamllint
+        run: |
+          pip install yamllint
+
+      - name: Run yamllint
+        run: |
+          yamllint . > yamllint-output.txt || true
+
+      - name: Upload yamllint results
+        uses: actions/upload-artifact@v4
+        with:
+          name: yamllint-results
+          path: yamllint-output.txt

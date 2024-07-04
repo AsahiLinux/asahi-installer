@@ -2,6 +2,16 @@
 
 TODO: document
 
+![Static Analysis](https://github.com/AsahiLinux/asahi-installer/actions/workflows/static-analysis.yml/badge.svg)
+
+## Static Analysis Results
+
+- [ShellCheck Results](https://github.com/AsahiLinux/asahi-installer/actions/runs/latest/shellcheck-results)
+- [Shfmt Results](https://github.com/AsahiLinux/asahi-installer/actions/runs/latest/shfmt-results)
+- [Flake8 Results](https://github.com/AsahiLinux/asahi-installer/actions/runs/latest/flake8-results)
+- [Bandit Results](https://github.com/AsahiLinux/asahi-installer/actions/runs/latest/bandit-results)
+- [YAML Lint Results](https://github.com/AsahiLinux/asahi-installer/actions/runs/latest/yamllint-results)
+
 ## License
 
 Copyright The Asahi Linux Contributors
