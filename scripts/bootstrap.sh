@@ -3,62 +3,62 @@
 
 # Truncation guard
 if true; then
-    set -e
+  set -e
 
-    if [ ! -e /System ]; then
-        echo "You appear to be running this script from Linux or another non-macOS system."
-        echo "Asahi Linux can only be installed from macOS (or recoveryOS)."
-        exit 1
-    fi
+  if [ ! -e /System ]; then
+      echo "You appear to be running this script from Linux or another non-macOS system."
+      echo "Asahi Linux can only be installed from macOS (or recoveryOS)."
+      exit 1
+  fi
 
-    export LC_ALL=en_US.UTF-8
-    export LANG=en_US.UTF-8
-    export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+  export LC_ALL=en_US.UTF-8
+  export LANG=en_US.UTF-8
+  export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
-    export VERSION_FLAG=http://localhost:5000/releases/latest
-    export INSTALLER_BASE=http://localhost:5000/releases
-    export INSTALLER_DATA=http://localhost:5000/data/installer_data.json
-    export REPO_BASE=https://cdn.asahilinux.org
+  export VERSION_FLAG=http://localhost:5000/releases/latest
+  export INSTALLER_BASE=http://localhost:5000/releases
+  export INSTALLER_DATA=http://localhost:5000/data/installer_data.json
+  export REPO_BASE=https://cdn.asahilinux.org
 
-    export EXPERT=1
+  export EXPERT=1
 
-    #TMP="$(mktemp -d)"
-    TMP=/tmp/asahi-install
+  #TMP="$(mktemp -d)"
+  TMP=/tmp/asahi-install
 
-    echo
-    echo "Bootstrapping installer:"
+  echo
+  echo "Bootstrapping installer:"
 
-    if [ -e "$TMP" ]; then
-        mv "$TMP" "$TMP-$(date +%Y%m%d-%H%M%S)"
-    fi
+  if [ -e "$TMP" ]; then
+    mv "$TMP" "$TMP-$(date +%Y%m%d-%H%M%S)"
+  fi
 
-    mkdir -p "$TMP"
-    cd "$TMP"
+  mkdir -p "$TMP"
+  cd "$TMP"
 
-    echo "  Checking version..."
+  echo "  Checking version..."
 
-    PKG_VER="$(curl --no-progress-meter -L "$VERSION_FLAG")"
-    echo "  Version: $PKG_VER"
+  PKG_VER="$(curl --no-progress-meter -L "$VERSION_FLAG")"
+  echo "  Version: $PKG_VER"
 
-    PKG="installer-$PKG_VER.tar.gz"
+  PKG="installer-$PKG_VER.tar.gz"
 
-    echo "  Downloading..."
+  echo "  Downloading..."
 
-    curl --no-progress-meter -L -o "$PKG" "$INSTALLER_BASE/$PKG"
-    curl --no-progress-meter -L -O "$INSTALLER_DATA"
+  curl --no-progress-meter -L -o "$PKG" "$INSTALLER_BASE/$PKG"
+  curl --no-progress-meter -L -O "$INSTALLER_DATA"
 
-    echo "  Extracting..."
+  echo "  Extracting..."
 
-    tar xf "$PKG"
+  tar xf "$PKG"
 
-    echo "  Initializing..."
-    echo
+  echo "  Initializing..."
+  echo
 
-    if [ "$USER" != "root" ]; then
-        echo "The installer needs to run as root."
-        echo "Please enter your sudo password if prompted."
-        exec caffeinate -dis sudo -E ./install.sh "$@"
-    else
-        exec caffeinate -dis ./install.sh "$@"
-    fi
+  if [ "$USER" != "root" ]; then
+    echo "The installer needs to run as root."
+    echo "Please enter your sudo password if prompted."
+    exec caffeinate -dis sudo -E ./install.sh "$@"
+  else
+    exec caffeinate -dis ./install.sh "$@"
+  fi
 fi

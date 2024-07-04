@@ -34,12 +34,12 @@ echo "Determining version..."
 [ -d .git ] && VER=$(git describe --always --dirty --tags)
 
 if [ -z "$VER" ]; then
-    if [ -e version.tag ]; then
-        VER="$(cat version.tag)"
-    else
-        echo "Could not determine version!"
-        exit 1
-    fi
+  if [ -e version.tag ]; then
+    VER="$(cat version.tag)"
+  else
+    echo "Could not determine version!"
+    exit 1
+  fi
 fi
 
 echo "Version: $VER"
@@ -51,63 +51,64 @@ cd "$DL"
 echo " - Python"
 
 if [ -e "$PYTHON_PKG" ]; then
-    echo "Using existing $PYTHON_PKG"
+  echo "Using existing $PYTHON_PKG"
 else
-    wget -Nc "$PYTHON_URI"
+  wget -Nc "$PYTHON_URI"
 fi
 
 echo " - libffi"
 
 if [ -e "$LIBFFI_PKG" ]; then
-    echo "Using existing $LIBFFI_PKG"
+  echo "Using existing $LIBFFI_PKG"
 else
-    # get a JSON with an anonymous token
-    token=$(curl -s "https://ghcr.io/token?service=ghcr.io&scope=repository%3Ahomebrew/core/go%3Apull" | jq -jr ".token")
+  # get a JSON with an anonymous token
+  token=$(curl -s "https://ghcr.io/token?service=ghcr.io&scope=repository%3Ahomebrew/core/go%3Apull" | jq -jr ".token")
 
-    digest=$( \
-        curl -s \
-        -H "Authorization: Bearer ${token}" \
-        -H 'Accept: application/vnd.oci.image.index.v1+json' \
-        $LIBFFI_MANIFEST_URI \
-        | jq -r '[.manifests[] |
-                select(.platform.architecture == "arm64"
-                and .platform."os.version" == "'"$LIBFFI_TARGET_OS"'")
-            ] | first | .annotations."sh.brew.bottle.digest"' \
-    )
+  digest=$(
+    curl -s \
+      -H "Authorization: Bearer ${token}" \
+      -H 'Accept: application/vnd.oci.image.index.v1+json' \
+      $LIBFFI_MANIFEST_URI |
+      jq -r '[
+          .manifests[] |
+          select(.platform.architecture == "arm64"
+          and .platform."os.version" == "'"$LIBFFI_TARGET_OS"'")
+        ] | first | .annotations."sh.brew.bottle.digest"'
+  )
 
-    curl -L -o "$LIBFFI_PKG" \
-        -H "Authorization: Bearer ${token}" \
-        -H 'Accept: application/vnd.oci.image.index.v1+json' \
-        "$LIBFFI_BASE_URI/sha256:$digest"
+  curl -L -o "$LIBFFI_PKG" \
+    -H "Authorization: Bearer ${token}" \
+    -H 'Accept: application/vnd.oci.image.index.v1+json' \
+    "$LIBFFI_BASE_URI/sha256:$digest"
 fi
 
 if [ -r "$M1N1_STAGE1" ]; then
-    echo "Using '$M1N1_STAGE1' as m1n1 stage1"
+  echo "Using '$M1N1_STAGE1' as m1n1 stage1"
 elif [ ! -r "$M1N1/Makefile" ]; then
-    echo "m1n1 missing, did you forget to update the submodules?"
-    exit 1
+  echo "m1n1 missing, did you forget to update the submodules?"
+  exit 1
 else
-    echo "Building m1n1..."
+  echo "Building m1n1..."
 
-    # Do it twice in case of build system shenanigans with versions
-    make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
-    make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
+  # Do it twice in case of build system shenanigans with versions
+  make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
+  make -C "$M1N1" RELEASE=1 CHAINLOADING=1 -j4
 
-    M1N1_STAGE1="$M1N1/build/m1n1.bin"
+  M1N1_STAGE1="$M1N1/build/m1n1.bin"
 fi
 
 echo "Copying files..."
 
 cp -r "$SRC"/* "$PACKAGE/"
-rm "$PACKAGE/asahi_firmware"
+rm -rf "$PACKAGE/asahi_firmware"
 cp -r "$AFW" "$PACKAGE/"
 if [ -r "$LOGO" ]; then
-    cp "$LOGO" "$PACKAGE/logo.icns"
+  cp "$LOGO" "$PACKAGE/logo.icns"
 elif [ ! -r "$ARTWORK/logos/icns/AsahiLinux_logomark.icns" ]; then
-    echo "artwork missing, did you forget to update the submodules?"
-    exit 1
+  echo "artwork missing, did you forget to update the submodules?"
+  exit 1
 else
-    cp "$ARTWORK/logos/icns/AsahiLinux_logomark.icns" "$PACKAGE/logo.icns"
+  cp "$ARTWORK/logos/icns/AsahiLinux_logomark.icns" "$PACKAGE/logo.icns"
 fi
 mkdir -p "$PACKAGE/boot"
 cp "$M1N1_STAGE1" "$PACKAGE/boot/m1n1.bin"
@@ -121,9 +122,11 @@ echo "Extracting Python framework..."
 
 mkdir -p "$PACKAGE/Frameworks/Python.framework"
 
-7z x -so "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | zcat | \
-    cpio -i -D "$PACKAGE/Frameworks/Python.framework"
-
+7z x -so "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | zcat |
+  ( 
+    cd "$PACKAGE/Frameworks/Python.framework"
+    cpio -i
+  )
 
 cd "$PACKAGE/Frameworks/Python.framework/Versions/Current"
 
@@ -141,7 +144,6 @@ cd python3.*
 rm -rf test ensurepip idlelib
 cd lib-dynload
 rm -f _test* _tkinter*
-    
 
 echo "Copying certificates..."
 

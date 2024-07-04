@@ -4,8 +4,8 @@ set -e
 cd "$(dirname "$0")"
 base="$PWD"
 
-if [ -e $HOME/.cargo/env ] ; then
-    source $HOME/.cargo/env
+if [ -e $HOME/.cargo/env ]; then
+  source $HOME/.cargo/env
 fi
 
 export INSTALLER_BASE=https://cdn.asahilinux.org/installer-dev
