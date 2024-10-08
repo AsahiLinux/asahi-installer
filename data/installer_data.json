@@ -5,7 +5,7 @@
             "default_os_name": "Fedora Linux with KDE Plasma",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-kde-202405221600.zip",
+            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-kde-202410071603.zip",
             "icon": "fedora.icns",
             "supported_fw": [
                 "12.3",
@@ -22,7 +22,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0xa63e863c",
+                    "volume_id": "0x9d773f46",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
@@ -36,7 +36,7 @@
                 {
                     "name": "Root",
                     "type": "Linux",
-                    "size": "14226010112B",
+                    "size": "14510174208B",
                     "expand": true,
                     "image": "root.img"
                 }
@@ -47,7 +47,7 @@
             "default_os_name": "Fedora Linux with GNOME",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-gnome-202405221600.zip",
+            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-gnome-202410071603.zip",
             "icon": "fedora.icns",
             "supported_fw": [
                 "12.3",
@@ -64,7 +64,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0x9d8112a7",
+                    "volume_id": "0xa4805400",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
@@ -78,7 +78,7 @@
                 {
                     "name": "Root",
                     "type": "Linux",
-                    "size": "11345571840B",
+                    "size": "11628687360B",
                     "expand": true,
                     "image": "root.img"
                 }
@@ -89,7 +89,7 @@
             "default_os_name": "Fedora Linux Server",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-server-202405221600.zip",
+            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-server-202410071603.zip",
             "icon": "fedora.icns",
             "supported_fw": [
                 "12.3",
@@ -103,7 +103,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0x8a1c9b0b",
+                    "volume_id": "0x88d3c992",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
@@ -117,7 +117,7 @@
                 {
                     "name": "Root",
                     "type": "Linux",
-                    "size": "4481593344B",
+                    "size": "4575965184B",
                     "expand": true,
                     "image": "root.img"
                 }
@@ -128,7 +128,7 @@
             "default_os_name": "Fedora Linux Minimal",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-minimal-202405221600.zip",
+            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-40-minimal-202410071603.zip",
             "icon": "fedora.icns",
             "supported_fw": [
                 "12.3",
@@ -142,7 +142,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0x86e84498",
+                    "volume_id": "0x8293a8b7",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
@@ -156,7 +156,7 @@
                 {
                     "name": "Root",
                     "type": "Linux",
-                    "size": "3933188096B",
+                    "size": "4053774336B",
                     "expand": true,
                     "image": "root.img"
                 }
