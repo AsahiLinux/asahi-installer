@@ -163,38 +163,6 @@
             ]
         },
         {
-            "name": "Arch Linux ARM (not recommended)",
-            "default_os_name": "Arch Linux ARM",
-            "expert": true,
-            "boot_object": "m1n1.bin",
-            "next_object": "m1n1/boot.bin",
-            "package": "asahi-base-20231012-1.zip",
-            "supported_fw": [
-                "12.3",
-                "12.3.1",
-                "13.5"
-            ],
-            "partitions": [
-                {
-                    "name": "EFI",
-                    "type": "EFI",
-                    "size": "500MB",
-                    "format": "fat",
-                    "volume_id": "0x2abf9f91",
-                    "copy_firmware": true,
-                    "copy_installer_data": true,
-                    "source": "esp"
-                },
-                {
-                    "name": "Root",
-                    "type": "Linux",
-                    "size": "5GB",
-                    "expand": true,
-                    "image": "root.img"
-                }
-            ]
-        },
-        {
             "name": "UEFI environment only (m1n1 + U-Boot + ESP)",
             "default_os_name": "UEFI boot",
             "boot_object": "m1n1.bin",
