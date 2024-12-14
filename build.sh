@@ -99,7 +99,7 @@ fi
 echo "Copying files..."
 
 cp -r "$SRC"/* "$PACKAGE/"
-rm "$PACKAGE/asahi_firmware"
+rm -r "$PACKAGE/asahi_firmware"
 cp -r "$AFW" "$PACKAGE/"
 if [ -r "$LOGO" ]; then
     cp "$LOGO" "$PACKAGE/logo.icns"
