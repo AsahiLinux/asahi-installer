@@ -223,7 +223,7 @@ class InstallerMain:
         if self.sysinfo.boot_mode == "macOS" and self.sysinfo.login_user not in self.cur_os.admin_users:
             p_error(f"Your login user {self.sysinfo.login_user} is not a machine admin.")
             print()
-            p_info("These users are machine admins: {' '.join(self.cur_os.admin_users)}")
+            p_info(f"These users are machine admins: {' '.join(self.cur_os.admin_users)}")
             print()
             p_message("You have to be a machine admin to install Asahi Linux.")
             sys.exit(1)
