@@ -1,5 +1,5 @@
 import json, os, logging, time
-from urllib import request, parse
+from urllib import request
 from util import *
 
 EXPLANATIONS = {
