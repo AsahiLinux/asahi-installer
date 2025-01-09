@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import pathlib, tempfile, subprocess, os.path
+import pathlib, tempfile, subprocess
 
 from .core import FWPackage
 from .wifi import WiFiFWCollection
