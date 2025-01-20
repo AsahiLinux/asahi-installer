@@ -2,7 +2,7 @@
     "os_list": [
         {
             "name": "Fedora Asahi Remix 41 with KDE Plasma",
-            "default_os_name": "Fedora Linux with KDE Plasma",
+            "default_os_name": "Fedora Linux",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-41-kde-202412161600.zip",
@@ -44,7 +44,7 @@
         },
         {
             "name": "Fedora Asahi Remix 41 with GNOME",
-            "default_os_name": "Fedora Linux with GNOME",
+            "default_os_name": "Fedora Linux",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-41-gnome-202412161600.zip",
@@ -86,7 +86,7 @@
         },
         {
             "name": "Fedora Asahi Remix 41 Server",
-            "default_os_name": "Fedora Linux Server",
+            "default_os_name": "Fedora Linux",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-41-server-202412161600.zip",
@@ -125,7 +125,7 @@
         },
         {
             "name": "Fedora Asahi Remix 41 Minimal",
-            "default_os_name": "Fedora Linux Minimal",
+            "default_os_name": "Fedora Linux",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
             "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-41-minimal-202412161600.zip",
