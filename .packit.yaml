@@ -1,0 +1,38 @@
+# See the documentation for more information:
+# https://packit.dev/docs/configuration/
+
+specfile_path: asahi-installer.spec
+files_to_sync:
+  - asahi-installer.spec
+  - .packit.yaml
+
+actions:
+  # Fetch the specfile from Rawhide, disable rpmautospec and download the
+  # missing libffi tarball from the lookaside
+  post-upstream-clone: "bash -c \"curl -s https://src.fedoraproject.org/rpms/asahi-installer/raw/main/f/asahi-installer.spec | sed -e '/^%autochangelog$/d' > asahi-installer.spec && curl -s --remote-name https://src.fedoraproject.org/repo/pkgs/asahi-installer/libffi-3.4.6-macos.tar.gz/sha512/84ad900bc28258a7617850612790150fb639496cb8e8bea1a96e75ecc5b678e29522c415973950a84b21adac239f3fbb6361850d2625e5072a5f341b3feb5035/libffi-3.4.6-macos.tar.gz\""
+
+srpm_build_deps:
+  - bash
+  - curl
+  - sed
+
+jobs:
+- job: copr_build
+  trigger: commit
+  owner: "@asahi"
+  project: packit-builds
+  targets:
+    - fedora-all-aarch64
+    - fedora-rawhide-i386
+    - fedora-rawhide-ppc64le
+    - fedora-rawhide-x86_64
+
+- job: copr_build
+  trigger: pull_request
+  owner: "@asahi"
+  project: packit-builds
+  targets:
+    - fedora-all-aarch64
+    - fedora-rawhide-i386
+    - fedora-rawhide-ppc64le
+    - fedora-rawhide-x86_64
