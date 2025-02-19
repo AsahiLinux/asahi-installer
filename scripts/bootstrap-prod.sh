@@ -15,7 +15,7 @@ if true; then
     export LANG=en_US.UTF-8
     export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
-    if ! curl --no-progress-meter file:/// &>/dev/null; then
+    if ! curl --no-progress-meter file:/// >/dev/null 2>&1; then
         echo "Your version of cURL is too old. This usually means your macOS is very out"
         echo "of date. Installing Asahi Linux requires at least macOS version 13.5."
         exit 1
