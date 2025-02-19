@@ -7,3 +7,8 @@ latest
 *.egg-info
 build
 dist
+/asahi-installer\.spec
+/asahi-installer-*\.src\.rpm
+/key\.asc
+/python-3.9.6-macos11\.pkg
+/python-3.9.6-macos11\.pkg\.asc
