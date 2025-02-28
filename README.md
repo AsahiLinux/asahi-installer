@@ -1,4 +1,4 @@
-# Asahi Linux installer
+# Asahi Linux Installer
 
 TODO: document
 
