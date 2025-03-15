@@ -203,7 +203,7 @@ class PackageInstaller:
         st = time.time()
         self.ucache.bytes_read = 0
         while True:
-            if size is not None:
+            if size is not None and size != 0:
                 prog = copied / size * 100
                 sys.stdout.write(f"\033[3G{prog:6.2f}% ({ssize(bps)}/s)")
                 sys.stdout.flush()
