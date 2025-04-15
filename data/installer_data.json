@@ -5,7 +5,7 @@
             "default_os_name": "Fedora Linux with KDE Plasma",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-42-kde-202504141600.zip",
+            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-42-kde-202504151714.zip",
             "icon": "fedora.icns",
             "supported_fw": [
                 "12.3",
@@ -22,7 +22,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0x4ea31977",
+                    "volume_id": "0x7c14f8b0",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
@@ -47,7 +47,7 @@
             "default_os_name": "Fedora Linux with GNOME",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-42-gnome-202504141600.zip",
+            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-42-gnome-202504151714.zip",
             "icon": "fedora.icns",
             "supported_fw": [
                 "12.3",
@@ -64,7 +64,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0x54ac478e",
+                    "volume_id": "0x8143896a",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
@@ -89,7 +89,7 @@
             "default_os_name": "Fedora Linux Server",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-42-server-202504141600.zip",
+            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-42-server-202504151714.zip",
             "icon": "fedora.icns",
             "supported_fw": [
                 "12.3",
@@ -103,7 +103,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0x3a16cbb4",
+                    "volume_id": "0x69267709",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
@@ -128,7 +128,7 @@
             "default_os_name": "Fedora Linux Minimal",
             "boot_object": "m1n1.bin",
             "next_object": "m1n1/boot.bin",
-            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-42-minimal-202504141600.zip",
+            "package": "https://asahilinux-fedora.b-cdn.net/os/fedora-42-minimal-202504151714.zip",
             "icon": "fedora.icns",
             "supported_fw": [
                 "12.3",
@@ -142,7 +142,7 @@
                     "type": "EFI",
                     "size": "524288000B",
                     "format": "fat",
-                    "volume_id": "0x2de4d73c",
+                    "volume_id": "0x57d3d55b",
                     "copy_firmware": true,
                     "copy_installer_data": true,
                     "source": "esp"
