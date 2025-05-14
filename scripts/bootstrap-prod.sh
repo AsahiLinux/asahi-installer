@@ -23,7 +23,7 @@ if true; then
 
     export VERSION_FLAG=https://cdn.asahilinux.org/installer/latest
     export INSTALLER_BASE=https://cdn.asahilinux.org/installer
-    export INSTALLER_DATA=https://github.com/AsahiLinux/asahi-installer/raw/prod/data/installer_data.json
+    export INSTALLER_DATA=https://github.com/AsahiLinux/asahi-installer-data/raw/prod/data/installer_data.json
     export INSTALLER_DATA_ALT=https://alx.sh/installer_data.json
     export REPO_BASE=https://cdn.asahilinux.org
     export REPORT=https://stats.asahilinux.org/report
