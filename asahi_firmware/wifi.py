@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import sys, os, os.path, pprint, statistics, logging
+import sys, os, os.path, logging
 from .core import FWFile
 
 log = logging.getLogger("asahi_firmware.wifi")
