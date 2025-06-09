@@ -3,6 +3,7 @@ import os, shutil, sys, stat, subprocess, urlcache, zipfile, logging
 
 import m1n1
 from util import *
+import unicodedata
 
 class OSInstaller(PackageInstaller):
     PART_ALIGNMENT = 1024 * 1024
@@ -94,6 +95,7 @@ class OSInstaller(PackageInstaller):
             if fmt == "fat":
                 # Clean up invalid characters in FAT
                 name_clean = name.translate(str.maketrans("", "", "*?/\\|,;:+=<>[]\""))
+                name_clean = unicodedata.normalize('NFKD', name_clean).encode('ascii', 'ignore').decode('ascii')
                 p_plain("  Formatting as FAT...")
                 args = ["newfs_msdos", "-F", "32",
                         "-v", name_clean[:11]]
