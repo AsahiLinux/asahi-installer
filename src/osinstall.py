@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import os, shutil, sys, stat, subprocess, urlcache, zipfile, logging
+import os, shutil, subprocess, urlcache, zipfile, logging
 
 import m1n1
 from util import *
