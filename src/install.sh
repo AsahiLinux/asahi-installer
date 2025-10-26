@@ -12,7 +12,7 @@ export LANG=en_US.UTF-8
 
 export DYLD_LIBRARY_PATH=$PWD/Frameworks/Python.framework/Versions/Current/lib
 export DYLD_FRAMEWORK_PATH=$PWD/Frameworks
-python=Frameworks/Python.framework/Versions/3.9/bin/python3.9
+python=Frameworks/Python.framework/Versions/3.13/bin/python3.13
 export SSL_CERT_FILE=$PWD/Frameworks/Python.framework/Versions/Current/etc/openssl/cert.pem
 # Bootstrap does part of this, but install.sh can be run standalone
 # so do it again for good measure.
