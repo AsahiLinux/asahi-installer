@@ -9,10 +9,10 @@ PYTHON_VER=3.13.9
 PYTHON_PKG=python-$PYTHON_VER-macos11.pkg
 PYTHON_URI="https://www.python.org/ftp/python/$PYTHON_VER/$PYTHON_PKG"
 
-LIBFFI_VER=3.4.6
+LIBFFI_VER=3.5.2
 LIBFFI_MANIFEST_URI="https://ghcr.io/v2/homebrew/core/libffi/manifests/$LIBFFI_VER"
 LIBFFI_BASE_URI="https://ghcr.io/v2/homebrew/core/libffi/blobs"
-LIBFFI_TARGET_OS="macOS 12.6"
+LIBFFI_TARGET_OS="macOS 26"
 LIBFFI_PKG="libffi-$LIBFFI_VER-macos.tar.gz"
 
 M1N1="$PWD/m1n1"
