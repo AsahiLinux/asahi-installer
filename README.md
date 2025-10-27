@@ -17,6 +17,10 @@ or brand the installer. By default, the build will fetch required dependencies f
 the Internet and cache them under `dl/`. If this isn't desired, place the required
 files there before running the build.
 
+The reference installer at https://alx.sh is deployed from the latest tag of this
+repo by `.github/workflows/release-prod.yaml`. The dev installer at https://alx.sh/dev
+is deployed from the latest push to `main` by `.github/workflows/release-dev.yaml`.
+
 ## Bootstrapping and branding
 The installer is meant to be executed via a bootstrap script. We provide reference
 implementations for [local development](scripts/bootstrap.sh) and for alx.sh
