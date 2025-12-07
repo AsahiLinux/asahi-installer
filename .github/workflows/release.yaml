@@ -1,0 +1,46 @@
+name: release
+
+on:
+  workflow_call:
+    inputs:
+        upload-type:
+            required: true
+            type: string
+  workflow_dispatch:
+
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yaml
+
+  upload-artefact:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artefact
+        uses: actions/download-artifact@v4
+        with:
+          name: installer-build
+          path: releases/.
+
+      - name: Push to Bunny
+        env:
+          PKG_URL: "https://storage.bunnycdn.com/asahilinux/${{ inputs.upload-type }}"
+          PKG_VER: "installer-${{ needs.build.outputs.installer_ver }}"
+        run: |
+          if [ ! -e "releases/${PKG_VER}" ]; then
+              echo "Package not found!"
+              exit 1
+          fi
+
+          upload() {
+               curl -# --fail --request PUT \
+                   --url "${2}" \
+                   -H "AccessKey: ${{ secrets.BUNNY_TOKEN }}" \
+                   -H "Content-Type: ${3}" \
+                   -H "Accept: application/json" \
+                   --data-binary @${1}
+          }
+
+          upload "releases/${PKG_VER}" "${PKG_URL}/${PKG_VER}" "application/octet-stream"
+          upload "releases/latest" "${PKG_URL}/latest" "text/plain"
