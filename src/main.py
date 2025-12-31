@@ -437,6 +437,74 @@ class InstallerMain:
         # Go for step2 again
         self.step2()
 
+    def action_rebuild_vendorfw(self, oses):
+        choices = {str(i): f"{p.desc}\n      {str(o)}" for i, (p, o) in enumerate(oses)}
+
+        if len(choices) > 1:
+            print()
+            p_question("Choose an install to rebuild firmware for:")
+            idx = self.choice("Installed OS", choices)
+        else:
+            idx = list(choices.keys())[0]
+
+        self.part, osi = oses[int(idx)]
+        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo)
+        if not self.ins.check_existing_install(osi):
+            p_error(   "The existing installation is missing files.")
+            p_message(f"This tool can only rebuild firmware on installations that completed the first")
+            p_message( "stage of the installation process. If it was interrupted, please")
+            p_message( "delete the partitions manually and reinstall from scratch.")
+            return False
+
+        vars = m1n1.extract_vars(self.ins.boot_obj_path)
+        if vars is None:
+            p_error("Could not get variables from the installed m1n1")
+            p_message(f"Path: {self.ins.boot_obj_path}")
+            return False
+
+        esp_id = None
+        for var in vars:
+            k, v = var.split('=')
+            if k == "chosen.asahi,efi-system-partition":
+                esp_id = v
+                break
+        if esp_id is None:
+            p_error("Unable to determine the associated EFI system partition for this install.")
+            p_message("Is first stage m1n1 corrupted?")
+            return False
+
+        target = self.dutil.get_partition_info(esp_id)
+        mountpoint = self.dutil.mount(target.name)
+
+        os.makedirs("vendorfw", exist_ok=True)
+        fw_pkg = asahi_firmware.core.FWPackage("vendorfw")
+        ipsw = None
+        for ver in IPSW_VERSIONS:
+            if ver.version == osi.version:
+                ipsw = ver
+                break
+        if ipsw is None:
+            p_error(f"This install is using an unsupported macOS version {osi.version}")
+            p_message("Unable to rebuild firmware")
+            return False
+
+        self.ins.load_ipsw(ipsw)
+        self.ins.load_identity()
+        self.ins.collect_firmware(fw_pkg)
+        fw_pkg.close()
+
+        p_plain(f"  Copying firmware into {target.name} partition...")
+        base = os.path.join(mountpoint, "vendorfw")
+        logging.info(f"Firmware -> {base}")
+        shutil.copytree(fw_pkg.path, base, dirs_exist_ok=True)
+
+        print()
+        p_success(f"Firmware rebuild complete. Press enter to continue.")
+        self.input()
+        print()
+
+        return True
+
     def do_install(self, total_size=None):
         p_progress(f"Installing stub macOS into {self.part.name} ({self.part.label})")
 
@@ -907,6 +975,7 @@ class InstallerMain:
         parts_resizable = []
         oses_incomplete = []
         oses_upgradable = []
+        oses_vendorfw = []
 
         for i, p in enumerate(self.parts):
             p.index = i
@@ -981,6 +1050,8 @@ class InstallerMain:
                 p_plain(f"    OS: [{state}] {os}")
                 if os.attached_partitions:
                     p_plain(f"      Extra partitions: {' '.join('#' + str(i.index) for i in os.attached_partitions)}")
+                if os.stub and os.m1n1_ver:
+                    oses_vendorfw.append((p, os))
                 if os.stub and os.m1n1_ver and os.m1n1_ver != self.m1n1_ver:
                     oses_upgradable.append((p, os))
                 elif os.stub and not (os.bp and os.bp.get("coih", None)):
@@ -1018,6 +1089,9 @@ class InstallerMain:
         if oses_upgradable:
             actions["m"] = "Upgrade m1n1 on an existing OS"
             default = default or "m"
+        if oses_vendorfw:
+            actions["v"] = "Rebuild vendor firmware package"
+            default = default or "v"
 
         if not actions:
             p_error("No actions available on this system.")
@@ -1046,6 +1120,8 @@ class InstallerMain:
             return self.action_select_disk()
         elif act == "w":
             return self.action_wipe()
+        elif act == "v":
+            return self.action_rebuild_vendorfw(oses_vendorfw)
         elif act == "q":
             return False
 
