@@ -6,6 +6,7 @@ from asahi_firmware.bluetooth import BluetoothFWCollection
 from asahi_firmware.multitouch import MultitouchFWCollection
 from asahi_firmware.kernel import KernelFWCollection
 from asahi_firmware.isp import ISPFWCollection
+from asahi_firmware.als import AlsFWCollection
 from util import *
 
 class StubInstaller(PackageInstaller):
@@ -459,6 +460,9 @@ class StubInstaller(PackageInstaller):
         pkg.add_files(sorted(col.files()))
         logging.info("Collecting Kernel firmware")
         col = KernelFWCollection(kernel_path)
+        pkg.add_files(sorted(col.files()))
+        logging.info("Collecting ALS firmware")
+        col = AlsFWCollection()
         pkg.add_files(sorted(col.files()))
         logging.info("Making fallback firmware archive")
         subprocess.run(["tar", "czf", "all_firmware.tar.gz",
