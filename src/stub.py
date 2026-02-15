@@ -6,6 +6,7 @@ from asahi_firmware.bluetooth import BluetoothFWCollection
 from asahi_firmware.multitouch import MultitouchFWCollection
 from asahi_firmware.kernel import KernelFWCollection
 from asahi_firmware.isp import ISPFWCollection
+from asahi_firmware.als import AlsFWCollection
 from util import *
 
 class StubInstaller(PackageInstaller):
@@ -209,26 +210,20 @@ class StubInstaller(PackageInstaller):
                 else:
                     logging.info("'asahi' dir not found in ESP")
 
-    def install_files(self, cur_os):
-        logging.info("StubInstaller.install_files()")
-        logging.info(f"VGID: {self.osi.vgid}")
-        logging.info(f"OS info: {self.osi}")
-
-        p_progress("Beginning stub OS install...")
+    def load_identity(self):
         self.get_paths()
 
         logging.info("Parsing metadata...")
 
-        sysver = plistlib.load(self.open("SystemVersion.plist"))
         manifest = plistlib.load(self.open("BuildManifest.plist"))
-        bootcaches = plistlib.load(self.open("usr/standalone/bootcaches.plist"))
+        self.bootcaches = plistlib.load(self.open("usr/standalone/bootcaches.plist"))
         self.flush_progress()
 
         if self.is_ota:
-            variant = "macOS Customer Software Update"
+            self.variant = "macOS Customer Software Update"
             behavior = "Update"
         else:
-            variant = "macOS Customer"
+            self.variant = "macOS Customer"
             behavior = "Erase"
 
         self.manifest = manifest
@@ -237,7 +232,7 @@ class StubInstaller(PackageInstaller):
                 identity["ApChipID"] != f'0x{self.sysinfo.chip_id:04X}' or
                 identity["Info"]["DeviceClass"] != self.sysinfo.device_class or
                 identity["Info"]["RestoreBehavior"] != behavior or
-                identity["Info"]["Variant"] != variant):
+                identity["Info"]["Variant"] != self.variant):
                 continue
             break
         else:
@@ -248,6 +243,16 @@ class StubInstaller(PackageInstaller):
         self.all_identities = manifest["BuildIdentities"]
         self.identity = identity
         manifest["BuildIdentities"] = [identity]
+        return identity
+
+    def install_files(self, cur_os):
+        logging.info("StubInstaller.install_files()")
+        logging.info(f"VGID: {self.osi.vgid}")
+        logging.info(f"OS info: {self.osi}")
+
+        p_progress("Beginning stub OS install...")
+        identity = self.load_identity()
+        sysver = plistlib.load(self.open("SystemVersion.plist"))
 
         self.stub_info.update({
             "vgid": self.osi.vgid,
@@ -292,13 +297,13 @@ class StubInstaller(PackageInstaller):
 
         os.makedirs(self.pb_vgid, exist_ok=True)
 
-        bless2 = bootcaches["bless2"]
+        bless2 = self.bootcaches["bless2"]
 
         restore_bundle = os.path.join(self.pb_vgid, bless2["RestoreBundlePath"])
         os.makedirs(restore_bundle, exist_ok=True)
         restore_manifest = os.path.join(restore_bundle, "BuildManifest.plist")
         with open(restore_manifest, "wb") as fd:
-            plistlib.dump(manifest, fd)
+            plistlib.dump(self.manifest, fd)
         self.copy_idata.append((restore_manifest, "BuildManifest.plist"))
         self.extract("SystemVersion.plist", restore_bundle)
         self.extract("RestoreVersion.plist", restore_bundle)
@@ -311,10 +316,9 @@ class StubInstaller(PackageInstaller):
         self.extract_file("BootabilityBundle/Restore/Firmware/Bootability.dmg.trustcache",
                           os.path.join(restore_bundle, "Bootability/Bootability.trustcache"))
 
-        self.extract_tree(f"Firmware/Manifests/restore/{variant}/", restore_bundle)
+        self.extract_tree(f"Firmware/Manifests/restore/{self.variant}/", restore_bundle)
 
         copied = set()
-        self.kernel_path = None
         for key, val in identity["Manifest"].items():
             if key in ("BaseSystem", "OS", "Ap,SystemVolumeCanonicalMetadata",
                        "RestoreRamDisk", "RestoreTrustCache"):
@@ -328,8 +332,6 @@ class StubInstaller(PackageInstaller):
             if path.startswith("kernelcache."):
                 name = os.path.basename(path)
                 self.copy_idata.append((os.path.join(restore_bundle, name), name))
-                if self.kernel_path is None:
-                    self.kernel_path = os.path.join(restore_bundle, name)
             copied.add(path)
 
         self.flush_progress()
@@ -404,7 +406,10 @@ class StubInstaller(PackageInstaller):
             shutil.rmtree("fud_firmware")
 
         os.makedirs("fud_firmware", exist_ok=True)
+        bless2 = self.bootcaches["bless2"]
+        restore_bundle = os.path.join(self.pb_vgid, bless2["RestoreBundlePath"])
         copied = set()
+        kernel_path = None
         for identity in [self.identity]:
             if (identity["Info"]["RestoreBehavior"] != "Erase" or
                 identity["Info"]["Variant"] != "macOS Customer"):
@@ -419,6 +424,10 @@ class StubInstaller(PackageInstaller):
                            "StaticTrustCache", "SystemVolume"):
                     continue
                 path = val["Info"]["Path"]
+                if path.startswith("kernelcache."):
+                    name = os.path.basename(path)
+                    if kernel_path is None:
+                        kernel_path = os.path.join(restore_bundle, name)
                 if (not val["Info"].get("IsFUDFirmware", False)
                     or val["Info"].get("IsLoadedByiBoot", False)
                     or val["Info"].get("IsLoadedByiBootStage1", False)
@@ -450,7 +459,10 @@ class StubInstaller(PackageInstaller):
         col = ISPFWCollection("recovery/usr/sbin/")
         pkg.add_files(sorted(col.files()))
         logging.info("Collecting Kernel firmware")
-        col = KernelFWCollection(self.kernel_path)
+        col = KernelFWCollection(kernel_path)
+        pkg.add_files(sorted(col.files()))
+        logging.info("Collecting ALS firmware")
+        col = AlsFWCollection()
         pkg.add_files(sorted(col.files()))
         logging.info("Making fallback firmware archive")
         subprocess.run(["tar", "czf", "all_firmware.tar.gz",
