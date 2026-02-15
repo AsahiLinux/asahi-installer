@@ -143,6 +143,8 @@ if [ -e "$system_dir/System/Library/CoreServices/SystemVersion-disabled.plist" ]
     mv -f "$system_dir/System/Library/CoreServices/SystemVersion"{-disabled,}".plist"
 fi
 
+chflags hidden "$system_dir"
+
 echo
 echo "Installation complete! Press enter to reboot."
 read
