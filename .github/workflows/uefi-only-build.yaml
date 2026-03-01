@@ -11,6 +11,8 @@ on:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+  # Allow being called from other workflows to deploy the artifact.
+  workflow_call:
 
 jobs:
   uefi-only-boot-bin:
