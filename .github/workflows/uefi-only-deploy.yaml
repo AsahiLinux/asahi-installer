@@ -1,0 +1,44 @@
+name: uefi-only-deploy
+
+on:
+  workflow_dispatch:
+
+env:
+  UEFI_ONLY_VERSION: uefi-only-${{ vars.UEFI_DATE }}-${{ vars.UEFI_LINUX_TAG }}
+
+jobs:
+  build:
+    uses: ./.github/workflows/uefi-only-build.yaml
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: uefi-only-boot.bin
+
+      - name: Deploy to Bunny
+        env:
+          PKG_URL: https://storage.bunnycdn.com/asahilinux/os
+          PKG_VER: ${{ env.UEFI_ONLY_VERSION }}.zip
+          ACCESS_KEY: ${{ secrets.BUNNY_TOKEN }}
+        run: |
+          if [ ! -e "${PKG_VER}" ]; then
+              echo "Package not found!"
+              ls -R
+              exit 1
+          fi
+
+          upload() {
+               curl -# --fail --request PUT \
+                   --url "${2}" \
+                   --variable %ACCESS_KEY \
+                   --expand-header 'AccessKey: {{ACCESS_KEY}}' \
+                   -H "Content-Type: ${3}" \
+                   -H "Accept: application/json" \
+                   --data-binary @${1}
+          }
+
+          upload "${PKG_VER}" "${PKG_URL}/${PKG_VER}" "application/octet-stream"
