@@ -1,0 +1,91 @@
+name: uefi-only-build
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow only on pull-requests when this file is changed.
+  # Intended use is to manually trigger runs after updating the repository
+  # variables `UEFI_DATE`, `UEFI_LINUX_TAG` or `UEFI_UBOOT_TAG`.
+  pull_request:
+    branches: [ main ]
+    paths: [ .github/workflows/uefi-only-build.yaml ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  uefi-only-boot-bin:
+    runs-on: ubuntu-latest
+
+    env:
+      UEFI_DATE: ${{ vars.UEFI_DATE }}
+      UEFI_LINUX_TAG: ${{ vars.UEFI_LINUX_TAG }}
+      UEFI_UBOOT_TAG: ${{ vars.UEFI_UBOOT_TAG }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Checkout linux
+        uses: actions/checkout@v5
+        with:
+          repository: AsahiLinux/linux
+          ref: ${{ env.UEFI_LINUX_TAG }}
+          path: linux
+          sparse-checkout: 'arch/arm64/boot/dts/apple/'
+
+      - name: Checkout u-boot
+        uses: actions/checkout@v5
+        with:
+          repository: AsahiLinux/u-boot
+          ref: ${{ env.UEFI_UBOOT_TAG }}
+          path: u-boot
+
+      - name: Install aarch64-linux-gnu- toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+                               gcc-aarch64-linux-gnu \
+                               libgnutls28-dev \
+                               device-tree-compiler
+
+      - name: Install aarch64-unknown-none-softfloat rust target
+        run: |
+          rustup target install aarch64-unknown-none-softfloat
+
+      - name: Build
+        run: |
+          cd m1n1
+          make -k -j2 ARCH=aarch64-linux-gnu- RELEASE=1
+
+      - name: Update u-boot apple device trees
+        run: |
+          cp -f linux/arch/arm64/boot/dts/apple/*.dts \
+                linux/arch/arm64/boot/dts/apple/*.dtsi \
+                linux/arch/arm64/boot/dts/apple/*.h \
+                u-boot/arch/arm/dts/
+
+      - name: Build u-boot
+        run: |
+          cd u-boot
+          make CROSS_COMPILE=aarch64-linux-gnu- apple_m1_defconfig
+          make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm -k -j2
+
+      - name: Create m1n1 uefi only boot.bin
+        run: |
+          mkdir -p out/esp/m1n1/
+          gzip -k u-boot/u-boot-nodtb.bin
+          cat m1n1/build/m1n1.bin \
+              u-boot/arch/arm/dts/t60*.dtb \
+              u-boot/arch/arm/dts/t81*.dtb \
+              u-boot/u-boot-nodtb.bin.gz \
+              > out/esp/m1n1/boot.bin
+          cd out
+          zip -r uefi-only-${{ env.UEFI_DATE }}-${{ env.UEFI_LINUX_TAG }}.zip esp
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ci-uefi-only-${{ env.UEFI_DATE }}-${{ env.UEFI_LINUX_TAG }}
+          path: |
+            out/uefi-only-${{ env.UEFI_DATE }}-${{ env.UEFI_LINUX_TAG }}.zip
