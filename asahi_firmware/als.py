@@ -16,6 +16,9 @@ class AlsFWCollection(object):
         if ioreg.returncode != 0:
             log.warning("Unable to run ioreg, ambient light sensor calibration will not be saved")
             return
+        if len(ioreg.stdout) == 0:
+            log.info("ioreg without 'als' object. Possibly a device without ambient light sensor.")
+            return
         tree = plistlib.loads(ioreg.stdout)
         try:
             cal_data = tree[0]["IORegistryEntryChildren"][0]["IORegistryEntryChildren"][0]["IORegistryEntryChildren"][0]["CalibrationData"]
