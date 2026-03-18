@@ -3,8 +3,11 @@ import os, sys, os.path, time, logging, random
 from dataclasses import dataclass
 
 from urllib import parse
-from http.client import HTTPSConnection, HTTPConnection
+from http.client import HTTPSConnection, HTTPConnection, HTTPException
 from util import *
+
+class NetworkError(Exception):
+    pass
 
 @dataclass
 class CacheBlock:
@@ -78,19 +81,31 @@ class URLCache:
         return True
 
     def get_size(self):
-        for i in range(10):
-            con = self.get_con()
-            con.request("HEAD", self.url.path, headers={"Connection":" keep-alive"})
-            res = con.getresponse()
-            res.read()
-            loc = res.getheader("Location", None)
-            if loc is not None:
-                self.url = parse.urlparse(loc)
-                self.con = None
-                continue
-            return int(res.getheader("Content-length"))
-
-        raise Exception("Maximum number of redirects reached")
+        retries = 5
+        sleep = 1
+        for retry in range(retries + 1):
+            try:
+                for i in range(10):
+                    con = self.get_con()
+                    con.request("HEAD", self.url.path, headers={"Connection":" keep-alive"})
+                    res = con.getresponse()
+                    res.read()
+                    loc = res.getheader("Location", None)
+                    if loc is not None:
+                        self.url = parse.urlparse(loc)
+                        self.con = None
+                        continue
+                    return int(res.getheader("Content-length"))
+                raise Exception("Maximum number of redirects reached")
+            except (OSError, HTTPException) as e:
+                if retry == retries:
+                    raise NetworkError(
+                        f"Failed to connect to {self.url.netloc} after multiple retries"
+                    ) from e
+                p_warning(f"Connection error ({e}), retrying... ({retry + 1}/{retries})")
+                time.sleep(sleep)
+                self.close_connection()
+                sleep += 1
 
     def get_partial(self, off, size, bypass_cache=False):
         path = self.url.path
@@ -147,7 +162,9 @@ class URLCache:
             except Exception as e:
                 if retry == retries:
                     p_error(f"Exceeded maximum retries downloading data.")
-                    raise
+                    raise NetworkError(
+                        f"Download failed: lost connection to {self.url.netloc}"
+                    ) from e
                 p_warning(f"Error downloading data ({e}), retrying... ({retry + 1}/{retries})")
                 time.sleep(sleep)
                 self.close_connection()

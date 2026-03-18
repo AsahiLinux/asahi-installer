@@ -4,6 +4,7 @@ import os, os.path, shlex, subprocess, sys, time, termios, json, getpass, report
 from dataclasses import dataclass
 
 import system, osenum, stub, diskutil, osinstall, asahi_firmware, m1n1, bugs
+from urlcache import NetworkError
 from util import *
 
 PART_ALIGN = psize("1MiB")
@@ -263,11 +264,25 @@ class InstallerMain:
         logging.info(f"Chosen IPSW version: {ipsw.version}")
 
         self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo)
-        self.ins.load_ipsw(ipsw)
         self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
-        self.osins.load_package()
+        while True:
+            try:
+                self.ins.load_ipsw(ipsw)
+                self.osins.load_package()
+                break
+            except NetworkError as e:
+                logging.error(f"Network error: {e}")
+                print()
+                p_error(f"Download failed: {e}")
+                p_message("Please check your internet connection.")
+                if not self.yesno("Retry"):
+                    return True
+                print()
 
-        self.do_install()
+        try:
+            self.do_install()
+        except NetworkError as e:
+            self._handle_post_partition_network_error(e)
 
     def action_wipe(self):
         p_warning("This will wipe all data on the currently selected disk.")
@@ -280,27 +295,63 @@ class InstallerMain:
         template = self.choose_os()
 
         self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
-        self.osins.load_package()
+        while True:
+            try:
+                self.osins.load_package()
+                break
+            except NetworkError as e:
+                logging.error(f"Network error: {e}")
+                print()
+                p_error(f"Download failed: {e}")
+                p_message("Please check your internet connection.")
+                if not self.yesno("Retry"):
+                    return True
+                print()
 
         min_size = STUB_SIZE + (self.osins.min_size if self.expert else self.osins.min_recommended_size)
         print()
         p_message(f"Minimum required space for this OS: {ssize(min_size)}")
 
         start, end = self.dutil.get_disk_usable_range(self.cur_disk)
-        os_size = self.get_os_size_and_info(end - start, min_size, template)
+        while True:
+            try:
+                os_size = self.get_os_size_and_info(end - start, min_size, template)
+                break
+            except NetworkError as e:
+                logging.error(f"Network error: {e}")
+                print()
+                p_error(f"Download failed: {e}")
+                p_message("Please check your internet connection.")
+                if not self.yesno("Retry"):
+                    return True
+                print()
 
         p_progress(f"Partitioning the whole disk ({self.cur_disk})")
         self.part = self.dutil.partitionDisk(self.cur_disk, "apfs", self.osins.name, STUB_SIZE)
 
         p_progress(f"Creating new stub macOS named {self.osins.name}")
         logging.info(f"Creating stub macOS: {self.osins.name}")
-        self.do_install(os_size)
+        try:
+            self.do_install(os_size)
+        except NetworkError as e:
+            self._handle_post_partition_network_error(e)
 
     def action_install_into_free(self, avail_free):
         template = self.choose_os()
 
         self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
-        self.osins.load_package()
+        while True:
+            try:
+                self.osins.load_package()
+                break
+            except NetworkError as e:
+                logging.error(f"Network error: {e}")
+                print()
+                p_error(f"Download failed: {e}")
+                p_message("Please check your internet connection.")
+                if not self.yesno("Retry"):
+                    return True
+                print()
 
         min_size = STUB_SIZE + (self.osins.min_size if self.expert else self.osins.min_recommended_size)
         print()
@@ -327,13 +378,27 @@ class InstallerMain:
         print()
         p_message(f"Available free space: {ssize(free_part.size)}")
 
-        os_size = self.get_os_size_and_info(free_part.size, min_size, template)
+        while True:
+            try:
+                os_size = self.get_os_size_and_info(free_part.size, min_size, template)
+                break
+            except NetworkError as e:
+                logging.error(f"Network error: {e}")
+                print()
+                p_error(f"Download failed: {e}")
+                p_message("Please check your internet connection.")
+                if not self.yesno("Retry"):
+                    return True
+                print()
 
         p_progress(f"Creating new stub macOS named {self.osins.name}")
         logging.info(f"Creating stub macOS: {self.osins.name}")
         self.part = self.dutil.addPartition(free_part.name, "apfs", self.osins.name, STUB_SIZE)
 
-        self.do_install(os_size)
+        try:
+            self.do_install(os_size)
+        except NetworkError as e:
+            self._handle_post_partition_network_error(e)
 
     def get_os_size_and_info(self, free_size, min_size, template):
         os_size = None
@@ -488,9 +553,19 @@ class InstallerMain:
             p_message("Unable to rebuild firmware")
             return False
 
-        self.ins.load_ipsw(ipsw)
-        self.ins.load_identity()
-        self.ins.collect_firmware(fw_pkg)
+        try:
+            self.ins.load_ipsw(ipsw)
+            self.ins.load_identity()
+            self.ins.collect_firmware(fw_pkg)
+        except NetworkError as e:
+            logging.error(f"Network error during firmware rebuild: {e}")
+            print()
+            p_error(f"Firmware rebuild failed: {e}")
+            p_message("Please check your internet connection and try again.")
+            print()
+            p_message("Press enter to return to the main menu.")
+            self.input()
+            return True
         fw_pkg.close()
 
         p_plain(f"  Copying firmware into {target.name} partition...")
@@ -504,6 +579,23 @@ class InstallerMain:
         print()
 
         return True
+
+    def _handle_post_partition_network_error(self, e):
+        logging.error(f"Network error during installation: {e}")
+        print()
+        p_error("Installation failed due to a network error.")
+        p_error(f"  {e}")
+        print()
+        p_message("Please check your internet connection, then re-run the installer.")
+        p_message("The installer will detect the incomplete installation and offer")
+        p_message("to repair it.")
+        print()
+        p_warning("If you need to file a bug report, please attach the log file:")
+        p_warning(f"  {os.getcwd()}/installer.log")
+        print()
+        p_message("Press enter to exit.")
+        self.input()
+        sys.exit(1)
 
     def do_install(self, total_size=None):
         p_progress(f"Installing stub macOS into {self.part.name} ({self.part.label})")
@@ -1151,6 +1243,13 @@ if __name__ == "__main__":
         print()
         logging.info("KeyboardInterrupt")
         p_error("Interrupted")
+    except NetworkError as e:
+        logging.exception("Network error")
+        p_error(f"Installation failed due to a network error: {e}")
+        print()
+        p_message("Please check your internet connection and try again.")
+        p_warning("If you need to file a bug report, please attach the log file:")
+        p_warning(f"  {os.getcwd()}/installer.log")
     except subprocess.CalledProcessError as e:
         cmd = shlex.join(e.cmd)
         p_error(f"Failed to run process: {cmd}")
