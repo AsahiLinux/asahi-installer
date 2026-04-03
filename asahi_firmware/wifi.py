@@ -45,9 +45,17 @@ class WiFiFWCollection(object):
                 dirnames.remove("perf")
             if "assert" in dirnames:
                 dirnames.remove("assert")
+            # remove broken firmware dir in 14.6.1 IPSW
+            if "C-4388__s-C2" in dirnames:
+                dirnames.remove("C-4388__s-C2")
             subpath = os.path.relpath(dirpath, source_path)
             for name in sorted(filenames):
                 if not any(name.endswith("." + i) for i in self.EXTMAP):
+                    continue
+                # macOS 14.6/14.8 contains {java,sumatra}_gen* files, possible
+                # for generic data. It's not clear how they are used so skip
+                # them for now
+                if "_gen" in name:
                     continue
                 path = os.path.join(dirpath, name)
                 relpath = os.path.join(subpath, name)
