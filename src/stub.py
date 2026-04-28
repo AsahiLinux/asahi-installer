@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: MIT
-import os, os.path, plistlib, shutil, sys, stat, subprocess, urlcache, zipfile, logging, json
+import os, os.path, plistlib, shutil, sys, stat, subprocess, urlcache, zipfile, logging, json, tempfile
 import osenum
 from asahi_firmware.wifi import WiFiFWCollection
 from asahi_firmware.bluetooth import BluetoothFWCollection
 from asahi_firmware.multitouch import MultitouchFWCollection
 from asahi_firmware.kernel import KernelFWCollection
 from asahi_firmware.isp import ISPFWCollection
-from asahi_firmware.als import AlsFWCollection
+from asahi_firmware.als import AlsFWCollection, FACTORY_DIR
 from util import *
 
 class StubInstaller(PackageInstaller):
@@ -463,13 +463,20 @@ class StubInstaller(PackageInstaller):
         pkg.add_files(sorted(col.files()))
         logging.info("Collecting ALS firmware")
         col = AlsFWCollection()
-        pkg.add_files(sorted(col.files()))
+        als_files = sorted(col.files())
+        pkg.add_files(als_files)
         logging.info("Making fallback firmware archive")
-        subprocess.run(["tar", "czf", "all_firmware.tar.gz",
-                        "fud_firmware",
-                        "-C", "recovery/usr/share", "firmware",
-                        "-C", "../../usr/sbin", "appleh13camerad",
-                       ], check=True)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            os.makedirs(f"{tmpdir}/apple")
+            for name, fwf in als_files:
+                open(f"{tmpdir}/{name}", "wb").write(fwf.data)
+            subprocess.run(["tar", "czf", "all_firmware.tar.gz",
+                            "fud_firmware",
+                            "-C", "recovery/usr/share", "firmware",
+                            "-C", "../../usr/sbin", "appleh13camerad",
+                            "-C", os.path.dirname(FACTORY_DIR), os.path.basename(FACTORY_DIR),
+                            "-C", tmpdir, "apple",
+                            ], check=True)
         self.copy_idata.append(("all_firmware.tar.gz", "all_firmware.tar.gz"))
         logging.info("Detaching recovery ramdisk")
         subprocess.run(["hdiutil", "detach", "-quiet", "recovery"])

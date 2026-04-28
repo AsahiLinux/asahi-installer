@@ -497,6 +497,9 @@ class InstallerMain:
         base = os.path.join(mountpoint, "vendorfw")
         logging.info(f"Firmware -> {base}")
         shutil.copytree(fw_pkg.path, base, dirs_exist_ok=True)
+        asahi = os.path.join(mountpoint, "asahi")
+        all_fw = "all_firmware.tar.gz"
+        shutil.copy(all_fw, os.path.join(asahi, all_fw))
 
         print()
         p_success(f"Firmware rebuild complete. Press enter to continue.")
