@@ -221,17 +221,17 @@ class StubInstaller(PackageInstaller):
 
         if self.is_ota:
             self.variant = "macOS Customer Software Update"
-            behavior = "Update"
+            self.behavior = "Update"
         else:
             self.variant = "macOS Customer"
-            behavior = "Erase"
+            self.behavior = "Erase"
 
         self.manifest = manifest
         for identity in manifest["BuildIdentities"]:
             if (identity["ApBoardID"] != f'0x{self.sysinfo.board_id:02X}' or
                 identity["ApChipID"] != f'0x{self.sysinfo.chip_id:04X}' or
                 identity["Info"]["DeviceClass"] != self.sysinfo.device_class or
-                identity["Info"]["RestoreBehavior"] != behavior or
+                identity["Info"]["RestoreBehavior"] != self.behavior or
                 identity["Info"]["Variant"] != self.variant):
                 continue
             break
@@ -413,8 +413,8 @@ class StubInstaller(PackageInstaller):
         copied = set()
         kernel_path = None
         for identity in [self.identity]:
-            if (identity["Info"]["RestoreBehavior"] != "Erase" or
-                identity["Info"]["Variant"] != "macOS Customer"):
+            if (identity["Info"]["RestoreBehavior"] != self.behavior or
+                identity["Info"]["Variant"] != self.variant):
                 continue
             device = identity["Info"]["DeviceClass"]
             if not device.endswith("ap"):
