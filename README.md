@@ -34,7 +34,7 @@ as those will be consumed by the installer and used for its branding. These incl
 * `VERSION_FLAG`: a URI pointing to the `latest` file within the installer tree
 * `INSTALLER_BASE`: a URL pointing to your installer tree
 * `INSTALLER_DATA`: a URI pointing to your installer medatata file (see
-  [asahi-installer-data](https://github.com/AsahiLinux/asahi-installer) for
+  [asahi-installer-data](https://github.com/AsahiLinux/asahi-installer-data) for
   the one we're using for alx.sh)
 * `INSTALLER_DATA_ALT`: optionally, a URI pointing to an alternative location for
   your installer metadata file; this can be useful in locations where the
