@@ -73,6 +73,12 @@ DEVICES = {
     "j180dap":  Device("13.4", False),  # Mac Pro (M2 Ultra, 2023)
 }
 
+# Asahi Linux does not support running in a virtual machine, this option
+# exists only for development of the installer itself.
+if os.environ.get("ALLOW_VM", None):
+    CHIP_MIN_VER[0xfe00] = "12.0"
+    DEVICES["vma2macosap"] = Device("12.0", False)
+
 IPSW_VERSIONS = [
     IPSW("12.3.1",
          "12.1",
