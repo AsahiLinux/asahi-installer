@@ -28,6 +28,7 @@ class OSInfo:
     paired: bool = False
     admin_users: object = None
     attached_partitions: list = None
+    sys_vol_bootable: bool = False
 
     def update_admin_users(self):
         try:
@@ -225,7 +226,10 @@ class OSEnum:
             except FileNotFoundError:
                 logging.info(f"    Not Found")
                 continue
-
+        try:
+            osi.sys_vol_bootable = fsctl_is_bootable(mounts["System"])
+        except Exception as e:
+            logging.warning(f"  Failed to get VolBootable: {e}")
         osi.update_admin_users()
 
         try:

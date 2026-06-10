@@ -437,6 +437,29 @@ class InstallerMain:
         # Go for step2 again
         self.step2()
 
+    def action_set_vol_bootable(self, oses):
+        choices = {str(i): f"{p.desc}\n      {str(o)}" for i, (p, o) in enumerate(oses)}
+
+        if len(choices) > 1:
+            print()
+            p_question("Choose an install to fix macOS 27 compatibility on:")
+            idx = self.choice("Installed OS", choices)
+        else:
+            idx = list(choices.keys())[0]
+
+        self.part, osi = oses[int(idx)]
+
+        self.dutil.remount_rw(osi.system)
+        fsctl_set_bootable(osi.system, True)
+        print()
+        p_success(f"macOS 27 fix applied. System Settings caches the bootability state,")
+        p_success(f"so you may need to reboot before the os becomes visible")
+        p_success(f"Press enter to continue.")
+        self.input()
+        print()
+
+        return True
+
     def action_rebuild_vendorfw(self, oses):
         choices = {str(i): f"{p.desc}\n      {str(o)}" for i, (p, o) in enumerate(oses)}
 
@@ -977,6 +1000,7 @@ class InstallerMain:
         parts_empty_apfs = []
         parts_resizable = []
         oses_incomplete = []
+        oses_non_vol_boot = []
         oses_upgradable = []
         oses_vendorfw = []
 
@@ -1055,6 +1079,8 @@ class InstallerMain:
                     p_plain(f"      Extra partitions: {' '.join('#' + str(i.index) for i in os.attached_partitions)}")
                 if os.stub and os.m1n1_ver:
                     oses_vendorfw.append((p, os))
+                if os.stub and not os.sys_vol_bootable:
+                    oses_non_vol_boot.append((p, os))
                 if os.stub and os.m1n1_ver and os.m1n1_ver != self.m1n1_ver:
                     oses_upgradable.append((p, os))
                 elif os.stub and not (os.bp and os.bp.get("coih", None)):
@@ -1095,6 +1121,9 @@ class InstallerMain:
         if oses_vendorfw:
             actions["v"] = "Rebuild vendor firmware package"
             default = default or "v"
+        if oses_non_vol_boot:
+            actions["7"] = "Fix macOS 27 boot picker compatibility"
+            default = default or "7"
 
         if not actions:
             p_error("No actions available on this system.")
@@ -1125,6 +1154,8 @@ class InstallerMain:
             return self.action_wipe()
         elif act == "v":
             return self.action_rebuild_vendorfw(oses_vendorfw)
+        elif act == "7":
+            return self.action_set_vol_bootable(oses_non_vol_boot)
         elif act == "q":
             return False
 

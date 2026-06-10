@@ -356,3 +356,22 @@ class PackageInstaller:
 
             if self.verbose:
                 self.flush_progress()
+c_fsctl = None
+def fsctl_apfs_bootable(path, cmd):
+    global c_fsctl
+    if c_fsctl is None:
+        sysdll = CDLL("libSystem.B.dylib", use_errno=True)
+        func = sysdll.fsctl
+        func.restype = c_int
+        func.argtypes = (c_char_p, c_ulong, POINTER(c_int), c_uint)
+        c_fsctl = func
+    c_cmd = c_int(cmd)
+    err = c_fsctl(path.encode(), 0xc0044a57, byref(c_cmd), 0)
+    if err == -1:
+        raise Exception(f'fsctl call failed, errno: {get_errno()}')
+    return c_cmd.value
+
+def fsctl_is_bootable(path):
+    return fsctl_apfs_bootable(path, 0) == 1
+def fsctl_set_bootable(path, val):
+    fsctl_apfs_bootable(path, 1 if val else -1)
