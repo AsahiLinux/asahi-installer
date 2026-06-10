@@ -9,8 +9,6 @@ SAFE_MACOS_VERSION_MIN = "14.3"
 # Allow the recoveryOS we use
 ALLOWED_RECOVERYOS_VERSIONS = ("13.5",)
 
-GGATE_VALIDATION_MIN = "27.0"
-
 PROMOTION_DEVICES = {
     "j314cap",
     "j314sap",
@@ -79,31 +77,7 @@ def request_upgrade():
     p_message("macOS Sonoma versions prior to 14.2 on this machine.")
     print()
 
-def run_checks_ggate_validation(main):
-    if main.sysinfo.macos_ver and split_ver(main.sysinfo.macos_ver) < split_ver(GGATE_VALIDATION_MIN):
-        logging.info("bugs: Tahoe or lower")
-        return
-    p_error("macOS Golden Gate detected!")
-    print()
-    p_warning("Apple has changed how the boot picker and Startup Disk applications detect")
-    p_warning('"valid" macOS installs. When using either from macOS 27, your Asahi partition')
-    p_warning("will not be visible! We believe this to be a bug, and have filed a report.")
-    print()
-    p_message("If you are running the installer because you have noticed that your Asahi partition")
-    p_message("has disappeared, do not stress. Your Asahi partition is still there, and you have")
-    p_message("not lost any data. The Apple Silicon boot picker is a macOS application running")
-    p_message("in the default boot volume's recovery environment and therefore still works if")
-    p_message("your default boot disk is macOS 26 and below or Asahi.")
-    print()
-    p_message("If you have a secondary installation of macOS 26 or below, set this as your default")
-    p_message("Startup Disk to restore access to Asahi. If this is your only install, it is possible")
-    p_message("that the Fallback recoveryOS is still using macOS 26 or older, and in that case you can")
-    p_message("enter it by turning off the machine, rapidly pressing and releasing the power button, then")
-    p_message('holding it until the "Loading startup options..." message appears')
-    print()
-    exit(1)
-
-def run_checks_promotion(main):
+def run_checks(main):
     if main.sysinfo.device_class not in PROMOTION_DEVICES:
         logging.info("bugs: Not a ProMotion device")
         return
@@ -126,7 +100,3 @@ def run_checks_promotion(main):
 
     request_upgrade()
     sys.exit(1)
-
-def run_checks(main):
-    run_checks_ggate_validation(main)
-    run_checks_promotion(main)
