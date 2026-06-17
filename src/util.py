@@ -366,7 +366,8 @@ def fsctl_apfs_bootable(path, cmd):
         func.argtypes = (c_char_p, c_ulong, POINTER(c_int), c_uint)
         c_fsctl = func
     c_cmd = c_int(cmd)
-    err = c_fsctl(path.encode(), 0xc0044a57, byref(c_cmd), 0)
+    APFSIOC_VOL_BOOTABLE = 0xc0044a57 # _IOWR('J', 'W', int32_t)
+    err = c_fsctl(path.encode(), APFSIOC_VOL_BOOTABLE, byref(c_cmd), 0)
     if err == -1:
         raise Exception(f'fsctl call failed, errno: {get_errno()}')
     return c_cmd.value
