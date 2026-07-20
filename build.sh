@@ -121,9 +121,15 @@ echo "Extracting Python framework..."
 
 mkdir -p "$PACKAGE/Frameworks/Python.framework"
 
-7z x -so "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | zcat | \
-    cpio -i -D "$PACKAGE/Frameworks/Python.framework"
-
+# test if libarchive's bsdtar is capable of extracting the payload
+# libarchive 3.7.2 (Ubuntu 24.04) is broken while 3.8.5 (Ubuntu 26.04) works
+if $(bsdtar -tf "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload > /dev/null); then
+    bsdtar -xOf "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | zcat | \
+        cpio -i -D "$PACKAGE/Frameworks/Python.framework"
+else
+    7z x -so "$DL/$PYTHON_PKG" Python_Framework.pkg/Payload | zcat | \
+        cpio -i -D "$PACKAGE/Frameworks/Python.framework"
+fi
 
 cd "$PACKAGE/Frameworks/Python.framework/Versions/Current"
 

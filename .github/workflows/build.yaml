@@ -27,7 +27,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y gcc-aarch64-linux-gnu
-          sudo apt-get install --no-install-recommends -y 7zip jq
+          sudo apt-get install --no-install-recommends -y libarchive-tools 7zip jq
           rustup target install aarch64-unknown-none-softfloat
 
       - name: Build asahi-installer
