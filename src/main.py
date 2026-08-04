@@ -751,7 +751,7 @@ class InstallerMain:
         os.system("shutdown -h now")
 
     def get_min_free_space(self, p):
-        if p.os and any(os.version for os in p.os) and not self.expert:
+        if p.os and any(os.version for os in p.os) and not self.expert and not self.is_edu_128gb:
             logging.info("  Has OS")
             return MIN_FREE_OS
         else:
@@ -1001,6 +1001,11 @@ class InstallerMain:
         p_progress("Collecting OS information...")
         self.osinfo = osenum.OSEnum(self.sysinfo, self.dutil, self.cur_disk)
         self.osinfo.collect(self.parts)
+        self.is_edu_128gb = self.dutil.get_disk_size(self.sys_disk) < 150 * 1024 * 1024 * 1024
+        if self.is_edu_128gb:
+            p_warning("Education-only 128GB device detected, allowing to resize macOS below safe limits")
+            p_warning("System updates may fail if less than ~30GB of free space remains on the main partition")
+
 
         parts_free = []
         parts_empty_apfs = []
