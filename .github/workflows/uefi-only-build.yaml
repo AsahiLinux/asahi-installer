@@ -64,7 +64,7 @@ jobs:
           cp -f linux/arch/arm64/boot/dts/apple/*.dts \
                 linux/arch/arm64/boot/dts/apple/*.dtsi \
                 linux/arch/arm64/boot/dts/apple/*.h \
-                u-boot/arch/arm/dts/
+                u-boot/dts/upstream/src/arm64/apple/
 
       - name: Build u-boot
         run: |
