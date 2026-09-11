@@ -71,6 +71,8 @@ jobs:
           cd u-boot
           echo "CONFIG_LOCALVERSION_AUTO=n" >> configs/apple_m1_defconfig
           export LOCALVERSION=-${{ vars.UEFI_UBOOT_TAG }}
+          echo 'bootdelay=10' >> board/apple/mac/mac.env
+          echo 'preboot=usb start; echo; echo "Welcome to AsahiLinux UEFI boot"; echo "Enter `bootmenu -e` for boot menu"; echo' >> board/apple/mac/mac.env
           make CROSS_COMPILE=aarch64-linux-gnu- apple_m1_defconfig
           make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm -k -j2
           unset LOCALVERSION
