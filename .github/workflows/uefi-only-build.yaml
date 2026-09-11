@@ -69,8 +69,11 @@ jobs:
       - name: Build u-boot
         run: |
           cd u-boot
+          echo "CONFIG_LOCALVERSION_AUTO=n" >> configs/apple_m1_defconfig
+          export LOCALVERSION=-${{ vars.UEFI_UBOOT_TAG }}
           make CROSS_COMPILE=aarch64-linux-gnu- apple_m1_defconfig
           make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm -k -j2
+          unset LOCALVERSION
 
       - name: Create m1n1 uefi only boot.bin
         run: |
