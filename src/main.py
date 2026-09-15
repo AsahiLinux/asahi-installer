@@ -75,17 +75,17 @@ DEVICES = {
     "j475cap":  Device("13.4", False),  # Mac Studio (M2 Max, 2023)
     "j475dap":  Device("13.4", False),  # Mac Studio (M2 Ultra, 2023)
     "j180dap":  Device("13.4", False),  # Mac Pro (M2 Ultra, 2023)
-    "j433ap":   Device("14.8.3", True), # iMac (24-inch, M3, 2023)
-    "j434ap":   Device("14.8.3", True), # iMac (24-inch, M3, 2023)
-    "j504ap":   Device("14.8.3", True), # MacBook Pro (14-inch, M3, 2023)
-    "j613ap":   Device("14.8.3", True), # MacBook Air (13-inch, M3, 2024)
-    "j615ap":   Device("14.8.3", True), # MacBook Air (15-inch, M3, 2024)
-    "j514sap":  Device("14.8.3", True), # MacBook Pro (14-inch, M3 Pro, 2023)
-    "j514cap":  Device("14.8.3", True), # MacBook Pro (14-inch, M3 Max, 2023)
-    "j514map":  Device("14.8.3", True), # MacBook Pro (14-inch, M3 Max, 2023)
-    "j516sap":  Device("14.8.3", True), # MacBook Pro (16-inch, M3 Pro, 2023)
-    "j516cap":  Device("14.8.3", True), # MacBook Pro (16-inch, M3 Max, 2023)
-    "j516map":  Device("14.8.3", True), # MacBook Pro (16-inch, M3 Max, 2023)
+    "j433ap":   Device("14.8.3", False), # iMac (24-inch, M3, 2023)
+    "j434ap":   Device("14.8.3", False), # iMac (24-inch, M3, 2023)
+    "j504ap":   Device("14.8.3", False), # MacBook Pro (14-inch, M3, 2023)
+    "j613ap":   Device("14.8.3", False), # MacBook Air (13-inch, M3, 2024)
+    "j615ap":   Device("14.8.3", False), # MacBook Air (15-inch, M3, 2024)
+    "j514sap":  Device("14.8.3", False), # MacBook Pro (14-inch, M3 Pro, 2023)
+    "j514cap":  Device("14.8.3", False), # MacBook Pro (14-inch, M3 Max, 2023)
+    "j514map":  Device("14.8.3", False), # MacBook Pro (14-inch, M3 Max, 2023)
+    "j516sap":  Device("14.8.3", False), # MacBook Pro (16-inch, M3 Pro, 2023)
+    "j516cap":  Device("14.8.3", False), # MacBook Pro (16-inch, M3 Max, 2023)
+    "j516map":  Device("14.8.3", False), # MacBook Pro (16-inch, M3 Max, 2023)
 }
 
 # Asahi Linux does not support running in a virtual machine, this option
@@ -120,7 +120,7 @@ IPSW_VERSIONS = [
          "14.6",
          "iBoot-10151.140.19",
          "23.10.220.0.0,0",
-         True,
+         False,
          ["j433ap", "j434ap", "j504ap", "j613ap", "j615ap", "j514sap", "j514cap", "j514map", "j516sap", "j516cap", "j516map"],
          "https://updates.cdn-apple.com/2025FallFCS/patches/089-71124/49AD260A-D47F-4B5E-A793-30446187196E/com_apple_MobileAsset_MacSoftwareUpdate/f6d1ac9149f6a06401ff87fae5b262c420bfc5f7.zip"),
 ]
