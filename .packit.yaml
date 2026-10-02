@@ -9,7 +9,7 @@ files_to_sync:
 actions:
   # Fetch the specfile from Rawhide, disable rpmautospec and download the
   # missing libffi tarball from the lookaside
-  post-upstream-clone: "bash -c \"curl -s https://src.fedoraproject.org/rpms/asahi-installer/raw/main/f/asahi-installer.spec | sed -e '/^%autochangelog$/d' > asahi-installer.spec && curl -s --remote-name https://src.fedoraproject.org/repo/pkgs/asahi-installer/libffi-3.4.6-macos.tar.gz/sha512/84ad900bc28258a7617850612790150fb639496cb8e8bea1a96e75ecc5b678e29522c415973950a84b21adac239f3fbb6361850d2625e5072a5f341b3feb5035/libffi-3.4.6-macos.tar.gz\""
+  post-upstream-clone: "bash -c \"curl -s https://src.fedoraproject.org/rpms/asahi-installer/raw/main/f/asahi-installer.spec | sed -e '/^%autochangelog$/d' > asahi-installer.spec && curl -s --remote-name https://src.fedoraproject.org/repo/pkgs/asahi-installer/libffi-3.5.2-macos.tar.gz/sha512/1cc3e7807d6ad434b3e399fbbed63a6d4347c1eb707a03cd9c7e067304403c04be3ff4a70b6e06b5857cf1ea16fc628d83815fa3b8b7c5674d552b690b630297/libffi-3.5.2-macos.tar.gz\""
 
 srpm_build_deps:
   - bash
