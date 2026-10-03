@@ -174,13 +174,17 @@ class StubInstaller(PackageInstaller):
         os.makedirs(os.path.join(self.pb_vgid, "var/db"), exist_ok=True)
         admin_users = os.path.join(cur_os.preboot, cur_os.vgid, "var/db/AdminUserRecoveryInfo.plist")
         tg_admin_users = os.path.join(self.pb_vgid, "var/db/AdminUserRecoveryInfo.plist")
+        same_file = False
         if os.path.exists(tg_admin_users):
             self.chflags("noschg", tg_admin_users)
-        shutil.copy(admin_users, tg_admin_users)
+            same_file = os.path.samefile(admin_users, tg_admin_users)
+        if not same_file:
+            shutil.copy(admin_users, tg_admin_users)
 
         self.copy_idata.append((tg_admin_users, "AdminUserRecoveryInfo.plist"))
 
-        admin_users = plistlib.load(open(tg_admin_users, "rb"))
+        with open(tg_admin_users, "rb") as fd:
+            admin_users = plistlib.load(fd)
         self.stub_info["admin_users"] = {}
         for user, info in admin_users.items():
             self.stub_info["admin_users"][user] = {

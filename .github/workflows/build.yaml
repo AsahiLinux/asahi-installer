@@ -30,6 +30,9 @@ jobs:
           sudo apt-get install --no-install-recommends -y libarchive-tools 7zip jq
           rustup target install aarch64-unknown-none-softfloat
 
+      - name: Run unit tests
+        run: python3 -m unittest discover -s tests -v
+
       - name: Build asahi-installer
         id: compile
         run: |
