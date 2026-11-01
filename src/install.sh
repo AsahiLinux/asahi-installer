@@ -52,5 +52,9 @@ if [ $(arch) != "arm64" ]; then
     exec arch -arm64 ./install.sh
 fi
 
+$python -m venv venv
+venv/bin/pip3 install *.whl
+
+
 exec </dev/tty >/dev/tty 2>/dev/tty
-exec $python main.py "$@"
+exec venv/bin/python3 main.py "$@"

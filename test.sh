@@ -15,6 +15,10 @@ make -C "m1n1" RELEASE=1 CHAINLOADING=1 -j4
 
 sudo rm -rf /tmp/asahi-install
 mkdir -p /tmp/asahi-install
+VBASE=/tmp/asahi-install/venv
+mkdir -p $VBASE
+python3 -m venv $VBASE
+$VBASE/bin/pip3 install cryptography==50.0.2
 
 git describe --tags --always --dirty > /tmp/asahi-install/version.tag
 
@@ -26,4 +30,4 @@ ln -sf "$base/m1n1/build/m1n1.bin" boot/m1n1.bin
 ln -sf "$base/artwork/logos/icns/AsahiLinux_logomark.icns" logo.icns
 ln -sf "$base/data/installer_data.json" installer_data.json
 
-sudo -E python3 main.py
+sudo -E $VBASE/bin/python3 main.py
