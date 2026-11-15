@@ -1,10 +1,10 @@
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-2.0-or-later
 import os, sys, os.path, time, logging, random
 from dataclasses import dataclass
 
 from urllib import parse
 from http.client import HTTPSConnection, HTTPConnection
-from util import *
+from .util import user_log
 
 @dataclass
 class CacheBlock:
@@ -17,19 +17,17 @@ class URLCache:
     TIMEOUT = 30
     MIN_READAHEAD = 8
     MAX_READAHEAD = 64
-    SPINNER = "/-\\|"
 
-    def __init__(self, url):
+    def __init__(self, url, progress_cb=None):
+        self.progress_cb = progress_cb
         self.url_str = url
         self.url = parse.urlparse(url)
         self.con = None
         self.size = self.get_size()
         self.p = 0
         self.cache = {}
-        self.blocks_read = 0
         self.bytes_read = 0
         self.readahead = self.MAX_READAHEAD
-        self.spin = 0
 
     def close_connection(self):
         if self.con is not None:
@@ -115,10 +113,8 @@ class URLCache:
         if not d:
             raise Exception(f"Server returned no data for for {self.url_str} range {off}-{off+size-1}")
 
-        self.spin = (self.spin + 1) % len(self.SPINNER)
-        sys.stdout.write(f"\r{self.SPINNER[self.spin]} ")
-        sys.stdout.flush()
-        self.blocks_read += 1
+        if self.progress_cb:
+            self.progress_cb(None, None)
         self.bytes_read += len(d)
 
         return d
@@ -146,9 +142,9 @@ class URLCache:
                 data = self.get_partial(off, size, bypass_cache=(retry == retries))
             except Exception as e:
                 if retry == retries:
-                    p_error(f"Exceeded maximum retries downloading data.")
+                    user_log.error(f"Exceeded maximum retries downloading data.")
                     raise
-                p_warning(f"Error downloading data ({e}), retrying... ({retry + 1}/{retries})")
+                user_log.warning(f"Error downloading data ({e}), retrying... ({retry + 1}/{retries})")
                 time.sleep(sleep)
                 self.close_connection()
                 sleep += 1
@@ -194,7 +190,6 @@ class URLCache:
             readahead = blk_end - blk + 1
             d.append(self.get_block(blk, readahead).data)
             prog = (blk - blk_start + 1) / blocks * 100
-            self.blocks_read += 1
 
         trim = self.p - (blk_start * self.BLOCKSIZE)
         d[0] = d[0][trim:]
@@ -204,17 +199,9 @@ class URLCache:
         self.p += count
         return d
 
-    def flush_progress(self):
-        if self.blocks_read > 0:
-            sys.stdout.write("\n")
-            self.blocks_read = 0
-            return True
-        else:
-            return False
-
 if __name__ == "__main__":
-    import sys, zipfile
-    from util import PackageInstaller
+    import zipfile
+    from .util import PackageInstaller
 
     url = sys.argv[1]
     ucache = URLCache(url)

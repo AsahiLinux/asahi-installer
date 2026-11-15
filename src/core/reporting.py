@@ -1,6 +1,7 @@
-import json, os, logging, time
-from urllib import request, parse
-from util import *
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+import json, os, logging
+from urllib import request
 
 EXPLANATIONS = {
     "device_class":
@@ -44,23 +45,7 @@ EXPLANATIONS = {
         "# command line.",
 }
 
-def show_data(data):
-    print()
-    p_message(f"This is the data that will be sent:")
-
-    for line in json.dumps(data, indent=4).split("\n"):
-        if not line:
-            continue
-        for key, exp in EXPLANATIONS.items():
-            indent = line[:len(line) - len(line.lstrip())]
-            if line.strip().startswith(f'"{key}"'):
-                exp = indent + exp.replace("\n", "\n" + indent)
-                p_message(exp)
-                break
-        p_info(line)
-    print()
-
-def report_inner(m, url, tag):
+def build_report(m, tag):
     disk_size = m.dutil.get_disk_size(m.cur_disk)
     size = round(20 * m.osins.install_size / disk_size) / 20
 
@@ -85,38 +70,9 @@ def report_inner(m, url, tag):
     for var in ("INSTALLER_BASE", "INSTALLER_DATA", "REPO_BASE"):
         data["installer"]["env"][var] = os.environ.get(var, None)
 
-    print()
-    print()
-    p_question("Help us improve Asahi Linux!")
-    p_message("We'd love to know how many people are installing Asahi and on what")
-    p_message("kind of hardware. Would you mind sending a one-time installation")
-    p_message("report to us?")
-    print()
-    p_warning("This will only report what kind of machine you have, the OS you're")
-    p_warning("installing, basic version info, and the rough install size.")
-    p_warning("No personally identifiable information (such as serial numbers,")
-    p_warning("specific partition sizes, etc.) is included. You can view the")
-    p_warning("exact data that will be sent.")
+    return data
 
-    while True:
-        print()
-        p_question("Report your install?")
-        act = m.choice("Choice (y/n/d)", {
-            "y": "Yes",
-            "n": "No",
-            "d": "View the data that will be sent",
-        }, default=None)
-
-        if act == "n":
-            return
-        elif act == "d":
-            show_data(data)
-            continue
-        elif act == "y":
-            break
-        else:
-            assert False
-
+def send_report(url, data):
     logging.info(f"Report data: {data!r}")
 
     try:
@@ -125,26 +81,17 @@ def report_inner(m, url, tag):
         req = request.Request(url, data=postdata, method="POST", headers=headers)
         with request.urlopen(req) as fd:
             fd.read()
-            if fd.status == 200:
-                p_success("Your install has been counted. Thank you! ❤")
-            else:
-                p_warning("Failed to send report! No worries.")
+            return fd.status == 200
 
-    except Exception as e:
-        p_warning("Failed to send report! No worries.")
+    except Exception:
+        logging.exception("Failed to send report")
+        return False
 
-    print()
-    print()
-    time.sleep(1)
-
-def report(m):
+def get_report_config():
     url = os.environ.get("REPORT", None)
     tag = os.environ.get("REPORT_TAG", None)
 
     if not tag or not url:
-        return
+        return None
 
-    try:
-        report_inner(m, url, tag)
-    except Exception as e:
-        logging.exception("Reporting failed, continuing...")
+    return url, tag

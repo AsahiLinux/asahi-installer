@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-2.0-or-later
 import tarfile, io, logging, os.path
 from hashlib import sha256
 from . import cpio
