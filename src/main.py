@@ -152,17 +152,16 @@ class InstallerCLI(InstallerCore):
         p_message("admin credentials.")
         print()
 
-        if self.sysinfo.boot_mode == "macOS":
-            self.admin_user = self.sysinfo.login_user
+        users = self.admin_candidates()
+        if len(users) > 1:
+            p_question("Choose an admin user for authentication:")
+            idx = self.choice("User", users)
         else:
-            if len(self.cur_os.admin_users) > 1:
-                p_question("Choose an admin user for authentication:")
-                idx = self.choice("User", self.cur_os.admin_users)
-            else:
-                idx = 0
-            self.admin_user = self.cur_os.admin_users[idx]
+            idx = 0
+        user = users[idx]
 
-        self.admin_password = getpass.getpass(f'Password for {self.admin_user}: ')
+        password = getpass.getpass(f'Password for {user}: ')
+        self.set_admin_credentials(user, password)
 
     def action_install_into_container(self, avail_parts):
         template = self.choose_os()
@@ -409,33 +408,27 @@ class InstallerCLI(InstallerCore):
         logging.info(f"Chosen OS: {os['name']}")
         return os
 
-    def set_reduced_security(self):
+    def do_reduced_security(self):
         while True:
             self.get_admin_credentials()
             print()
             p_progress("Preparing the new OS for booting in Reduced Security mode...")
             try:
-                subprocess.run(["bputil", "-g", "-v", self.ins.osi.vgid,
-                                "-u", self.admin_user, "-p", self.admin_password], check=True)
+                self.set_reduced_security()
                 break
             except subprocess.CalledProcessError:
                 p_error("Failed to run bputil. Press enter to try again.")
                 self.input()
 
-        self.credentials_validated = True
         print()
 
-    def bless(self):
+    def do_bless(self):
         while True:
             self.get_admin_credentials()
             print()
             p_progress("Setting the new OS as the default boot volume...")
             try:
-                subprocess.run(["bless", "--setBoot",
-                                "--device", "/dev/" + self.ins.osi.sys_volume,
-                                "--user", self.admin_user, "--stdinpass"],
-                               input=self.admin_password.encode("utf-8"),
-                               check=True)
+                self.bless()
                 break
             except subprocess.CalledProcessError:
                 if self.admin_password.strip() != self.admin_password:
@@ -444,9 +437,7 @@ class InstallerCLI(InstallerCore):
                     p_warning("and that doesn't work due to a silly Apple bug.")
                     p_warning("Let's try a different way. Sorry, you'll have to type it in again.")
                     try:
-                        subprocess.run(["bless", "--setBoot",
-                                        "--device", "/dev/" + self.ins.osi.sys_volume,
-                                        "--user", self.admin_user], check=True)
+                        self.bless(use_stdin=False)
                         print()
                         return
                     except subprocess.CalledProcessError:
@@ -454,23 +445,20 @@ class InstallerCLI(InstallerCore):
                 p_error("Failed to run bless. Press enter to try again.")
                 self.input()
 
-        self.credentials_validated = True
         print()
 
     def step2(self, report=False):
-        is_1tr = self.sysinfo.boot_mode == "one true recoveryOS"
-        is_recovery = "recoveryOS" in self.sysinfo.boot_mode
-        sys_ver = split_ver(self.sysinfo.macos_ver)
-        if is_1tr and self.ins.osi.paired:
-            subprocess.run([self.ins.step2_sh], check=True)
-            self.bless()
+        mode = self.step2_mode()
+        if mode == STEP2_DIRECT:
+            self.run_step2_script()
+            self.do_bless()
             self.step2_completed(report)
-        elif is_recovery:
-            self.set_reduced_security()
-            self.bless()
+        elif mode == STEP2_RECOVERY:
+            self.do_reduced_security()
+            self.do_bless()
             self.step2_indirect(report)
         else:
-            self.bless()
+            self.do_bless()
             self.step2_indirect(report)
 
     def flush_input(self):
@@ -480,15 +468,15 @@ class InstallerCLI(InstallerCore):
             pass
 
     def install_info(self, report):
-        # Hide the new volume until step2 is done
-        self.ins.prepare_for_step2()
+        self.hide_new_volume()
+        info = self.get_install_info()
 
         p_success( "Installation successful!")
         print()
         p_progress("Install information:")
-        p_info(   f"  APFS VGID: {col()}{self.ins.osi.vgid}")
-        if self.osins and self.osins.efi_part:
-            p_info(f"  EFI PARTUUID: {col()}{self.osins.efi_part.uuid.lower()}")
+        p_info(   f"  APFS VGID: {col()}{info.vgid}")
+        if info.efi_partuuid:
+            p_info(f"  EFI PARTUUID: {col()}{info.efi_partuuid}")
         print()
 
         if report:
@@ -572,11 +560,10 @@ class InstallerCLI(InstallerCore):
         p_prompt( "Press enter to reboot the system.")
         self.input()
         time.sleep(1)
-        os.system("shutdown -r now")
+        self.reboot()
 
     def step2_indirect(self, report=False):
-        # Hide the new volume until step2 is done
-        self.ins.prepare_for_step2()
+        self.hide_new_volume()
 
         self.install_info(report)
 
@@ -615,7 +602,7 @@ class InstallerCLI(InstallerCore):
         p_prompt( "Press enter to shut down the system.")
         self.input()
         time.sleep(1)
-        os.system("shutdown -h now")
+        self.shutdown()
 
     def action_resize(self, resizable):
         choices = {str(i): p.desc for i,p in enumerate(self.partitions) if p in resizable}

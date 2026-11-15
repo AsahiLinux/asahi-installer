@@ -25,6 +25,10 @@ FIRMWARE_ARCHIVE = "all_firmware.tar.gz"
 
 LARGE_OVERHEAD = 16_000_000_000
 
+STEP2_DIRECT = "direct"
+STEP2_RECOVERY = "recovery"
+STEP2_MACOS = "macos"
+
 BOOT_RECOVERY = "recovery"
 BOOT_BOOTED = "booted"
 BOOT_UNKNOWN = "unknown"
@@ -134,6 +138,11 @@ IPSW_VERSIONS = [
 ]
 
 @dataclass
+class InstallInfo:
+    vgid: str
+    efi_partuuid: str = None
+
+@dataclass
 class ResizeInfo:
     total: int
     free: int
@@ -174,6 +183,8 @@ class InstallerCore:
         self.default_os = None
         self.data = json.load(open("installer_data.json"))
         self.credentials_validated = False
+        self.admin_user = None
+        self.admin_password = None
         self.expert = False
         self.ipsw = None
         self.part = None
@@ -492,6 +503,64 @@ class InstallerCore:
         if size > free_size:
             raise SizeTooLargeError(free_size)
         return size
+
+    def admin_candidates(self):
+        if self.sysinfo.boot_mode == "macOS":
+            return [self.sysinfo.login_user]
+        return self.cur_os.admin_users
+
+    def set_admin_credentials(self, user, password):
+        self.admin_user = user
+        self.admin_password = password
+
+    def set_reduced_security(self):
+        self.stage = "finalising"
+        subprocess.run(["bputil", "-g", "-v", self.ins.osi.vgid,
+                        "-u", self.admin_user, "-p", self.admin_password], check=True)
+        self.credentials_validated = True
+
+    def bless(self, use_stdin=True):
+        self.stage = "finalising"
+        cmd = ["bless", "--setBoot",
+               "--device", "/dev/" + self.ins.osi.sys_volume,
+               "--user", self.admin_user]
+        if use_stdin:
+            subprocess.run(cmd + ["--stdinpass"],
+                           input=self.admin_password.encode("utf-8"),
+                           check=True)
+        else:
+            subprocess.run(cmd, check=True)
+        self.credentials_validated = True
+
+    def step2_mode(self):
+        is_1tr = self.sysinfo.boot_mode == "one true recoveryOS"
+        is_recovery = "recoveryOS" in self.sysinfo.boot_mode
+        if is_1tr and self.ins.osi.paired:
+            return STEP2_DIRECT
+        elif is_recovery:
+            return STEP2_RECOVERY
+        return STEP2_MACOS
+
+    def run_step2_script(self):
+        self.stage = "finalising"
+        subprocess.run([self.ins.step2_sh], check=True)
+
+    def hide_new_volume(self):
+        self.stage = "finalising"
+        # Hide the new volume until step2 is done
+        self.ins.prepare_for_step2()
+
+    def get_install_info(self):
+        info = InstallInfo(vgid=self.ins.osi.vgid)
+        if self.osins and self.osins.efi_part:
+            info.efi_partuuid = self.osins.efi_part.uuid.lower()
+        return info
+
+    def reboot(self):
+        os.system("shutdown -r now")
+
+    def shutdown(self):
+        os.system("shutdown -h now")
 
     def parse_partitions(self):
         self.reset_partition_lists()
