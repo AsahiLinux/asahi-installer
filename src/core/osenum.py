@@ -1,9 +1,13 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 import os, os.path, plistlib, subprocess, logging
+
+from ctypes import *
 from dataclasses import dataclass
 
-import core.m1n1
+from . import m1n1
 
+from .diskutil import DiskUtil
+from .exceptions import *
 from .util import *
 
 UUID_SROS = "3D3287DE-280D-4619-AAAB-D97469CA9C71"
@@ -62,6 +66,32 @@ class OSInfo:
                 return f"[{lbl}] {col(BRIGHT, YELLOW)}unknown fuOS{col()} (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
         else:
             return f"[{lbl}] {col(BRIGHT, RED)}incomplete install{col()} (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
+
+    def fsctl_volbootable(self, arm):
+        APFSIOC_VOL_BOOTABLE = 0xc0044a57 # _IOWR('J', 'W', int32_t)
+
+        if arm != 0:
+            DiskUtil.remount_rw(self.system)
+
+        libsys = CDLL("libSystem.B.dylib", use_errno=True)
+        f = libsys.fsctl
+        f.restype = c_int
+        f.argtypes = (c_char_p, c_ulong, POINTER(c_int), c_uint)
+        c_arm = c_int(arm)
+
+        ret = f(self.system.encode(), APFSIOC_VOL_BOOTABLE, byref(c_arm), 0)
+        if ret == -1:
+            err = f"fsctl call failed, errno: {get_errno()}"
+            logging.error(err)
+            raise FsctlError(err)
+
+        return c_arm.value
+
+    def get_volbootable(self):
+        return self.fsctl_volbootable(0) == 1
+
+    def set_volbootable(self, arm):
+        return self.fsctl_volbootable(1 if arm else -1)
 
 class OSEnum:
     def __init__(self, sysinfo, dutil, sysdsk):
@@ -228,7 +258,7 @@ class OSEnum:
                 logging.info(f"    Not Found")
                 continue
         try:
-            osi.sys_vol_bootable = fsctl_is_bootable(mounts["System"])
+            osi.sys_vol_bootable = osi.get_volbootable()
         except Exception as e:
             logging.warning(f"  Failed to get VolBootable: {e}")
         osi.update_admin_users()

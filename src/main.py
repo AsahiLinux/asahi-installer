@@ -361,9 +361,8 @@ class InstallerCLI(InstallerCore):
             idx = list(choices.keys())[0]
 
         self.part, osi = oses[int(idx)]
+        osi.set_volbootable(True)
 
-        self.dutil.remount_rw(osi.system)
-        fsctl_set_bootable(osi.system, True)
         print()
         p_success(f"macOS 27 fix applied. System Settings caches the bootability state,")
         p_success(f"so you may need to reboot before the os becomes visible")

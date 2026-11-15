@@ -236,7 +236,8 @@ class DiskUtil:
         info = self.get("info", "-plist", target)
         return info["MountPoint"]
 
-    def remount_rw(self, target):
+    @staticmethod
+    def remount_rw(target):
         logging.info(f"DiskUtil.remount_rw({target})")
         subprocess.run(["mount", "-u", "-w", target], check=True)
 

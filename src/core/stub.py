@@ -290,7 +290,7 @@ class StubInstaller(PackageInstaller):
         except:
             p_error("Failed to apply extended attributes, logo will not work.")
 
-        fsctl_set_bootable(self.osi.system, True)
+        self.osi.set_volbootable(True)
 
         p_progress("Setting up Data volume...")
         logging.info("Setting up Data volume")

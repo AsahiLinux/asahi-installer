@@ -23,3 +23,7 @@ class APFSNoContainersError(Exception):
 class PartitionNoFreeSpaceError(Exception):
     """The partition has insufficient free space"""
     pass
+
+class FsctlError(Exception):
+    """An APFS fsctl call failed"""
+    pass
