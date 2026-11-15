@@ -165,12 +165,12 @@ class InstallerCLI(InstallerCore):
     def action_install_into_container(self, avail_parts):
         template = self.choose_os()
 
-        containers = {str(i): p.desc for i,p in enumerate(self.parts) if p in avail_parts}
+        containers = {str(i): p.desc for i,p in enumerate(self.partitions) if p in avail_parts}
 
         print()
         p_question("Choose a container to install into:")
         idx = self.choice("Target container", containers)
-        self.part = self.parts[int(idx)]
+        self.part = self.partitions[int(idx)]
 
         ipsw = self.choose_ipsw(template.get("supported_fw", None))
         logging.info(f"Chosen IPSW version: {ipsw.version}")
@@ -219,7 +219,7 @@ class InstallerCLI(InstallerCore):
         print()
         p_message(f"Minimum required space for this OS: {ssize(min_size)}")
 
-        frees = {str(i): p.desc for i,p in enumerate(self.parts)
+        frees = {str(i): p.desc for i,p in enumerate(self.partitions)
                  if p in avail_free and align_down(p.size, PART_ALIGN) >= min_size}
 
         if len(frees) < 1:
@@ -235,7 +235,7 @@ class InstallerCLI(InstallerCore):
             idx = self.choice("Target area", frees)
         else:
             idx = list(frees.keys())[0]
-        free_part = self.parts[int(idx)]
+        free_part = self.partitions[int(idx)]
 
         print()
         p_message(f"Available free space: {ssize(free_part.size)}")
@@ -657,43 +657,14 @@ class InstallerCLI(InstallerCore):
         time.sleep(1)
         os.system("shutdown -h now")
 
-    def get_min_free_space(self, p):
-        if p.os and any(os.version for os in p.os) and not self.expert and not self.is_edu_128gb:
-            logging.info("  Has OS")
-            return MIN_FREE_OS
-        else:
-            return MIN_FREE
-
-    def can_resize(self, p):
-        logging.info(f"Checking resizability of {p.name}")
-        if p.type != "Apple_APFS":
-            logging.info(f"  Not APFS or system container")
-            return False
-
-        if p.container is None:
-            logging.info(f"  No container?")
-            return False
-
-        min_space = self.get_min_free_space(p) + psize("500MB")
-        logging.info(f"  Min space required: {min_space}")
-
-        free = p.container["CapacityFree"]
-        logging.info(f"  Free space: {free}")
-        if free <= min_space:
-            logging.info(f"  Cannot resize")
-            return False
-        else:
-            logging.info(f"  Can resize")
-            return True
-
     def action_resize(self, resizable):
-        choices = {str(i): p.desc for i,p in enumerate(self.parts) if p in resizable}
+        choices = {str(i): p.desc for i,p in enumerate(self.partitions) if p in resizable}
 
         print()
         if len(resizable) > 1 or self.expert:
             p_question("Choose an existing partition to resize:")
             idx = self.choice("Partition", choices)
-            target = self.parts[int(idx)]
+            target = self.partitions[int(idx)]
         else:
             target = resizable[0]
 
@@ -701,7 +672,7 @@ class InstallerCLI(InstallerCore):
 
         total = target.container["CapacityCeiling"]
         free = target.container["CapacityFree"]
-        min_free = self.get_min_free_space(target)
+        min_free = target.min_free_space(self.expert or self.is_edu_128gb)
         # Minimum size, ignoring APFS snapshots & co, but with a conservative buffer
         min_size_raw = align_up(total - free + min_free, PART_ALIGN)
         # Minimum size reported by diskutil, considering APFS snapshots & co but with a less conservative buffer
@@ -887,66 +858,26 @@ class InstallerCLI(InstallerCore):
 
     def main_loop(self):
         p_progress("Collecting partition information...")
-        self.dutil.get_info()
-        if self.sys_disk is None:
-            self.cur_disk = self.sys_disk = self.dutil.find_system_disk()
 
-        p_info(f"  System disk: {col()}{self.sys_disk}")
+        self.disk_info_init()
 
-        if self.expert:
-            self.external_disks = self.dutil.find_external_disks()
-        else:
-            self.external_disks = None
+        if self.sys_disk:
+            p_info(f"  System disk: {col()}{self.sys_disk}")
 
         if self.external_disks:
             p_info(f"  Found {len(self.external_disks)} external disk(s)")
 
-        self.parts = self.dutil.get_partitions(self.cur_disk)
         print()
 
         p_progress("Collecting OS information...")
         self.osinfo = osenum.OSEnum(self.sysinfo, self.dutil, self.cur_disk)
-        self.osinfo.collect(self.parts)
+        self.osinfo.collect(self.partitions)
         self.is_edu_128gb = self.dutil.get_disk_size(self.sys_disk) < 150 * 1024 * 1024 * 1024
         if self.is_edu_128gb:
             p_warning("Education-only 128GB device detected, allowing to resize macOS below safe limits")
             p_warning("System updates may fail if less than ~30GB of free space remains on the main partition")
 
-
-        parts_free = []
-        parts_empty_apfs = []
-        parts_resizable = []
-        oses_incomplete = []
-        oses_non_vol_boot = []
-        oses_upgradable = []
-        oses_vendorfw = []
-
-        for i, p in enumerate(self.parts):
-            p.index = i
-            if p.type in ("Apple_APFS_ISC",):
-                continue
-            if p.free:
-                p.desc = f"(free space: {ssize(p.size)})"
-                if p.size >= STUB_SIZE:
-                    parts_free.append(p)
-            elif p.type.startswith("Apple_APFS"):
-                p.desc = "APFS"
-                if p.type == "Apple_APFS_Recovery":
-                    p.desc += " (System Recovery)"
-                if p.label is not None:
-                    p.desc += f" [{p.label}]"
-                if p.container is None:
-                    p.desc += f" (not a container)"
-                else:
-                    vols = p.container["Volumes"]
-                    p.desc += f" ({ssize(p.size)}, {len(vols)} volume{'s' if len(vols) != 1 else ''})"
-                    if self.can_resize(p):
-                        parts_resizable.append(p)
-                    else:
-                        if p.size >= STUB_SIZE * 0.95:
-                            parts_empty_apfs.append(p)
-            else:
-                p.desc = f"{p.type} ({ssize(p.size)})"
+        self.parse_partitions()
 
         print()
         if self.cur_disk == self.sys_disk:
@@ -967,7 +898,7 @@ class InstallerCLI(InstallerCore):
 
         is_gpt = self.dutil.disks[self.cur_disk]["Content"] == "GUID_partition_scheme"
 
-        for i, p in enumerate(self.parts):
+        for i, p in enumerate(self.partitions):
             if p.desc is None:
                 continue
             p_choice(f"  {col(BRIGHT)}{i}{col()}: {p.desc}")
@@ -995,13 +926,13 @@ class InstallerCLI(InstallerCore):
                 if os.attached_partitions:
                     p_plain(f"      Extra partitions: {' '.join('#' + str(i.index) for i in os.attached_partitions)}")
                 if os.stub and os.m1n1_ver:
-                    oses_vendorfw.append((p, os))
+                    self.partitions_vendorfw.append((p, os))
                 if os.stub and not os.sys_vol_bootable:
-                    oses_non_vol_boot.append((p, os))
+                    self.partitions_no_volboot.append((p, os))
                 if os.stub and os.m1n1_ver and os.m1n1_ver != self.m1n1_ver:
-                    oses_upgradable.append((p, os))
+                    self.partitions_upgradeable.append((p, os))
                 elif os.stub and not (os.bp and os.bp.get("coih", None)):
-                    oses_incomplete.append((p, os))
+                    self.partitions_incomplete.append((p, os))
 
         print()
         p_plain(f"  [{b} ] = Booted OS, [{r} ] = Booted recovery, [{u} ] = Unknown")
@@ -1015,15 +946,15 @@ class InstallerCLI(InstallerCore):
         actions = {}
 
         default = None
-        if oses_incomplete:
+        if self.partitions_incomplete:
             actions["p"] = "Repair an incomplete installation"
             default = default or "p"
-        if parts_free and is_gpt:
+        if self.partitions_freespace and is_gpt:
             actions["f"] = "Install an OS into free space"
             default = default or "f"
-        if parts_empty_apfs and is_gpt and False: # This feature is confusing, disable it for now
+        if self.partitions_empty_apfs and is_gpt and False: # This feature is confusing, disable it for now
             actions["a"] = "Install an OS into an existing APFS container"
-        if parts_resizable and is_gpt:
+        if self.partitions_resizable and is_gpt:
             actions["r"] = "Resize an existing partition to make space for a new OS"
             default = default or "r"
         if self.cur_disk != self.sys_disk:
@@ -1032,13 +963,13 @@ class InstallerCLI(InstallerCore):
         if self.external_disks:
             actions["d"] = "Select another disk for installation"
             default = default or "d"
-        if oses_upgradable:
+        if self.partitions_upgradeable:
             actions["m"] = "Upgrade m1n1 on an existing OS"
             default = default or "m"
-        if oses_vendorfw:
+        if self.partitions_vendorfw:
             actions["v"] = "Rebuild vendor firmware package"
             default = default or "v"
-        if oses_non_vol_boot:
+        if self.partitions_no_volboot:
             actions["7"] = "Fix macOS 27 boot picker compatibility"
             default = default or "7"
 
@@ -1056,23 +987,23 @@ class InstallerCLI(InstallerCore):
         act = self.choice("Action", actions, default)
 
         if act == "f":
-            return self.action_install_into_free(parts_free)
+            return self.action_install_into_free(self.partitions_freespace)
         elif act == "a":
-            return self.action_install_into_container(parts_empty_apfs)
+            return self.action_install_into_container(self.partitions_empty_apfs)
         elif act == "r":
-            return self.action_resize(parts_resizable)
+            return self.action_resize(self.partitions_resizable)
         elif act == "m":
-            return self.action_repair_or_upgrade(oses_upgradable, upgrade=True)
+            return self.action_repair_or_upgrade(self.partitions_upgradeable, upgrade=True)
         elif act == "p":
-            return self.action_repair_or_upgrade(oses_incomplete, upgrade=False)
+            return self.action_repair_or_upgrade(self.partitions_incomplete, upgrade=False)
         elif act == "d":
             return self.action_select_disk()
         elif act == "w":
             return self.action_wipe()
         elif act == "v":
-            return self.action_rebuild_vendorfw(oses_vendorfw)
+            return self.action_rebuild_vendorfw(self.partitions_vendorfw)
         elif act == "7":
-            return self.action_set_vol_bootable(oses_non_vol_boot)
+            return self.action_set_vol_bootable(self.partitions_no_volboot)
         elif act == "q":
             return False
 
