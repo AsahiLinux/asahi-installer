@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-2.0-or-later
 import sys, os, os.path, pprint, statistics, logging
 from .core import FWFile
 

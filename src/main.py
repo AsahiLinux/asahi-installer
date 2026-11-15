@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-2.0-or-later
 import os, os.path, shlex, subprocess, sys, time, termios, json, getpass, reporting
 from dataclasses import dataclass
 

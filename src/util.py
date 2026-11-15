@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-2.0-or-later
 import re, logging, sys, os, stat, shutil, struct, subprocess, zlib, time, hashlib, lzma
 from ctypes import *
 

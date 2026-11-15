@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-2.0-or-later
 import os, shutil, sys, stat, subprocess, urlcache, zipfile, logging
 
 import m1n1
