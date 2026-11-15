@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from . import m1n1
 
+from .diskutil import DiskUtil
 from .exceptions import *
 from .util import *
 
@@ -138,6 +139,7 @@ class InstallerCore:
         self.osi = None
         self.m1n1 = "boot/m1n1.bin"
         self.m1n1_ver = m1n1.get_version(self.m1n1)
+        self.dutil = DiskUtil()
         self.sys_disk = None
         self.cur_disk = None
 

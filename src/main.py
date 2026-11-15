@@ -884,7 +884,6 @@ class InstallerCLI(InstallerCore):
 
     def main_loop(self):
         p_progress("Collecting partition information...")
-        self.dutil = diskutil.DiskUtil()
         self.dutil.get_info()
         if self.sys_disk is None:
             self.cur_disk = self.sys_disk = self.dutil.find_system_disk()
