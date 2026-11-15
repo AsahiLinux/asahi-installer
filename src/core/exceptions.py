@@ -71,3 +71,15 @@ class UnsupportedVersionError(Exception):
     def __init__(self, version):
         super().__init__(version)
         self.version = version
+
+class SizeTooSmallError(Exception):
+    """The requested size is below the minimum"""
+    def __init__(self, limit):
+        super().__init__(limit)
+        self.limit = limit
+
+class SizeTooLargeError(Exception):
+    """The requested size is above the maximum"""
+    def __init__(self, limit):
+        super().__init__(limit)
+        self.limit = limit

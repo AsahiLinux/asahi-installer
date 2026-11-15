@@ -23,6 +23,8 @@ EDU_128GB_LIMIT = 150 * 1024 * 1024 * 1024
 VENDORFW_DIR = "vendorfw"
 FIRMWARE_ARCHIVE = "all_firmware.tar.gz"
 
+LARGE_OVERHEAD = 16_000_000_000
+
 BOOT_RECOVERY = "recovery"
 BOOT_BOOTED = "booted"
 BOOT_UNKNOWN = "unknown"
@@ -130,6 +132,33 @@ IPSW_VERSIONS = [
          ["j433ap", "j434ap", "j504ap", "j613ap", "j615ap", "j514sap", "j514cap", "j514map", "j516sap", "j516cap", "j516map"],
          "https://updates.cdn-apple.com/2025FallFCS/patches/089-71124/49AD260A-D47F-4B5E-A793-30446187196E/com_apple_MobileAsset_MacSoftwareUpdate/f6d1ac9149f6a06401ff87fae5b262c420bfc5f7.zip"),
 ]
+
+@dataclass
+class ResizeInfo:
+    total: int
+    free: int
+    min_free: int
+    min_size: int
+    overhead: int
+
+    @property
+    def avail(self):
+        return self.total - self.min_size
+
+    @property
+    def min_perc(self):
+        return 100 * self.min_size / self.total
+
+    @property
+    def has_large_overhead(self):
+        return self.overhead > LARGE_OVERHEAD
+
+    @property
+    def can_shrink(self):
+        return self.avail >= 2 * PART_ALIGN
+
+    def frees_enough_for_install(self, size):
+        return self.total - size > MIN_INSTALL_FREE
 
 class InstallerCore:
     def __init__(self, version, progress_cb=None, verbose=False):
@@ -298,6 +327,11 @@ class InstallerCore:
     def min_os_size(self):
         return STUB_SIZE + (self.osins.min_size if self.expert else self.osins.min_recommended_size)
 
+    def os_partition_size(self, alloc_size):
+        if alloc_size is None:
+            return None
+        return alloc_size - STUB_SIZE
+
     def do_install(self, total_size=None):
         self.stage = "installing"
         user_log.info(f"Installing stub macOS into {self.part.name} ({self.part.label})")
@@ -322,22 +356,22 @@ class InstallerCore:
             self.ins.collect_installer_data(i)
             shutil.copy("installer.log", os.path.join(i, "installer.log"))
 
-    def install_into_free(self, free_part, os_size):
+    def install_into_free(self, free_part, alloc_size=None):
         self.stage = "installing"
         user_log.info(f"Creating new stub macOS named {self.osins.name}")
         logging.info(f"Creating stub macOS: {self.osins.name}")
         self.part = self.dutil.addPartition(free_part.name, "apfs", self.osins.name, STUB_SIZE)
 
-        self.do_install(os_size)
+        self.do_install(self.os_partition_size(alloc_size))
 
-    def install_into_disk(self, os_size):
+    def install_into_disk(self, alloc_size=None):
         self.stage = "installing"
         user_log.info(f"Partitioning the whole disk ({self.cur_disk})")
         self.part = self.dutil.partitionDisk(self.cur_disk, "apfs", self.osins.name, STUB_SIZE)
 
         user_log.info(f"Creating new stub macOS named {self.osins.name}")
         logging.info(f"Creating stub macOS: {self.osins.name}")
-        self.do_install(os_size)
+        self.do_install(self.os_partition_size(alloc_size))
 
     def install_into_container(self, part):
         self.part = part
@@ -420,6 +454,44 @@ class InstallerCore:
         shutil.copytree(fw_pkg.path, base, dirs_exist_ok=True)
         asahi = os.path.join(mountpoint, "asahi")
         shutil.copy(FIRMWARE_ARCHIVE, os.path.join(asahi, FIRMWARE_ARCHIVE))
+
+    def get_resize_info(self, target):
+        limits = self.dutil.get_resize_limits(target.name)
+
+        total = target.container["CapacityCeiling"]
+        free = target.container["CapacityFree"]
+        min_free = target.min_free_space(self.expert or self.is_edu_128gb)
+        # Minimum size, ignoring APFS snapshots & co, but with a conservative buffer
+        min_size_raw = align_up(total - free + min_free, PART_ALIGN)
+        # Minimum size reported by diskutil, considering APFS snapshots & co but with a less conservative buffer
+        min_size_safe = limits["MinimumSizePreferred"]
+        min_size = max(min_size_raw, min_size_safe)
+
+        if free <= min_free:
+            raise PartitionNoFreeSpaceError(f"{target.name} has no space to free")
+
+        return ResizeInfo(total=total, free=free, min_free=min_free,
+                          min_size=min_size, overhead=min_size - min_size_raw)
+
+    def check_resize_size(self, info, size):
+        size = align_up(size, PART_ALIGN)
+        if size < info.min_size:
+            raise SizeTooSmallError(info.min_size)
+        if size >= info.total:
+            raise SizeTooLargeError(info.total)
+        return size
+
+    def resize_partition(self, target, size):
+        self.stage = "resizing"
+        self.dutil.resizeContainer(target.name, size)
+
+    def check_os_size(self, size, min_size, free_size):
+        size = align_down(size, PART_ALIGN)
+        if size < min_size:
+            raise SizeTooSmallError(min_size)
+        if size > free_size:
+            raise SizeTooLargeError(free_size)
+        return size
 
     def parse_partitions(self):
         self.reset_partition_lists()

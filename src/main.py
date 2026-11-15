@@ -252,19 +252,19 @@ class InstallerCLI(InstallerCore):
                                     total=free_size)
                 if os_size is None:
                     continue
-                os_size = align_down(os_size, PART_ALIGN)
-                if os_size < min_size:
-                    p_error(f"Size is too small, please enter a value > {ssize(min_size)} ({min_perc:.2f}%)")
+                try:
+                    os_size = self.check_os_size(os_size, min_size, free_size)
+                except SizeTooSmallError as e:
+                    p_error(f"Size is too small, please enter a value > {ssize(e.limit)} ({min_perc:.2f}%)")
                     continue
-                if os_size > free_size:
-                    p_error(f"Size is too large, please enter a value < {ssize(free_size)}")
+                except SizeTooLargeError as e:
+                    p_error(f"Size is too large, please enter a value < {ssize(e.limit)}")
                     continue
                 break
 
             print()
             p_message(f"The new OS will be allocated {ssize(os_size)} of space,")
             p_message(f"leaving {ssize(free_size - os_size)} of free space.")
-            os_size -= STUB_SIZE
 
         print()
         self.flush_input()
@@ -628,32 +628,17 @@ class InstallerCLI(InstallerCore):
         else:
             target = resizable[0]
 
-        limits = self.dutil.get_resize_limits(target.name)
-
-        total = target.container["CapacityCeiling"]
-        free = target.container["CapacityFree"]
-        min_free = target.min_free_space(self.expert or self.is_edu_128gb)
-        # Minimum size, ignoring APFS snapshots & co, but with a conservative buffer
-        min_size_raw = align_up(total - free + min_free, PART_ALIGN)
-        # Minimum size reported by diskutil, considering APFS snapshots & co but with a less conservative buffer
-        min_size_safe = limits["MinimumSizePreferred"]
-        min_size = max(min_size_raw, min_size_safe)
-        overhead = min_size - min_size_raw
-        avail = total - min_size
-
-        min_perc = 100 * min_size / total
-
-        assert free > min_free
+        info = self.get_resize_info(target)
 
         p_message( "We're going to resize this partition:")
         p_message(f"  {target.desc}")
-        p_info(   f"  Total size: {col()}{ssize(total)}")
-        p_info(   f"  Free space: {col()}{ssize(free)}")
-        p_info(   f"  Available space: {col()}{ssize(avail)}")
-        p_info(   f"  Overhead: {col()}{ssize(overhead)}")
-        p_info(   f"  Minimum new size: {col()}{ssize(min_size)} ({min_perc:.2f}%)")
+        p_info(   f"  Total size: {col()}{ssize(info.total)}")
+        p_info(   f"  Free space: {col()}{ssize(info.free)}")
+        p_info(   f"  Available space: {col()}{ssize(info.avail)}")
+        p_info(   f"  Overhead: {col()}{ssize(info.overhead)}")
+        p_info(   f"  Minimum new size: {col()}{ssize(info.min_size)} ({info.min_perc:.2f}%)")
         print()
-        if overhead > 16_000_000_000:
+        if info.has_large_overhead:
             p_warning("  Warning: The selected partition has a large amount of overhead space.")
             p_warning("  This prevents you from resizing the partition to a smaller size, even")
             p_warning("  though macOS reports that space as free.")
@@ -669,7 +654,7 @@ class InstallerCLI(InstallerCore):
             p_plain( f"    {col(BLUE, BRIGHT)}https://alx.sh/tmcleanup{col()}")
             print()
 
-            if avail < 2 * PART_ALIGN:
+            if not info.can_shrink:
                 p_error("  Not enough available space to resize. Please follow the instructions")
                 p_error("  above to continue.")
                 return False
@@ -678,7 +663,7 @@ class InstallerCLI(InstallerCore):
                 return False
             print()
 
-        if avail < 2 * PART_ALIGN:
+        if not info.can_shrink:
             p_error("Not enough available space to resize.")
             return False
 
@@ -693,23 +678,24 @@ class InstallerCLI(InstallerCore):
         print()
 
         default = "50%"
-        if total / 2 < min_size:
+        if info.total / 2 < info.min_size:
             default = "min"
         while True:
-            val = self.get_size("New size", default=default, min=min_size, total=total)
+            val = self.get_size("New size", default=default, min=info.min_size, total=info.total)
             if val is None:
                 continue
-            val = align_up(val, PART_ALIGN)
-            if val < min_size:
-                p_error(f"Size is too small, please enter a value > {ssize(min_size)} ({min_perc:.2f}%)")
+            try:
+                val = self.check_resize_size(info, val)
+            except SizeTooSmallError as e:
+                p_error(f"Size is too small, please enter a value > {ssize(e.limit)} ({info.min_perc:.2f}%)")
                 continue
-            if val >= total:
-                p_error(f"Size is too large, please enter a value < {ssize(total)}")
+            except SizeTooLargeError as e:
+                p_error(f"Size is too large, please enter a value < {ssize(e.limit)}")
                 continue
-            freeing = total - val
+            freeing = info.total - val
             print()
             p_message(f"Resizing will free up {ssize(freeing)} of space.")
-            if freeing <= MIN_INSTALL_FREE:
+            if not info.frees_enough_for_install(val):
                 if not self.expert:
                     p_error(f"That's not enough free space for an OS install.")
                     continue
@@ -723,7 +709,7 @@ class InstallerCLI(InstallerCore):
 
         print()
         try:
-            self.dutil.resizeContainer(target.name, val)
+            self.resize_partition(target, val)
         except subprocess.CalledProcessError as e:
             print()
             p_error(f"Resize failed. This is usually caused by pre-existing APFS filesystem corruption.")
