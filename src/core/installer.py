@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
+import subprocess
+
 import json
 from dataclasses import dataclass
 
@@ -157,3 +159,11 @@ class InstallerCore:
             raise UserNotAdminError
 
         return True
+
+    def update_preboot(self):
+        proc = subprocess.run(["diskutil", "apfs", "updatePreboot", self.cur_os.system], check = True,
+                              stdout = subprocess.PIPE,
+                              stderr = subprocess.STDOUT)
+        logging.debug(f"Preboot update stdout: {proc.stdout}")
+
+        self.cur_os.update_admin_users()
