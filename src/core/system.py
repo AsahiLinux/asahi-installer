@@ -137,29 +137,6 @@ class SystemInfo:
         except:
             return None
 
-    def show(self):
-        p_info(f"  Product name: {col()}{self.product_name}")
-        p_info(f"  SoC: {col()}{self.soc_name}")
-        p_info(f"  Device class: {col()}{self.device_class}")
-        p_info(f"  Product type: {col()}{self.product_type}")
-        p_info(f"  Board ID: {col()}{self.board_id:#x}")
-        p_info(f"  Chip ID: {col()}{self.chip_id:#x}")
-        p_info(f"  System firmware: {col()}{self.sys_firmware}")
-        p_info(f"  Boot UUID: {col()}{self.boot_uuid}")
-        p_info(f"  Boot VGID: {col()}{self.boot_vgid}")
-        p_info(f"  Default boot VGID: {col()}{self.default_boot}")
-        p_info(f"  Boot mode: {col()}{self.boot_mode}")
-        p_info(f"  OS version: {col()}{self.macos_ver} ({self.macos_build})")
-        p_info(f"  OS restore version: {col()}{self.macos_restore_ver}")
-        p_info(f"  Main firmware version: {col()}{self.sfr_ver} ({self.sfr_build})")
-        if self.fsfr_ver:
-            p_info(f"  Fallback firmware version: {col()}{self.fsfr_ver} ({self.fsfr_build})")
-        else:
-            p_info(f"  No Fallback System Firmware / rOS")
-        p_info(f"  SFR version: {col()}{self.sfr_full_ver}")
-        p_info(f"  SystemRecovery version: {col()}{self.sros_full_ver} ({self.sros_ver} {self.sros_build})")
-        p_info(f"  Login user: {col()}{self.login_user}")
-
     def get_child(self, obj, name):
         for child in obj["IORegistryEntryChildren"]:
             if child.get("IORegistryEntryName", None) == name:

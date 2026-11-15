@@ -818,7 +818,29 @@ class InstallerCLI(InstallerCore):
 
         p_progress("Collecting system information...")
         self.sysinfo = system.SystemInfo()
-        self.sysinfo.show()
+
+        p_info(f"  Product name: {col()}{self.sysinfo.product_name}")
+        p_info(f"  SoC: {col()}{self.sysinfo.soc_name}")
+        p_info(f"  Device class: {col()}{self.sysinfo.device_class}")
+        p_info(f"  Product type: {col()}{self.sysinfo.product_type}")
+        p_info(f"  Board ID: {col()}{self.sysinfo.board_id:#x}")
+        p_info(f"  Chip ID: {col()}{self.sysinfo.chip_id:#x}")
+        p_info(f"  System firmware: {col()}{self.sysinfo.sys_firmware}")
+        p_info(f"  Boot UUID: {col()}{self.sysinfo.boot_uuid}")
+        p_info(f"  Boot VGID: {col()}{self.sysinfo.boot_vgid}")
+        p_info(f"  Default boot VGID: {col()}{self.sysinfo.default_boot}")
+        p_info(f"  Boot mode: {col()}{self.sysinfo.boot_mode}")
+        p_info(f"  OS version: {col()}{self.sysinfo.macos_ver} ({self.sysinfo.macos_build})")
+        p_info(f"  OS restore version: {col()}{self.sysinfo.macos_restore_ver}")
+        p_info(f"  Main firmware version: {col()}{self.sysinfo.sfr_ver} ({self.sysinfo.sfr_build})")
+        if self.sysinfo.fsfr_ver:
+            p_info(f"  Fallback firmware version: {col()}{self.sysinfo.fsfr_ver} ({self.sysinfo.fsfr_build})")
+        else:
+            p_info(f"  No Fallback System Firmware / rOS")
+        p_info(f"  SFR version: {col()}{self.sysinfo.sfr_full_ver}")
+        p_info(f"  SystemRecovery version: {col()}{self.sysinfo.sros_full_ver} ({self.sysinfo.sros_ver} {self.sysinfo.sros_build})")
+        p_info(f"  Login user: {col()}{self.sysinfo.login_user}")
+
         print()
 
         bugs.run_checks(self)
