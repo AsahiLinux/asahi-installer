@@ -843,7 +843,20 @@ class InstallerCLI(InstallerCore):
 
         print()
 
-        bugs.run_checks(self)
+        if bugs.is_bugged(self.sysinfo):
+            p_error("Dangerously buggy macOS version detected!")
+            print()
+            p_warning("You have a machine with a ProMotion display, and you are running macOS")
+            p_warning("Sonoma earlier than 14.2 or your System Firmware is in this range. Due to")
+            p_warning("critical macOS bugs, this combination can lead to an unbootable system under")
+            p_warning("certain conditions.")
+            print()
+            p_message("Please upgrade your system to macOS 14.2 or later and run this installer")
+            p_message("again to continue. This version resolves the bug and will make your machine")
+            p_message("safe again. If you have multiple macOS installs, we recommend not booting")
+            p_message("macOS Sonoma versions prior to 14.2 on this machine.")
+            print()
+            sys.exit(1)
 
         self.chip_min_ver = CHIP_MIN_VER.get(self.sysinfo.chip_id, None)
         self.device = DEVICES.get(self.sysinfo.device_class, None)

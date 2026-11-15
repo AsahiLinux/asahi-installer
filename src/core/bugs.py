@@ -64,40 +64,25 @@ def get_startup_display_mode():
 
     return None
 
-def request_upgrade():
-    p_error("Dangerously buggy macOS version detected!")
-    print()
-    p_warning("You have a machine with a ProMotion display, and you are running macOS")
-    p_warning("Sonoma earlier than 14.2 or your System Firmware is in this range. Due to")
-    p_warning("critical macOS bugs, this combination can lead to an unbootable system under")
-    p_warning("certain conditions.")
-    print()
-    p_message("Please upgrade your system to macOS 14.2 or later and run this installer")
-    p_message("again to continue. This version resolves the bug and will make your machine")
-    p_message("safe again. If you have multiple macOS installs, we recommend not booting")
-    p_message("macOS Sonoma versions prior to 14.2 on this machine.")
-    print()
-
-def run_checks(main):
-    if main.sysinfo.device_class not in PROMOTION_DEVICES:
+def is_bugged(si):
+    if si.device_class not in PROMOTION_DEVICES:
         logging.info("bugs: Not a ProMotion device")
-        return
+        return False
 
-    if split_ver(main.sysinfo.sfr_ver) < split_ver(BUGGY_SFR_MIN):
+    if split_ver(si.sfr_ver) < split_ver(BUGGY_SFR_MIN):
         logging.info("bugs: SFR not updated beyond problem version")
-        return
+        return False
 
-    if main.sysinfo.macos_restore_ver and split_ver(main.sysinfo.macos_restore_ver) >= split_ver(SAFE_MACOS_RVERSION_MIN):
+    if si.macos_restore_ver and split_ver(si.macos_restore_ver) >= split_ver(SAFE_MACOS_RVERSION_MIN):
         logging.info("bugs: macOS is new enough to guarantee safety")
-        return
+        return False
 
-    if main.sysinfo.macos_ver and split_ver(main.sysinfo.macos_ver) >= split_ver(SAFE_MACOS_VERSION_MIN):
+    if si.macos_ver and split_ver(si.macos_ver) >= split_ver(SAFE_MACOS_VERSION_MIN):
         logging.info("bugs: macOS is new enough to guarantee safety")
-        return
+        return False
 
-    if "recovery" in main.sysinfo.boot_mode and main.sysinfo.macos_ver in ALLOWED_RECOVERYOS_VERSIONS:
+    if "recovery" in si.boot_mode and si.macos_ver in ALLOWED_RECOVERYOS_VERSIONS:
         logging.info("bugs: allowlisted recoveryOS, assuming we're OK")
-        return
+        return False
 
-    request_upgrade()
-    sys.exit(1)
+    return True
