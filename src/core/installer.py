@@ -4,7 +4,7 @@ import json, subprocess
 
 from dataclasses import dataclass
 
-from . import m1n1
+from . import bugs, m1n1, osenum, osinstall, stub, system
 
 from .diskutil import DiskUtil, MIN_INSTALL_FREE
 from .exceptions import *
@@ -16,6 +16,12 @@ STUB_SIZE = align_down(psize("2.5GB"), PART_ALIGN)
 
 MIN_MACOS_VERSION = "13.5"
 MIN_MACOS_VERSION_EXPERT = "12.3"
+
+EDU_128GB_LIMIT = 150 * 1024 * 1024 * 1024
+
+BOOT_RECOVERY = "recovery"
+BOOT_BOOTED = "booted"
+BOOT_UNKNOWN = "unknown"
 
 @dataclass
 class IPSW:
@@ -127,10 +133,17 @@ class InstallerCore:
         self.progress_cb = progress_cb
         self.verbose = verbose
         self.stage = "preparing"  # preparing, resizing, installing, finalising
+        self.sysinfo = None
+        self.chip_min_ver = None
+        self.device = None
+        self.osinfo = None
+        self.cur_os = None
+        self.default_os = None
         self.data = json.load(open("installer_data.json"))
         self.credentials_validated = False
         self.expert = False
         self.ipsw = None
+        self.ins = None
         self.osins = None
         self.osi = None
         self.m1n1 = "boot/m1n1.bin"
@@ -140,6 +153,27 @@ class InstallerCore:
         self.cur_disk = None
         self.is_edu_128gb = False
         self.reset_partition_lists()
+
+    def collect_system_info(self):
+        self.sysinfo = system.SystemInfo()
+
+    def check_system(self):
+        if bugs.is_bugged(self.sysinfo):
+            raise BuggyMacOSError
+
+        self.chip_min_ver = CHIP_MIN_VER.get(self.sysinfo.chip_id, None)
+        self.device = DEVICES.get(self.sysinfo.device_class, None)
+        if not self.chip_min_ver or not self.device or (self.device.expert_only and not self.expert):
+            raise UnsupportedDeviceError
+
+        if self.sysinfo.boot_mode == "macOS" and (
+            (not self.sysinfo.login_user)
+            or self.sysinfo.login_user == "unknown"):
+            raise NoLoginUserError
+
+        min_ver = MIN_MACOS_VERSION_EXPERT if self.expert else MIN_MACOS_VERSION
+        if split_ver(self.sysinfo.macos_ver) < split_ver(min_ver):
+            raise MacOSTooOldError(min_ver)
 
     def reset_partition_lists(self):
         self.partitions_freespace = []
@@ -162,6 +196,102 @@ class InstallerCore:
             self.external_disks = None
 
         self.partitions = self.dutil.get_partitions(self.cur_disk)
+
+    @property
+    def is_gpt(self):
+        return self.dutil.disks[self.cur_disk]["Content"] == "GUID_partition_scheme"
+
+    def collect_os_info(self):
+        self.osinfo = osenum.OSEnum(self.sysinfo, self.dutil, self.cur_disk)
+        self.osinfo.collect(self.partitions)
+        self.is_edu_128gb = self.dutil.get_disk_size(self.sys_disk) < EDU_128GB_LIMIT
+
+        self.parse_partitions()
+        self.classify_oses()
+
+    def os_boot_state(self, os):
+        if self.sysinfo.boot_vgid == os.vgid and self.sysinfo.boot_uuid == os.rec_vgid:
+            return BOOT_RECOVERY
+        elif self.sysinfo.boot_uuid == os.vgid:
+            return BOOT_BOOTED
+        elif self.sysinfo.boot_vgid == os.vgid:
+            return BOOT_UNKNOWN
+        return None
+
+    def classify_oses(self):
+        if self.cur_disk == self.sys_disk:
+            self.cur_os = None
+        self.default_os = None
+
+        for p in self.partitions:
+            if p.desc is None or not p.os:
+                continue
+            for os in p.os:
+                if not os.version:
+                    continue
+                state = self.os_boot_state(os)
+                if state == BOOT_RECOVERY:
+                    if p.type == "APFS":
+                        self.cur_os = os
+                elif state == BOOT_BOOTED:
+                    self.cur_os = os
+                if self.sysinfo.default_boot == os.vgid:
+                    self.default_os = os
+                if os.stub and os.m1n1_ver:
+                    self.partitions_vendorfw.append((p, os))
+                if os.stub and not os.sys_vol_bootable:
+                    self.partitions_no_volboot.append((p, os))
+                if os.stub and os.m1n1_ver and os.m1n1_ver != self.m1n1_ver:
+                    self.partitions_upgradeable.append((p, os))
+                elif os.stub and not (os.bp and os.bp.get("coih", None)):
+                    self.partitions_incomplete.append((p, os))
+
+        if self.cur_os is None and self.sysinfo.boot_mode != "macOS":
+            self.cur_os = self.default_os
+
+    def available_oses(self):
+        os_list = self.data["os_list"]
+        if not self.expert:
+            os_list = [i for i in os_list if not i.get("expert", False)]
+        if self.cur_disk != self.sys_disk:
+            os_list = [i for i in os_list if i.get("external_boot", False)]
+        return os_list
+
+    def available_ipsws(self, supported_fw=None):
+        sys_iboot = split_ver(self.sysinfo.sys_firmware)
+        sys_macos = split_ver(self.sysinfo.macos_ver)
+        sys_sfr = split_ver(self.sysinfo.sfr_full_ver)
+        chip_min = split_ver(CHIP_MIN_VER.get(self.sysinfo.chip_id, "0"))
+        device_min = split_ver(self.device.min_ver)
+        minver = [ipsw for ipsw in IPSW_VERSIONS
+                 if split_ver(ipsw.version) >= max(chip_min, device_min)
+                 and (supported_fw is None or ipsw.version in supported_fw)
+                 and (ipsw.devices is None or self.sysinfo.device_class in ipsw.devices)]
+        avail = [ipsw for ipsw in minver
+                 if split_ver(ipsw.min_iboot) <= sys_iboot
+                 and split_ver(ipsw.min_macos) <= sys_macos
+                 and split_ver(ipsw.min_sfr) <= sys_sfr
+                 and (not ipsw.expert_only or self.expert)]
+
+        minver.sort(key=lambda ipsw: split_ver(ipsw.version))
+
+        if not avail:
+            raise FirmwareTooOldError(minver[0].version if minver else None)
+
+        return avail
+
+    def load_ipsw(self, ipsw):
+        self.ipsw = ipsw
+        logging.info(f"Chosen IPSW version: {ipsw.version}")
+        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo, self.progress_cb)
+        self.ins.load_ipsw(ipsw)
+
+    def load_os_package(self, template):
+        self.osins = osinstall.OSInstaller(self.dutil, self.data, template, self.progress_cb)
+        self.osins.load_package()
+
+    def min_os_size(self):
+        return STUB_SIZE + (self.osins.min_size if self.expert else self.osins.min_recommended_size)
 
     def parse_partitions(self):
         self.reset_partition_lists()
