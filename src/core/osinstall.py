@@ -8,8 +8,8 @@ from .util import *
 
 class OSInstaller(PackageInstaller):
     PART_ALIGNMENT = 1024 * 1024
-    def __init__(self, dutil, data, template):
-        super().__init__()
+    def __init__(self, dutil, data, template, progress_cb=None):
+        super().__init__(progress_cb)
         self.dutil = dutil
         self.data = data
         self.template = template
@@ -52,18 +52,13 @@ class OSInstaller(PackageInstaller):
 
         logging.info(f"OS package URL: {package}")
         if package.startswith("http"):
-            p_progress("Downloading OS package info...")
-            self.ucache = urlcache.URLCache(package)
+            user_log.info("Downloading OS package info...")
+            self.ucache = urlcache.URLCache(package, self.progress_cb)
             self.pkg = zipfile.ZipFile(self.ucache)
         else:
-            p_progress("Loading OS package info...")
+            user_log.info("Loading OS package info...")
             self.pkg = zipfile.ZipFile(open(package, "rb"))
-        self.flush_progress()
         logging.info(f"OS package opened")
-
-    def flush_progress(self):
-        if self.ucache:
-            self.ucache.flush_progress()
 
     def partition_disk(self, prev, total_size=None):
         self.part_info = []
@@ -88,7 +83,7 @@ class OSInstaller(PackageInstaller):
                 size += expand_size
                 logging.info(f"Expanded to {size} (+{expand_size})")
 
-            p_progress(f"Adding partition {part['name']} ({ssize(size)})...")
+            user_log.info(f"Adding partition {part['name']} ({ssize(size)})...")
             info = self.dutil.addPartition(prev, f"%{ptype}%", "%noformat%", size)
             if ptype == "EFI":
                 self.efi_part = info
@@ -97,7 +92,7 @@ class OSInstaller(PackageInstaller):
                 # Clean up invalid characters in FAT
                 name_clean = name.translate(str.maketrans("", "", "*?/\\|,;:+=<>[]\""))
                 name_clean = unicodedata.normalize('NFKD', name_clean).encode('ascii', 'ignore').decode('ascii')
-                p_plain("  Formatting as FAT...")
+                user_log.info("  Formatting as FAT...")
                 args = ["newfs_msdos", "-F", "32",
                         "-v", name_clean[:11]]
                 if "volume_id" in part:
@@ -111,7 +106,7 @@ class OSInstaller(PackageInstaller):
             prev = info.name
 
     def download_extras(self):
-        p_progress("Downloading extra files...")
+        user_log.info("Downloading extra files...")
         logging.info("OSInstaller.download_extras()")
 
         mountpoint = self.dutil.mount(self.efi_part.name)
@@ -121,15 +116,14 @@ class OSInstaller(PackageInstaller):
         count = len(self.template["extras"])
         for i, url in enumerate(self.template["extras"]):
             base = os.path.basename(url)
-            p_plain(f"  Downloading {base} ({i + 1}/{count})...")
-            ucache = urlcache.URLCache(url)
+            user_log.info(f"  Downloading {base} ({i + 1}/{count})...")
+            ucache = urlcache.URLCache(url, self.progress_cb)
             data = ucache.read()
             with open(os.path.join(dest, base), "wb") as fd:
                 fd.write(data)
-            ucache.flush_progress()
 
     def install(self, stub_ins):
-        p_progress("Installing OS...")
+        user_log.info("Installing OS...")
         logging.info("OSInstaller.install()")
 
         # Force a reconnect, since the connection is likely to have timed out
@@ -139,13 +133,12 @@ class OSInstaller(PackageInstaller):
         icon = self.template.get("icon", None)
         if icon:
             self.extract_file(icon, stub_ins.icon_path)
-            self.flush_progress()
 
         for part, info in zip(self.template["partitions"], self.part_info):
             logging.info(f"Installing partition {part!r} -> {info.name}")
             image = part.get("image", None)
             if image:
-                p_plain(f"  Extracting {image} into {info.name} partition...")
+                user_log.info(f"  Extracting {image} into {info.name} partition...")
                 logging.info(f"Extract: {image}")
                 zinfo = self.pkg.getinfo(image)
                 if zinfo.file_size % (4 * 1024) != 0:
@@ -153,17 +146,15 @@ class OSInstaller(PackageInstaller):
                 with self.pkg.open(image) as sfd, \
                     open(f"/dev/r{info.name}", "r+b") as dfd:
                     self.fdcopy(sfd, dfd, zinfo.file_size)
-                self.flush_progress()
             source = part.get("source", None)
             if source:
-                p_plain(f"  Copying from {source} into {info.name} partition...")
+                user_log.info(f"  Copying from {source} into {info.name} partition...")
                 mountpoint = self.dutil.mount(info.name)
                 logging.info(f"Copy: {source} -> {mountpoint}")
                 self.extract_tree(source, mountpoint)
-                self.flush_progress()
             if part.get("copy_firmware", False):
                 mountpoint = self.dutil.mount(info.name)
-                p_plain(f"  Copying firmware into {info.name} partition...")
+                user_log.info(f"  Copying firmware into {info.name} partition...")
                 base = os.path.join(mountpoint, "vendorfw")
                 logging.info(f"Firmware -> {base}")
                 shutil.copytree(self.firmware_package.path, base)
@@ -177,7 +168,7 @@ class OSInstaller(PackageInstaller):
             assert self.efi_part is not None
             self.download_extras()
 
-        p_progress("Preparing to finish installation...")
+        user_log.info("Preparing to finish installation...")
 
         logging.info(f"Building boot object")
         boot_object = self.template["boot_object"]

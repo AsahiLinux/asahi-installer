@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
-import plistlib, subprocess, sys, logging
+import plistlib, subprocess, logging
 from dataclasses import dataclass
 
 from .exceptions import *
@@ -58,8 +58,8 @@ class Partition:
 
 class DiskUtil:
     FREE_THRESHOLD = 16 * 1024 * 1024
-    def __init__(self):
-        self.verbose = "-v" in sys.argv
+    def __init__(self, verbose=False):
+        self.verbose = verbose
 
     def action(self, *args, verbose=False):
         if verbose == 2:

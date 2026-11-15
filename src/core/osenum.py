@@ -44,28 +44,43 @@ class OSInfo:
         except:
             logging.warning(f"  Failed to get AdminUserRecoveryInfo.plist")
 
-    def __str__(self):
+    @property
+    def kind(self):
         if self.vgid == UUID_SROS:
-            return f"recoveryOS v{self.version} [Primary recoveryOS]"
+            return "recovery_primary"
         elif self.vgid == UUID_FROS:
-            return f"recoveryOS v{self.version} [Fallback recoveryOS]"
-
-        lbl = col(BRIGHT) + self.label + col()
-        if not self.stub:
-            macos = f"{col(BRIGHT, GREEN)}macOS v{self.version}{col()}"
+            return "recovery_fallback"
+        elif not self.stub:
             if self.m1n1_ver is not None:
-                return f"[{lbl}] {macos} + {col(CYAN)}m1n1 {self.m1n1_ver}{col()} [{self.sys_volume}, {self.vgid}]"
+                return "macos_m1n1"
             elif self.bp and self.bp.get("coih", None):
-                return f"[{lbl}] {macos} + {col(YELLOW)}unknown fuOS{col()} [{self.sys_volume}, {self.vgid}]"
+                return "macos_fuos"
             else:
-                return f"[{lbl}] {macos} [{self.sys_volume}, {self.vgid}]"
+                return "macos"
         elif self.bp and self.bp.get("coih", None):
-            if self.m1n1_ver:
-                return f"[{lbl}] {col(BRIGHT, CYAN)}m1n1 {self.m1n1_ver}{col()} (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
-            else:
-                return f"[{lbl}] {col(BRIGHT, YELLOW)}unknown fuOS{col()} (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
+            return "stub_m1n1" if self.m1n1_ver else "stub_fuos"
         else:
-            return f"[{lbl}] {col(BRIGHT, RED)}incomplete install{col()} (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
+            return "stub_incomplete"
+
+    def __str__(self):
+        ids = f"[{self.sys_volume}, {self.vgid}]"
+        kind = self.kind
+        if kind == "recovery_primary":
+            return f"recoveryOS v{self.version} [Primary recoveryOS]"
+        elif kind == "recovery_fallback":
+            return f"recoveryOS v{self.version} [Fallback recoveryOS]"
+        elif kind == "macos_m1n1":
+            return f"[{self.label}] macOS v{self.version} + m1n1 {self.m1n1_ver} {ids}"
+        elif kind == "macos_fuos":
+            return f"[{self.label}] macOS v{self.version} + unknown fuOS {ids}"
+        elif kind == "macos":
+            return f"[{self.label}] macOS v{self.version} {ids}"
+        elif kind == "stub_m1n1":
+            return f"[{self.label}] m1n1 {self.m1n1_ver} (macOS {self.version} stub) {ids}"
+        elif kind == "stub_fuos":
+            return f"[{self.label}] unknown fuOS (macOS {self.version} stub) {ids}"
+        else:
+            return f"[{self.label}] incomplete install (macOS {self.version} stub) {ids}"
 
     def fsctl_volbootable(self, arm):
         APFSIOC_VOL_BOOTABLE = 0xc0044a57 # _IOWR('J', 'W', int32_t)

@@ -122,8 +122,11 @@ IPSW_VERSIONS = [
 ]
 
 class InstallerCore:
-    def __init__(self, version):
+    def __init__(self, version, progress_cb=None, verbose=False):
         self.version = version
+        self.progress_cb = progress_cb
+        self.verbose = verbose
+        self.stage = "preparing"  # preparing, resizing, installing, finalising
         self.data = json.load(open("installer_data.json"))
         self.credentials_validated = False
         self.expert = False
@@ -132,7 +135,7 @@ class InstallerCore:
         self.osi = None
         self.m1n1 = "boot/m1n1.bin"
         self.m1n1_ver = m1n1.get_version(self.m1n1)
-        self.dutil = DiskUtil()
+        self.dutil = DiskUtil(self.verbose)
         self.sys_disk = None
         self.cur_disk = None
         self.is_edu_128gb = False

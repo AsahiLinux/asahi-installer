@@ -16,10 +16,12 @@ import core.system as system
 from core.installer import *
 from core.exceptions import *
 from core.util import *
+from terminal import *
 
 class InstallerCLI(InstallerCore):
     def __init__(self, version):
-        super().__init__(version)
+        super().__init__(version, terminal_progress, "-v" in sys.argv)
+        attach_log_handler()
 
     def input(self):
         self.flush_input()
@@ -175,9 +177,9 @@ class InstallerCLI(InstallerCore):
         ipsw = self.choose_ipsw(template.get("supported_fw", None))
         logging.info(f"Chosen IPSW version: {ipsw.version}")
 
-        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo)
+        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo, self.progress_cb)
         self.ins.load_ipsw(ipsw)
-        self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
+        self.osins = osinstall.OSInstaller(self.dutil, self.data, template, self.progress_cb)
         self.osins.load_package()
 
         self.do_install()
@@ -192,7 +194,7 @@ class InstallerCLI(InstallerCore):
 
         template = self.choose_os()
 
-        self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
+        self.osins = osinstall.OSInstaller(self.dutil, self.data, template, self.progress_cb)
         self.osins.load_package()
 
         min_size = STUB_SIZE + (self.osins.min_size if self.expert else self.osins.min_recommended_size)
@@ -212,7 +214,7 @@ class InstallerCLI(InstallerCore):
     def action_install_into_free(self, avail_free):
         template = self.choose_os()
 
-        self.osins = osinstall.OSInstaller(self.dutil, self.data, template)
+        self.osins = osinstall.OSInstaller(self.dutil, self.data, template, self.progress_cb)
         self.osins.load_package()
 
         min_size = STUB_SIZE + (self.osins.min_size if self.expert else self.osins.min_recommended_size)
@@ -287,12 +289,12 @@ class InstallerCLI(InstallerCore):
 
         ipsw = self.choose_ipsw(template.get("supported_fw", None))
         logging.info(f"Chosen IPSW version: {ipsw.version}")
-        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo)
+        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo, self.progress_cb)
         self.ins.load_ipsw(ipsw)
         return os_size
 
     def action_repair_or_upgrade(self, oses, upgrade):
-        choices = {str(i): f"{p.desc}\n      {str(o)}" for i, (p, o) in enumerate(oses)}
+        choices = {str(i): f"{p.desc}\n      {describe_os(o)}" for i, (p, o) in enumerate(oses)}
 
         if len(choices) > 1:
             print()
@@ -314,7 +316,7 @@ class InstallerCLI(InstallerCore):
         else:
             p_progress(f"Resuming installation into {self.part.name} ({self.part.label})")
 
-        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo)
+        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo, self.progress_cb)
         if not self.ins.check_existing_install(osi):
             op = "upgrade" if upgrade else "repair"
             p_error(   "The existing installation is missing files.")
@@ -351,7 +353,7 @@ class InstallerCLI(InstallerCore):
         self.step2()
 
     def action_set_vol_bootable(self, oses):
-        choices = {str(i): f"{p.desc}\n      {str(o)}" for i, (p, o) in enumerate(oses)}
+        choices = {str(i): f"{p.desc}\n      {describe_os(o)}" for i, (p, o) in enumerate(oses)}
 
         if len(choices) > 1:
             print()
@@ -373,7 +375,7 @@ class InstallerCLI(InstallerCore):
         return True
 
     def action_rebuild_vendorfw(self, oses):
-        choices = {str(i): f"{p.desc}\n      {str(o)}" for i, (p, o) in enumerate(oses)}
+        choices = {str(i): f"{p.desc}\n      {describe_os(o)}" for i, (p, o) in enumerate(oses)}
 
         if len(choices) > 1:
             print()
@@ -383,7 +385,7 @@ class InstallerCLI(InstallerCore):
             idx = list(choices.keys())[0]
 
         self.part, osi = oses[int(idx)]
-        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo)
+        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo, self.progress_cb)
         if not self.ins.check_existing_install(osi):
             p_error(   "The existing installation is missing files.")
             p_message(f"This tool can only rebuild firmware on installations that completed the first")
@@ -601,7 +603,77 @@ class InstallerCLI(InstallerCore):
         print()
 
         if report:
-            reporting.report(self)
+            self.report()
+
+    def show_report_data(self, data):
+        print()
+        p_message(f"This is the data that will be sent:")
+
+        for line in json.dumps(data, indent=4).split("\n"):
+            if not line:
+                continue
+            for key, exp in reporting.EXPLANATIONS.items():
+                indent = line[:len(line) - len(line.lstrip())]
+                if line.strip().startswith(f'"{key}"'):
+                    exp = indent + exp.replace("\n", "\n" + indent)
+                    p_message(exp)
+                    break
+            p_info(line)
+        print()
+
+    def report_inner(self, url, tag):
+        data = reporting.build_report(self, tag)
+
+        print()
+        print()
+        p_question("Help us improve Asahi Linux!")
+        p_message("We'd love to know how many people are installing Asahi and on what")
+        p_message("kind of hardware. Would you mind sending a one-time installation")
+        p_message("report to us?")
+        print()
+        p_warning("This will only report what kind of machine you have, the OS you're")
+        p_warning("installing, basic version info, and the rough install size.")
+        p_warning("No personally identifiable information (such as serial numbers,")
+        p_warning("specific partition sizes, etc.) is included. You can view the")
+        p_warning("exact data that will be sent.")
+
+        while True:
+            print()
+            p_question("Report your install?")
+            act = self.choice("Choice (y/n/d)", {
+                "y": "Yes",
+                "n": "No",
+                "d": "View the data that will be sent",
+            }, default=None)
+
+            if act == "n":
+                return
+            elif act == "d":
+                self.show_report_data(data)
+                continue
+            elif act == "y":
+                break
+            else:
+                assert False
+
+        if reporting.send_report(url, data):
+            p_success("Your install has been counted. Thank you! ❤")
+        else:
+            p_warning("Failed to send report! No worries.")
+
+        print()
+        print()
+        time.sleep(1)
+
+    def report(self):
+        config = reporting.get_report_config()
+        if config is None:
+            return
+
+        try:
+            self.report_inner(*config)
+        except Exception:
+            logging.exception("Reporting failed, continuing...")
 
     def step2_completed(self, report=False):
         self.install_info(report)
@@ -956,7 +1028,7 @@ class InstallerCLI(InstallerCore):
                     state += d
                 else:
                     state += " "
-                p_plain(f"    OS: [{state}] {os}")
+                p_plain(f"    OS: [{state}] {describe_os(os)}")
                 if os.attached_partitions:
                     p_plain(f"      Extra partitions: {' '.join('#' + str(i.index) for i in os.attached_partitions)}")
                 if os.stub and os.m1n1_ver:
@@ -1050,6 +1122,7 @@ if __name__ == "__main__":
 
     console = logging.StreamHandler()
     console.setLevel(logging.ERROR)
+    console.addFilter(lambda record: record.name != user_log.name)
     formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
