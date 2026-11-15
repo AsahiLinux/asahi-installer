@@ -102,7 +102,9 @@ class InstallerCLI(InstallerCore):
             p_warning(f"Please enter 'Y' or 'N'")
 
     def check_cur_os(self):
-        if self.cur_os is None:
+        try:
+            self.os_valid()
+        except OSInvalidError:
             p_error("Unable to determine primary OS.")
             p_error("This installer requires you to already have a macOS install with")
             p_error("at least one administrator user that is a machine owner.")
@@ -113,30 +115,31 @@ class InstallerCLI(InstallerCore):
         p_progress(f"Using OS '{self.cur_os.label}' ({self.cur_os.sys_volume}) for machine authentication.")
         logging.info(f"Current OS: {self.cur_os.label} / {self.cur_os.sys_volume}")
 
-        if not self.cur_os.admin_users or self.cur_os.admin_users == ["_mbsetupuser"] or (
-            self.sysinfo.boot_mode == "macOS" and self.sysinfo.login_user not in self.cur_os.admin_users):
-            # Out of date Preboot partition?
-            p_message(f"Oops, your Preboot volume may be out of date. Fixing that for you...")
-            p = subprocess.run(["diskutil", "apfs", "updatePreboot", self.cur_os.system], check=True,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT)
-            logging.debug(f"process output: {p.stdout}")
-            self.cur_os.update_admin_users()
-            p_message(f"Preboot volume updated.")
+        preboot_updated = False
 
-        if not self.cur_os.admin_users or self.cur_os.admin_users == ["_mbsetupuser"]:
-            p_error("No admin users found in the primary OS. Cannot continue.")
-            p_message("If this is a new or freshly reset machine, you will have to go through macOS")
-            p_message("initial user set-up and create an admin user before using this installer.")
-            sys.exit(1)
+        while True:
+            try:
+                self.user_valid()
+                break
+            except (NoAdminUsersError, UserNotAdminError) as e:
+                if not preboot_updated:
+                    p_message(f"Oops, your Preboot volume may be out of date. Fixing that for you...")
+                    self.update_preboot()
+                    p_message(f"Preboot volume updated.")
+                    preboot_updated = True
+                    continue
 
-        if self.sysinfo.boot_mode == "macOS" and self.sysinfo.login_user not in self.cur_os.admin_users:
-            p_error(f"Your login user {self.sysinfo.login_user} is not a machine admin.")
-            print()
-            p_info(f"These users are machine admins: {' '.join(self.cur_os.admin_users)}")
-            print()
-            p_message(f"You have to be a machine admin to install {DISTRO}.")
-            sys.exit(1)
+                if isinstance(e, NoAdminUsersError):
+                    p_error("No admin users found in the primary OS. Cannot continue.")
+                    p_message("If this is a new or freshly reset machine, you will have to go through macOS")
+                    p_message("initial user set-up and create an admin user before using this installer.")
+                else:
+                    p_error(f"Your login user {self.sysinfo.login_user} is not a machine admin.")
+                    print()
+                    p_info(f"These users are machine admins: {' '.join(self.cur_os.admin_users)}")
+                    print()
+                    p_message(f"You have to be a machine admin to install {DISTRO}.")
+                sys.exit(1)
 
     def get_admin_credentials(self):
         if self.credentials_validated:
