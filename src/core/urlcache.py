@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from urllib import parse
 from http.client import HTTPSConnection, HTTPConnection
 from .util import user_log
-from .util import *
 
 @dataclass
 class CacheBlock:

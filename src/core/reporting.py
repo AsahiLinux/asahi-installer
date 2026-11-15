@@ -3,8 +3,6 @@
 import json, os, logging
 from urllib import request
 
-from .util import *
-
 EXPLANATIONS = {
     "device_class":
         "# The model code of your device. For example, j274ap means\n"

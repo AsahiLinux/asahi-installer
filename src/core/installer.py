@@ -284,25 +284,25 @@ class InstallerCore:
         for p in self.partitions:
             if p.desc is None or not p.os:
                 continue
-            for os in p.os:
-                if not os.version:
+            for osi in p.os:
+                if not osi.version:
                     continue
-                state = self.os_boot_state(os)
+                state = self.os_boot_state(osi)
                 if state == BOOT_RECOVERY:
                     if p.type == "APFS":
-                        self.cur_os = os
+                        self.cur_os = osi
                 elif state == BOOT_BOOTED:
-                    self.cur_os = os
-                if self.sysinfo.default_boot == os.vgid:
-                    self.default_os = os
-                if os.stub and os.m1n1_ver:
-                    self.partitions_vendorfw.append((p, os))
-                if os.stub and not os.sys_vol_bootable:
-                    self.partitions_no_volboot.append((p, os))
-                if os.stub and os.m1n1_ver and os.m1n1_ver != self.m1n1_ver:
-                    self.partitions_upgradeable.append((p, os))
-                elif os.stub and not (os.bp and os.bp.get("coih", None)):
-                    self.partitions_incomplete.append((p, os))
+                    self.cur_os = osi
+                if self.sysinfo.default_boot == osi.vgid:
+                    self.default_os = osi
+                if osi.stub and osi.m1n1_ver:
+                    self.partitions_vendorfw.append((p, osi))
+                if osi.stub and not osi.sys_vol_bootable:
+                    self.partitions_no_volboot.append((p, osi))
+                if osi.stub and osi.m1n1_ver and osi.m1n1_ver != self.m1n1_ver:
+                    self.partitions_upgradeable.append((p, osi))
+                elif osi.stub and not (osi.bp and osi.bp.get("coih", None)):
+                    self.partitions_incomplete.append((p, osi))
 
         if self.cur_os is None and self.sysinfo.boot_mode != "macOS":
             self.cur_os = self.default_os

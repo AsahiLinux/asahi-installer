@@ -1,17 +1,8 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: GPL-2.0-or-later
 import os, os.path, shlex, subprocess, sys, time, termios, json, getpass
-from dataclasses import dataclass
 
-import core.asahi_firmware as asahi_firmware
-import core.bugs as bugs
-import core.diskutil as diskutil
-import core.m1n1 as m1n1
-import core.osenum as osenum
-import core.osinstall as osinstall
 import core.reporting as reporting
-import core.stub as stub
-import core.system as system
 
 from core.installer import *
 from core.exceptions import *
