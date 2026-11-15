@@ -14,6 +14,7 @@ import core.stub as stub
 import core.system as system
 
 from core.installer import *
+from core.exceptions import *
 from core.util import *
 
 class InstallerCLI(InstallerCore):

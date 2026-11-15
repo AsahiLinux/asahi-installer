@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from . import m1n1
 
+from .exceptions import *
 from .util import *
 
 PART_ALIGN = psize("1MiB")
@@ -139,3 +140,18 @@ class InstallerCore:
         self.m1n1_ver = m1n1.get_version(self.m1n1)
         self.sys_disk = None
         self.cur_disk = None
+
+    def os_valid(self) -> bool:
+        if self.cur_os is None:
+            raise OSInvalidError
+
+        return True
+
+    def user_valid(self) -> bool:
+        if not self.cur_os.admin_users or self.cur_os.admin_users == ["_mbsetupuser"]:
+            raise NoAdminUsersError
+
+        if self.sysinfo.boot_mode == "macOS" and self.sysinfo.login_user not in self.cur_os.admin_users:
+            raise UserNotAdminError
+
+        return True
