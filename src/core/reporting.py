@@ -1,6 +1,9 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 import json, os, logging, time
 from urllib import request, parse
-from util import *
+
+from .util import *
 
 EXPLANATIONS = {
     "device_class":

@@ -1,13 +1,16 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
-import os, os.path, plistlib, shutil, sys, stat, subprocess, urlcache, zipfile, logging, json, tempfile
-import osenum
-from asahi_firmware.wifi import WiFiFWCollection
-from asahi_firmware.bluetooth import BluetoothFWCollection
-from asahi_firmware.multitouch import MultitouchFWCollection
-from asahi_firmware.kernel import KernelFWCollection
-from asahi_firmware.isp import ISPFWCollection
-from asahi_firmware.als import AlsFWCollection, FACTORY_DIR
-from util import *
+import os, os.path, plistlib, shutil, sys, stat, subprocess, zipfile, logging, json, tempfile
+
+from . import osenum
+from . import urlcache
+
+from .asahi_firmware.wifi import WiFiFWCollection
+from .asahi_firmware.bluetooth import BluetoothFWCollection
+from .asahi_firmware.multitouch import MultitouchFWCollection
+from .asahi_firmware.kernel import KernelFWCollection
+from .asahi_firmware.isp import ISPFWCollection
+from .asahi_firmware.als import AlsFWCollection, FACTORY_DIR
+from .util import *
 
 class StubInstaller(PackageInstaller):
     def __init__(self, sysinfo, dutil, osinfo):
@@ -376,11 +379,11 @@ class StubInstaller(PackageInstaller):
             os.remove(self.sv_dis_path)
 
         logging.info("Copying Finish Installation.app")
-        shutil.copytree("step2/Finish Installation.app",
+        shutil.copytree(os.path.join(CORE_DIR, "step2/Finish Installation.app"),
                         os.path.join(self.osi.system, "Finish Installation.app"))
 
         logging.info("Writing step2.sh")
-        step2_sh = open("step2/step2.sh").read()
+        step2_sh = open(os.path.join(CORE_DIR, "step2/step2.sh")).read()
         step2_sh = step2_sh.replace("##DISTRO##", DISTRO)
         step2_sh = step2_sh.replace("##VGID##", self.osi.vgid)
         step2_sh = step2_sh.replace("##PREBOOT##", self.osi.preboot_vgid)
@@ -389,7 +392,7 @@ class StubInstaller(PackageInstaller):
         os.chmod(self.step2_sh, 0o755)
 
         logging.info("Copying .IAPhysicalMedia")
-        shutil.copy("step2/IAPhysicalMedia.plist", self.iapm_path)
+        shutil.copy(os.path.join(CORE_DIR, "step2/IAPhysicalMedia.plist"), self.iapm_path)
 
         if os.path.exists(self.iapm_dis_path):
             os.remove(self.iapm_dis_path)

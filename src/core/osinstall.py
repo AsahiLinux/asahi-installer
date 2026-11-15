@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
-import os, shutil, sys, stat, subprocess, urlcache, zipfile, logging
+import os, shutil, sys, stat, subprocess, unicodedata, zipfile, logging
 
-import m1n1
-from util import *
-import unicodedata
+from . import m1n1
+from . import urlcache
+
+from .util import *
 
 class OSInstaller(PackageInstaller):
     PART_ALIGNMENT = 1024 * 1024

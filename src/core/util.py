@@ -10,6 +10,8 @@ else:
 COMPRESSION_LZFSE = 0x801
 CHUNK_SIZE = 0x10000
 
+CORE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 DISTRO = os.environ.get("DISTRO", "Asahi Linux")
 DISTRO_DOCS = os.environ.get("DISTRO_DOCS", "https://alx.sh/w")
 

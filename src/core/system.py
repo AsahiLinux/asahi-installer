@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 import base64, plistlib, struct, subprocess, logging, json
 
-from util import *
+from .util import *
 
 class SystemInfo:
     def __init__(self):

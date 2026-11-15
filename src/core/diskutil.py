@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 import plistlib, subprocess, sys, logging
 from dataclasses import dataclass
-from util import *
+
+from .util import *
 
 @dataclass
 class Partition:

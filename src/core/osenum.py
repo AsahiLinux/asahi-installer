@@ -2,8 +2,9 @@
 import os, os.path, plistlib, subprocess, logging
 from dataclasses import dataclass
 
-import m1n1
-from util import *
+import core.m1n1
+
+from .util import *
 
 UUID_SROS = "3D3287DE-280D-4619-AAAB-D97469CA9C71"
 UUID_FROS = "C8858560-55AC-400F-BBB9-C9220A8DAC0D"
