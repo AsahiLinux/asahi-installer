@@ -51,3 +51,23 @@ class FirmwareTooOldError(Exception):
     def __init__(self, min_version):
         super().__init__(min_version)
         self.min_version = min_version
+
+class ExistingInstallError(Exception):
+    """The existing installation is missing files"""
+    pass
+
+class M1n1VarsError(Exception):
+    """The m1n1 variables could not be read from the boot object"""
+    def __init__(self, path):
+        super().__init__(path)
+        self.path = path
+
+class EspNotFoundError(Exception):
+    """The EFI system partition of an install could not be determined"""
+    pass
+
+class UnsupportedVersionError(Exception):
+    """The install uses a macOS version that is not supported"""
+    def __init__(self, version):
+        super().__init__(version)
+        self.version = version

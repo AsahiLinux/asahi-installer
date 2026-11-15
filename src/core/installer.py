@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-import json, subprocess
+import json, os, shutil, subprocess
 
 from dataclasses import dataclass
 
 from . import bugs, m1n1, osenum, osinstall, stub, system
 
+from .asahi_firmware.core import FWPackage
 from .diskutil import DiskUtil, MIN_INSTALL_FREE
 from .exceptions import *
 from .util import *
@@ -18,6 +19,9 @@ MIN_MACOS_VERSION = "13.5"
 MIN_MACOS_VERSION_EXPERT = "12.3"
 
 EDU_128GB_LIMIT = 150 * 1024 * 1024 * 1024
+
+VENDORFW_DIR = "vendorfw"
+FIRMWARE_ARCHIVE = "all_firmware.tar.gz"
 
 BOOT_RECOVERY = "recovery"
 BOOT_BOOTED = "booted"
@@ -143,6 +147,7 @@ class InstallerCore:
         self.credentials_validated = False
         self.expert = False
         self.ipsw = None
+        self.part = None
         self.ins = None
         self.osins = None
         self.osi = None
@@ -292,6 +297,129 @@ class InstallerCore:
 
     def min_os_size(self):
         return STUB_SIZE + (self.osins.min_size if self.expert else self.osins.min_recommended_size)
+
+    def do_install(self, total_size=None):
+        self.stage = "installing"
+        user_log.info(f"Installing stub macOS into {self.part.name} ({self.part.label})")
+
+        self.ins.prepare_volume(self.part)
+        self.ins.check_volume()
+        self.ins.install_files(self.cur_os)
+
+        self.osins.partition_disk(self.part.name, total_size)
+
+        pkg = None
+        if self.osins.needs_firmware:
+            os.makedirs(VENDORFW_DIR, exist_ok=True)
+            pkg = FWPackage(VENDORFW_DIR)
+            self.ins.collect_firmware(pkg)
+            pkg.close()
+            self.osins.firmware_package = pkg
+
+        self.osins.install(self.ins)
+
+        for i in self.osins.idata_targets:
+            self.ins.collect_installer_data(i)
+            shutil.copy("installer.log", os.path.join(i, "installer.log"))
+
+    def install_into_free(self, free_part, os_size):
+        self.stage = "installing"
+        user_log.info(f"Creating new stub macOS named {self.osins.name}")
+        logging.info(f"Creating stub macOS: {self.osins.name}")
+        self.part = self.dutil.addPartition(free_part.name, "apfs", self.osins.name, STUB_SIZE)
+
+        self.do_install(os_size)
+
+    def install_into_disk(self, os_size):
+        self.stage = "installing"
+        user_log.info(f"Partitioning the whole disk ({self.cur_disk})")
+        self.part = self.dutil.partitionDisk(self.cur_disk, "apfs", self.osins.name, STUB_SIZE)
+
+        user_log.info(f"Creating new stub macOS named {self.osins.name}")
+        logging.info(f"Creating stub macOS: {self.osins.name}")
+        self.do_install(os_size)
+
+    def install_into_container(self, part):
+        self.part = part
+
+        self.do_install()
+
+    def load_existing_install(self, part, osi):
+        self.part = part
+        self.ins = stub.StubInstaller(self.sysinfo, self.dutil, self.osinfo, self.progress_cb)
+        if not self.ins.check_existing_install(osi):
+            raise ExistingInstallError
+
+    def get_m1n1_vars(self):
+        # Note: we get the vars out of the boot.bin in the system volume instead of the
+        # actual installed fuOS. This is arguably the better option, since it allows
+        # users to fix their install using this functionality if they messed up the boot
+        # object.
+        vars = m1n1.extract_vars(self.ins.boot_obj_path)
+        if vars is None:
+            raise M1n1VarsError(self.ins.boot_obj_path)
+        return vars
+
+    def repair_install(self, part, osi, upgrade):
+        self.load_existing_install(part, osi)
+
+        self.dutil.remount_rw(self.ins.osi.system)
+        self.ins.repair(self.cur_os)
+
+        if upgrade:
+            vars = self.get_m1n1_vars()
+
+            user_log.info("Transferring m1n1 variables:")
+            for v in vars:
+                user_log.info(f"  {v}")
+
+            m1n1.build(self.m1n1, self.ins.boot_obj_path, vars)
+
+        # Unhide the SystemVersion, if hidden
+        self.ins.prepare_for_bless()
+
+    def set_vol_bootable(self, part, osi):
+        self.part = part
+        osi.set_volbootable(True)
+
+    def rebuild_vendorfw(self, part, osi):
+        self.load_existing_install(part, osi)
+
+        vars = self.get_m1n1_vars()
+
+        esp_id = None
+        for var in vars:
+            k, v = var.split('=')
+            if k == "chosen.asahi,efi-system-partition":
+                esp_id = v
+                break
+        if esp_id is None:
+            raise EspNotFoundError
+
+        target = self.dutil.get_partition_info(esp_id)
+        mountpoint = self.dutil.mount(target.name)
+
+        os.makedirs(VENDORFW_DIR, exist_ok=True)
+        fw_pkg = FWPackage(VENDORFW_DIR)
+        ipsw = None
+        for ver in IPSW_VERSIONS:
+            if ver.version == osi.version:
+                ipsw = ver
+                break
+        if ipsw is None:
+            raise UnsupportedVersionError(osi.version)
+
+        self.ins.load_ipsw(ipsw)
+        self.ins.load_identity()
+        self.ins.collect_firmware(fw_pkg)
+        fw_pkg.close()
+
+        user_log.info(f"  Copying firmware into {target.name} partition...")
+        base = os.path.join(mountpoint, "vendorfw")
+        logging.info(f"Firmware -> {base}")
+        shutil.copytree(fw_pkg.path, base, dirs_exist_ok=True)
+        asahi = os.path.join(mountpoint, "asahi")
+        shutil.copy(FIRMWARE_ARCHIVE, os.path.join(asahi, FIRMWARE_ARCHIVE))
 
     def parse_partitions(self):
         self.reset_partition_lists()
