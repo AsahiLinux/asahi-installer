@@ -25,6 +25,19 @@ FIRMWARE_ARCHIVE = "all_firmware.tar.gz"
 
 LARGE_OVERHEAD = 16_000_000_000
 
+# This feature is confusing, disable it for now
+ALLOW_INSTALL_INTO_CONTAINER = False
+
+ACTION_REPAIR = "repair"
+ACTION_INSTALL_FREE = "install_free"
+ACTION_INSTALL_CONTAINER = "install_container"
+ACTION_RESIZE = "resize"
+ACTION_WIPE = "wipe"
+ACTION_SELECT_DISK = "select_disk"
+ACTION_UPGRADE = "upgrade"
+ACTION_VENDORFW = "vendorfw"
+ACTION_VOLBOOTABLE = "volbootable"
+
 STEP2_DIRECT = "direct"
 STEP2_RECOVERY = "recovery"
 STEP2_MACOS = "macos"
@@ -503,6 +516,37 @@ class InstallerCore:
         if size > free_size:
             raise SizeTooLargeError(free_size)
         return size
+
+    def available_actions(self):
+        actions = []
+
+        if self.partitions_incomplete:
+            actions.append(ACTION_REPAIR)
+        if self.partitions_freespace and self.is_gpt:
+            actions.append(ACTION_INSTALL_FREE)
+        if ALLOW_INSTALL_INTO_CONTAINER and self.partitions_empty_apfs and self.is_gpt:
+            actions.append(ACTION_INSTALL_CONTAINER)
+        if self.partitions_resizable and self.is_gpt:
+            actions.append(ACTION_RESIZE)
+        if self.cur_disk != self.sys_disk:
+            actions.append(ACTION_WIPE)
+        if self.external_disks:
+            actions.append(ACTION_SELECT_DISK)
+        if self.partitions_upgradeable:
+            actions.append(ACTION_UPGRADE)
+        if self.partitions_vendorfw:
+            actions.append(ACTION_VENDORFW)
+        if self.partitions_no_volboot:
+            actions.append(ACTION_VOLBOOTABLE)
+
+        return actions
+
+    def usable_free_areas(self, min_size):
+        return [p for p in self.partitions_freespace
+                if align_down(p.size, PART_ALIGN) >= min_size]
+
+    def select_disk(self, disk=None):
+        self.cur_disk = disk or self.sys_disk
 
     def admin_candidates(self):
         if self.sysinfo.boot_mode == "macOS":

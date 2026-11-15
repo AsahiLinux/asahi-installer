@@ -19,6 +19,30 @@ from core.util import *
 from terminal import *
 
 class InstallerCLI(InstallerCore):
+    ACTION_KEYS = {
+        ACTION_REPAIR: "p",
+        ACTION_INSTALL_FREE: "f",
+        ACTION_INSTALL_CONTAINER: "a",
+        ACTION_RESIZE: "r",
+        ACTION_WIPE: "w",
+        ACTION_SELECT_DISK: "d",
+        ACTION_UPGRADE: "m",
+        ACTION_VENDORFW: "v",
+        ACTION_VOLBOOTABLE: "7",
+    }
+
+    ACTION_LABELS = {
+        ACTION_REPAIR: "Repair an incomplete installation",
+        ACTION_INSTALL_FREE: "Install an OS into free space",
+        ACTION_INSTALL_CONTAINER: "Install an OS into an existing APFS container",
+        ACTION_RESIZE: "Resize an existing partition to make space for a new OS",
+        ACTION_WIPE: "Wipe and install into the whole disk",
+        ACTION_SELECT_DISK: "Select another disk for installation",
+        ACTION_UPGRADE: "Upgrade m1n1 on an existing OS",
+        ACTION_VENDORFW: "Rebuild vendor firmware package",
+        ACTION_VOLBOOTABLE: "Fix macOS 27 boot picker compatibility",
+    }
+
     def __init__(self, version):
         super().__init__(version, terminal_progress, "-v" in sys.argv)
         attach_log_handler()
@@ -201,7 +225,7 @@ class InstallerCLI(InstallerCore):
         self.install_into_disk(os_size)
         self.step2(report=True)
 
-    def action_install_into_free(self, avail_free):
+    def action_install_into_free(self):
         template = self.choose_os()
 
         self.load_os_package(template)
@@ -210,8 +234,7 @@ class InstallerCLI(InstallerCore):
         print()
         p_message(f"Minimum required space for this OS: {ssize(min_size)}")
 
-        frees = {str(i): p.desc for i,p in enumerate(self.partitions)
-                 if p in avail_free and align_down(p.size, PART_ALIGN) >= min_size}
+        frees = {str(p.index): p.desc for p in self.usable_free_areas(min_size)}
 
         if len(frees) < 1:
             p_error( "There is not enough free space to install this OS.")
@@ -721,9 +744,9 @@ class InstallerCLI(InstallerCore):
         p_question("Choose a disk:")
         idx = int(self.choice("Disk", choices))
         if idx == 1:
-            self.cur_disk = self.sys_disk
+            self.select_disk()
         else:
-            self.cur_disk = self.external_disks[idx - 2]["DeviceIdentifier"]
+            self.select_disk(self.external_disks[idx - 2]["DeviceIdentifier"])
 
         return True
 
@@ -870,41 +893,16 @@ class InstallerCLI(InstallerCore):
 
         self.check_cur_os()
 
-        actions = {}
-
-        default = None
-        if self.partitions_incomplete:
-            actions["p"] = "Repair an incomplete installation"
-            default = default or "p"
-        if self.partitions_freespace and self.is_gpt:
-            actions["f"] = "Install an OS into free space"
-            default = default or "f"
-        if self.partitions_empty_apfs and self.is_gpt and False: # This feature is confusing, disable it for now
-            actions["a"] = "Install an OS into an existing APFS container"
-        if self.partitions_resizable and self.is_gpt:
-            actions["r"] = "Resize an existing partition to make space for a new OS"
-            default = default or "r"
-        if self.cur_disk != self.sys_disk:
-            actions["w"] = "Wipe and install into the whole disk"
-            # Never make this default!
-        if self.external_disks:
-            actions["d"] = "Select another disk for installation"
-            default = default or "d"
-        if self.partitions_upgradeable:
-            actions["m"] = "Upgrade m1n1 on an existing OS"
-            default = default or "m"
-        if self.partitions_vendorfw:
-            actions["v"] = "Rebuild vendor firmware package"
-            default = default or "v"
-        if self.partitions_no_volboot:
-            actions["7"] = "Fix macOS 27 boot picker compatibility"
-            default = default or "7"
-
-        if not actions:
+        available = self.available_actions()
+        if not available:
             p_error("No actions available on this system.")
             p_message("No partitions have enough free space to be resized, and there is")
             p_message("nothing else to be done.")
             sys.exit(1)
+
+        actions = {self.ACTION_KEYS[a]: self.ACTION_LABELS[a] for a in available}
+        # Never make wipe the default!
+        default = next((self.ACTION_KEYS[a] for a in available if a != ACTION_WIPE), None)
 
         actions["q"] = "Quit without doing anything"
         default = default or "q"
@@ -914,7 +912,7 @@ class InstallerCLI(InstallerCore):
         act = self.choice("Action", actions, default)
 
         if act == "f":
-            return self.action_install_into_free(self.partitions_freespace)
+            return self.action_install_into_free()
         elif act == "a":
             return self.action_install_into_container(self.partitions_empty_apfs)
         elif act == "r":
