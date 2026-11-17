@@ -79,7 +79,7 @@ def send_report(url, data):
         headers = {"Content-Type": "application­/json"}
         postdata = json.dumps(data).encode("utf-8")
         req = request.Request(url, data=postdata, method="POST", headers=headers)
-        with request.urlopen(req) as fd:
+        with request.urlopen(req, timeout=10) as fd:
             fd.read()
             return fd.status == 200
 
