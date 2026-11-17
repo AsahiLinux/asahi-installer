@@ -568,6 +568,14 @@ class InstallerCore:
         self.admin_user = user
         self.admin_password = password
 
+    def check_credentials(self, user, password):
+        try:
+            proc = subprocess.run(["dscl", ".", "-authonly", user, password],
+                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except OSError:
+            return None
+        return proc.returncode == 0
+
     def set_reduced_security(self):
         self.stage = "finalising"
         subprocess.run(["bputil", "-g", "-v", self.ins.osi.vgid,
