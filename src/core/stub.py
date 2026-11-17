@@ -41,11 +41,11 @@ class StubInstaller(PackageInstaller):
             logging.info(f"IPSW URL: {url}")
 
         if url.startswith("http"):
-            user_log.info("Downloading macOS OS package info...")
+            user_log.info("Downloading macOS OS package info...", extra={"op": "op.load_ipsw"})
             self.ucache = urlcache.URLCache(url, self.progress_cb)
             self.pkg = zipfile.ZipFile(self.ucache)
         else:
-            user_log.info("Loading macOS OS package info...")
+            user_log.info("Loading macOS OS package info...", extra={"op": "op.load_ipsw"})
             self.pkg = zipfile.ZipFile(open(url, "rb"))
         logging.info(f"OS package opened")
 
@@ -57,7 +57,7 @@ class StubInstaller(PackageInstaller):
 
         ctref = self.part.container["ContainerReference"]
 
-        user_log.info("Preparing target volumes...")
+        user_log.info("Preparing target volumes...", extra={"op": "op.prepare_volumes"})
 
         for volume in self.part.container["Volumes"]:
             roles = tuple(volume["Roles"])
@@ -104,7 +104,7 @@ class StubInstaller(PackageInstaller):
 
         logging.info(f"StubInstaller.check_volume({self.part.name=!r})")
 
-        user_log.info("Checking volumes...")
+        user_log.info("Checking volumes...", extra={"op": "op.check_volumes"})
         os = self.osinfo.collect_part(self.part)
 
         if len(os) != 1:
@@ -250,7 +250,7 @@ class StubInstaller(PackageInstaller):
         logging.info(f"VGID: {self.osi.vgid}")
         logging.info(f"OS info: {self.osi}")
 
-        user_log.info("Beginning stub OS install...")
+        user_log.info("Beginning stub OS install...", extra={"op": "op.install_stub"})
         identity = self.load_identity()
         sysver = plistlib.load(self.open("SystemVersion.plist"))
 
@@ -266,7 +266,7 @@ class StubInstaller(PackageInstaller):
             }
         })
 
-        user_log.info("Setting up System volume...")
+        user_log.info("Setting up System volume...", extra={"op": "op.stub_system"})
         logging.info("Setting up System volume")
 
         self.extract("usr/standalone/bootcaches.plist", self.osi.system)
@@ -288,12 +288,12 @@ class StubInstaller(PackageInstaller):
 
         self.osi.set_volbootable(True)
 
-        user_log.info("Setting up Data volume...")
+        user_log.info("Setting up Data volume...", extra={"op": "op.stub_data"})
         logging.info("Setting up Data volume")
 
         os.makedirs(os.path.join(self.osi.data, "private/var/db/dslocal"), exist_ok=True)
 
-        user_log.info("Setting up Preboot volume...")
+        user_log.info("Setting up Preboot volume...", extra={"op": "op.stub_preboot"})
         logging.info("Setting up Preboot volume")
 
         os.makedirs(self.pb_vgid, exist_ok=True)
@@ -345,7 +345,7 @@ class StubInstaller(PackageInstaller):
             os.unlink(sys_restore_bundle)
         os.symlink(restore_bundle, sys_restore_bundle)
 
-        user_log.info("Setting up Recovery volume...")
+        user_log.info("Setting up Recovery volume...", extra={"op": "op.stub_recovery"})
         logging.info("Setting up Recovery volume")
 
         rec_vgid = os.path.join(self.osi.recovery, self.osi.vgid)
@@ -362,7 +362,7 @@ class StubInstaller(PackageInstaller):
             self.copy_compress(identity["Manifest"]["BaseSystem"]["Info"]["Path"],
                                os.path.join(basesystem_path, "arm64eBaseSystem.dmg"))
 
-        user_log.info("Wrapping up...")
+        user_log.info("Wrapping up...", extra={"op": "op.stub_finish"})
 
         logging.info("Writing SystemVersion.plist")
         with open(self.sv_path, "wb") as fd:
@@ -394,7 +394,7 @@ class StubInstaller(PackageInstaller):
         logging.info("Stub OS installed")
 
     def collect_firmware(self, pkg):
-        user_log.info("Collecting firmware...")
+        user_log.info("Collecting firmware...", extra={"op": "op.collect_firmware"})
         logging.info("StubInstaller.collect_firmware()")
 
         logging.info("Collecting FUD firmware")
@@ -478,7 +478,7 @@ class StubInstaller(PackageInstaller):
         subprocess.run(["hdiutil", "detach", "-quiet", "recovery"])
 
     def collect_installer_data(self, path, merge_stub_info=False):
-        user_log.info("Collecting installer data...")
+        user_log.info("Collecting installer data...", extra={"op": "op.collect_installer_data"})
         logging.info(f"Copying installer data to {path}")
 
         for src, name in self.copy_idata:

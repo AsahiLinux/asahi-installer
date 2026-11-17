@@ -400,7 +400,7 @@ class InstallerCore:
 
     def install_into_free(self, free_part, alloc_size=None):
         self.stage = "installing"
-        user_log.info(f"Creating new stub macOS named {self.osins.name}")
+        user_log.info(f"Creating new stub macOS named {self.osins.name}", extra={"op": "op.create_partition", "op_vars": [self.osins.name]})
         logging.info(f"Creating stub macOS: {self.osins.name}")
         self.part = self.dutil.addPartition(free_part.name, "apfs", self.osins.name, STUB_SIZE)
 
@@ -408,10 +408,10 @@ class InstallerCore:
 
     def install_into_disk(self, alloc_size=None):
         self.stage = "installing"
-        user_log.info(f"Partitioning the whole disk ({self.cur_disk})")
+        user_log.info(f"Partitioning the whole disk ({self.cur_disk})", extra={"op": "op.partition_disk", "op_vars": [self.cur_disk]})
         self.part = self.dutil.partitionDisk(self.cur_disk, "apfs", self.osins.name, STUB_SIZE)
 
-        user_log.info(f"Creating new stub macOS named {self.osins.name}")
+        user_log.info(f"Creating new stub macOS named {self.osins.name}", extra={"op": "op.create_partition", "op_vars": [self.osins.name]})
         logging.info(f"Creating stub macOS: {self.osins.name}")
         self.do_install(self.os_partition_size(alloc_size))
 

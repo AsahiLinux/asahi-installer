@@ -52,11 +52,11 @@ class OSInstaller(PackageInstaller):
 
         logging.info(f"OS package URL: {package}")
         if package.startswith("http"):
-            user_log.info("Downloading OS package info...")
+            user_log.info("Downloading OS package info...", extra={"op": "op.load_os_package"})
             self.ucache = urlcache.URLCache(package, self.progress_cb)
             self.pkg = zipfile.ZipFile(self.ucache)
         else:
-            user_log.info("Loading OS package info...")
+            user_log.info("Loading OS package info...", extra={"op": "op.load_os_package"})
             self.pkg = zipfile.ZipFile(open(package, "rb"))
         logging.info(f"OS package opened")
 
@@ -83,7 +83,7 @@ class OSInstaller(PackageInstaller):
                 size += expand_size
                 logging.info(f"Expanded to {size} (+{expand_size})")
 
-            user_log.info(f"Adding partition {part['name']} ({ssize(size)})...")
+            user_log.info(f"Adding partition {part['name']} ({ssize(size)})...", extra={"op": "op.add_partition", "op_vars": [part['name'], str(size // 10**6)]})
             info = self.dutil.addPartition(prev, f"%{ptype}%", "%noformat%", size)
             if ptype == "EFI":
                 self.efi_part = info
@@ -106,7 +106,7 @@ class OSInstaller(PackageInstaller):
             prev = info.name
 
     def download_extras(self):
-        user_log.info("Downloading extra files...")
+        user_log.info("Downloading extra files...", extra={"op": "op.download_extras"})
         logging.info("OSInstaller.download_extras()")
 
         mountpoint = self.dutil.mount(self.efi_part.name)
@@ -123,7 +123,7 @@ class OSInstaller(PackageInstaller):
                 fd.write(data)
 
     def install(self, stub_ins):
-        user_log.info("Installing OS...")
+        user_log.info("Installing OS...", extra={"op": "op.install_os"})
         logging.info("OSInstaller.install()")
 
         # Force a reconnect, since the connection is likely to have timed out
@@ -138,7 +138,7 @@ class OSInstaller(PackageInstaller):
             logging.info(f"Installing partition {part!r} -> {info.name}")
             image = part.get("image", None)
             if image:
-                user_log.info(f"  Extracting {image} into {info.name} partition...")
+                user_log.info(f"  Extracting {image} into {info.name} partition...", extra={"op": "op.extract_image", "op_vars": [image, info.name]})
                 logging.info(f"Extract: {image}")
                 zinfo = self.pkg.getinfo(image)
                 if zinfo.file_size % (4 * 1024) != 0:
@@ -148,13 +148,13 @@ class OSInstaller(PackageInstaller):
                     self.fdcopy(sfd, dfd, zinfo.file_size)
             source = part.get("source", None)
             if source:
-                user_log.info(f"  Copying from {source} into {info.name} partition...")
+                user_log.info(f"  Copying from {source} into {info.name} partition...", extra={"op": "op.copy_files", "op_vars": [source, info.name]})
                 mountpoint = self.dutil.mount(info.name)
                 logging.info(f"Copy: {source} -> {mountpoint}")
                 self.extract_tree(source, mountpoint)
             if part.get("copy_firmware", False):
                 mountpoint = self.dutil.mount(info.name)
-                user_log.info(f"  Copying firmware into {info.name} partition...")
+                user_log.info(f"  Copying firmware into {info.name} partition...", extra={"op": "op.copy_firmware", "op_vars": [info.name]})
                 base = os.path.join(mountpoint, "vendorfw")
                 logging.info(f"Firmware -> {base}")
                 shutil.copytree(self.firmware_package.path, base)
@@ -168,7 +168,7 @@ class OSInstaller(PackageInstaller):
             assert self.efi_part is not None
             self.download_extras()
 
-        user_log.info("Preparing to finish installation...")
+        user_log.info("Preparing to finish installation...", extra={"op": "op.finish_os_install"})
 
         logging.info(f"Building boot object")
         boot_object = self.template["boot_object"]
