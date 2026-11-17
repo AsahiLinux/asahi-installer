@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-import json, os, shutil, subprocess
+import json, os, re, shutil, subprocess
 
 from dataclasses import dataclass
 
@@ -149,6 +149,9 @@ IPSW_VERSIONS = [
          ["j433ap", "j434ap", "j504ap", "j613ap", "j615ap", "j514sap", "j514cap", "j514map", "j516sap", "j516cap", "j516map"],
          "https://updates.cdn-apple.com/2025FallFCS/patches/089-71124/49AD260A-D47F-4B5E-A793-30446187196E/com_apple_MobileAsset_MacSoftwareUpdate/f6d1ac9149f6a06401ff87fae5b262c420bfc5f7.zip"),
 ]
+
+def edition_id(template):
+    return template.get("id") or re.sub(r"[^a-z0-9]+", "-", template["name"].lower()).strip("-")
 
 @dataclass
 class InstallInfo:
@@ -358,6 +361,10 @@ class InstallerCore:
     def load_os_package(self, template):
         self.osins = osinstall.OSInstaller(self.dutil, self.data, template, self.progress_cb)
         self.osins.load_package()
+
+    def template_min_size(self, template):
+        osins = osinstall.OSInstaller(self.dutil, self.data, template)
+        return STUB_SIZE + (osins.min_size if self.expert else osins.min_recommended_size)
 
     def min_os_size(self):
         return STUB_SIZE + (self.osins.min_size if self.expert else self.osins.min_recommended_size)
