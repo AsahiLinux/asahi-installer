@@ -83,3 +83,7 @@ class SizeTooLargeError(Exception):
     def __init__(self, limit):
         super().__init__(limit)
         self.limit = limit
+
+class InstallCancelled(BaseException):
+    """Installation was cancelled by the user."""
+    pass

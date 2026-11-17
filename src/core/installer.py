@@ -185,7 +185,9 @@ class ResizeInfo:
 class InstallerCore:
     def __init__(self, version, progress_cb=None, verbose=False):
         self.version = version
-        self.progress_cb = progress_cb
+        self.user_progress_cb = progress_cb
+        self.progress_cb = self.report_progress
+        self.cancel_requested = False
         self.verbose = verbose
         self.stage = "preparing"  # preparing, resizing, installing, finalising
         self.sysinfo = None
@@ -232,6 +234,15 @@ class InstallerCore:
         min_ver = MIN_MACOS_VERSION_EXPERT if self.expert else MIN_MACOS_VERSION
         if split_ver(self.sysinfo.macos_ver) < split_ver(min_ver):
             raise MacOSTooOldError(min_ver)
+
+    def report_progress(self, fraction, rate):
+        if self.cancel_requested and self.stage == "preparing":
+            raise InstallCancelled
+        if self.user_progress_cb:
+            self.user_progress_cb(fraction, rate)
+
+    def request_cancel(self):
+        self.cancel_requested = True
 
     def reset_partition_lists(self):
         self.partitions_freespace = []
