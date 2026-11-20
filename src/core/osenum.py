@@ -1,9 +1,14 @@
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-2.0-or-later
 import os, os.path, plistlib, subprocess, logging
+
+from ctypes import *
 from dataclasses import dataclass
 
-import m1n1
-from util import *
+from . import m1n1
+
+from .diskutil import DiskUtil
+from .exceptions import *
+from .util import *
 
 UUID_SROS = "3D3287DE-280D-4619-AAAB-D97469CA9C71"
 UUID_FROS = "C8858560-55AC-400F-BBB9-C9220A8DAC0D"
@@ -39,28 +44,69 @@ class OSInfo:
         except:
             logging.warning(f"  Failed to get AdminUserRecoveryInfo.plist")
 
-    def __str__(self):
+    @property
+    def kind(self):
         if self.vgid == UUID_SROS:
-            return f"recoveryOS v{self.version} [Primary recoveryOS]"
+            return "recovery_primary"
         elif self.vgid == UUID_FROS:
-            return f"recoveryOS v{self.version} [Fallback recoveryOS]"
-
-        lbl = col(BRIGHT) + self.label + col()
-        if not self.stub:
-            macos = f"{col(BRIGHT, GREEN)}macOS v{self.version}{col()}"
+            return "recovery_fallback"
+        elif not self.stub:
             if self.m1n1_ver is not None:
-                return f"[{lbl}] {macos} + {col(CYAN)}m1n1 {self.m1n1_ver}{col()} [{self.sys_volume}, {self.vgid}]"
+                return "macos_m1n1"
             elif self.bp and self.bp.get("coih", None):
-                return f"[{lbl}] {macos} + {col(YELLOW)}unknown fuOS{col()} [{self.sys_volume}, {self.vgid}]"
+                return "macos_fuos"
             else:
-                return f"[{lbl}] {macos} [{self.sys_volume}, {self.vgid}]"
+                return "macos"
         elif self.bp and self.bp.get("coih", None):
-            if self.m1n1_ver:
-                return f"[{lbl}] {col(BRIGHT, CYAN)}m1n1 {self.m1n1_ver}{col()} (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
-            else:
-                return f"[{lbl}] {col(BRIGHT, YELLOW)}unknown fuOS{col()} (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
+            return "stub_m1n1" if self.m1n1_ver else "stub_fuos"
         else:
-            return f"[{lbl}] {col(BRIGHT, RED)}incomplete install{col()} (macOS {self.version} stub) [{self.sys_volume}, {self.vgid}]"
+            return "stub_incomplete"
+
+    def __str__(self):
+        ids = f"[{self.sys_volume}, {self.vgid}]"
+        kind = self.kind
+        if kind == "recovery_primary":
+            return f"recoveryOS v{self.version} [Primary recoveryOS]"
+        elif kind == "recovery_fallback":
+            return f"recoveryOS v{self.version} [Fallback recoveryOS]"
+        elif kind == "macos_m1n1":
+            return f"[{self.label}] macOS v{self.version} + m1n1 {self.m1n1_ver} {ids}"
+        elif kind == "macos_fuos":
+            return f"[{self.label}] macOS v{self.version} + unknown fuOS {ids}"
+        elif kind == "macos":
+            return f"[{self.label}] macOS v{self.version} {ids}"
+        elif kind == "stub_m1n1":
+            return f"[{self.label}] m1n1 {self.m1n1_ver} (macOS {self.version} stub) {ids}"
+        elif kind == "stub_fuos":
+            return f"[{self.label}] unknown fuOS (macOS {self.version} stub) {ids}"
+        else:
+            return f"[{self.label}] incomplete install (macOS {self.version} stub) {ids}"
+
+    def fsctl_volbootable(self, arm):
+        APFSIOC_VOL_BOOTABLE = 0xc0044a57 # _IOWR('J', 'W', int32_t)
+
+        if arm != 0:
+            DiskUtil.remount_rw(self.system)
+
+        libsys = CDLL("libSystem.B.dylib", use_errno=True)
+        f = libsys.fsctl
+        f.restype = c_int
+        f.argtypes = (c_char_p, c_ulong, POINTER(c_int), c_uint)
+        c_arm = c_int(arm)
+
+        ret = f(self.system.encode(), APFSIOC_VOL_BOOTABLE, byref(c_arm), 0)
+        if ret == -1:
+            err = f"fsctl call failed, errno: {get_errno()}"
+            logging.error(err)
+            raise FsctlError(err)
+
+        return c_arm.value
+
+    def get_volbootable(self):
+        return self.fsctl_volbootable(0) == 1
+
+    def set_volbootable(self, arm):
+        return self.fsctl_volbootable(1 if arm else -1)
 
 class OSEnum:
     def __init__(self, sysinfo, dutil, sysdsk):
@@ -227,7 +273,7 @@ class OSEnum:
                 logging.info(f"    Not Found")
                 continue
         try:
-            osi.sys_vol_bootable = fsctl_is_bootable(mounts["System"])
+            osi.sys_vol_bootable = osi.get_volbootable()
         except Exception as e:
             logging.warning(f"  Failed to get VolBootable: {e}")
         osi.update_admin_users()

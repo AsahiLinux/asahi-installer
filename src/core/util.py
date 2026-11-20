@@ -1,6 +1,7 @@
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-2.0-or-later
 import re, logging, sys, os, stat, shutil, struct, subprocess, zlib, time, hashlib, lzma
 from ctypes import *
+
 
 if sys.platform == 'darwin':
     lzfse = CDLL('libcompression.dylib')
@@ -9,6 +10,12 @@ else:
 
 COMPRESSION_LZFSE = 0x801
 CHUNK_SIZE = 0x10000
+
+SUCCESS = 25
+logging.addLevelName(SUCCESS, "SUCCESS")
+user_log = logging.getLogger("installer.user")
+
+CORE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DISTRO = os.environ.get("DISTRO", "Asahi Linux")
 DISTRO_DOCS = os.environ.get("DISTRO_DOCS", "https://alx.sh/w")
@@ -64,76 +71,6 @@ align = align_up
 def align_down(v, a=16384):
     return v & ~(a - 1)
 
-BLACK     = 30
-RED       = 31
-GREEN     = 32
-YELLOW    = 33
-BLUE      = 34
-MAGENTA   = 35
-CYAN      = 36
-WHITE     = 37
-
-BRIGHT    = 1
-DIM       = 2
-BLINK     = 5
-NBLINK    = 25
-NORMAL    = 22
-RESET_ALL = 0
-
-def col(*color):
-    color = ";".join(map(str, color))
-    return f"\033[{color}m"
-
-def p_style(*args, color=[], **kwargs):
-    if isinstance(color, int):
-        color = [color]
-    text = " ".join(map(str, args))
-    print(col(*color) + text + col(), **kwargs)
-    if "\033" in text:
-        text += col()
-    logging.info(f"MSG: {text}")
-
-def p_plain(*args):
-    p_style(*args)
-
-def p_info(*args):
-    p_style(*args, color=(BRIGHT, BLUE))
-
-def p_progress(*args):
-    p_style(*args, color=(BRIGHT, MAGENTA))
-
-def p_message(*args):
-    p_style(*args, color=BRIGHT)
-
-def p_error(*args):
-    p_style(*args, color=(BRIGHT, RED))
-
-def p_warning(*args):
-    p_style(*args, color=(BRIGHT, YELLOW))
-
-def p_question(*args):
-    p_style(*args, color=(BRIGHT, CYAN))
-
-def p_success(*args):
-    p_style(*args, color=(BRIGHT, GREEN))
-
-def p_prompt(*args):
-    p_style(*args, color=(BRIGHT, CYAN))
-
-def p_choice(*args):
-    p_style(*args)
-
-def input_prompt(*args):
-    while True:
-        p_style(f"{col(BRIGHT, WHITE)}»{col(BRIGHT, CYAN)}", *args, end="")
-        val = input()
-        if any (ord(c) < 0x20 for c in val):
-            p_error("Invalid input")
-            continue
-        break
-    logging.info(f"INPUT: {val!r}")
-    return val
-
 class PBZX:
     def __init__(self, istream, osize):
         self.istream = istream
@@ -175,20 +112,15 @@ class PBZX:
         return d
 
 class PackageInstaller:
-    def __init__(self):
-        self.verbose = "-v" in sys.argv
-        self.printed_progress = False
+    def __init__(self, progress_cb=None):
+        self.progress_cb = progress_cb
+
+    def report_progress(self, fraction, rate=None):
+        if self.progress_cb:
+            self.progress_cb(fraction, rate)
 
     def path(self, path):
         return path
-
-    def flush_progress(self):
-        if self.ucache and self.ucache.flush_progress():
-            self.printed_progress = False
-            return
-        if self.printed_progress:
-            sys.stdout.write("\n")
-            self.printed_progress = False
 
     def extract(self, src, dest):
         dest_path = os.path.join(dest, src)
@@ -205,10 +137,7 @@ class PackageInstaller:
             self.ucache.bytes_read = 0
         while True:
             if size is not None and size != 0:
-                prog = copied / size * 100
-                sys.stdout.write(f"\033[3G{prog:6.2f}% ({ssize(bps)}/s)")
-                sys.stdout.flush()
-                self.printed_progress = True
+                self.report_progress(copied / size, bps)
             d = sfd.read(BLOCK)
             if not d:
                 break
@@ -218,8 +147,7 @@ class PackageInstaller:
                 bps = self.ucache.bytes_read / (time.time() - st)
 
         if size is not None:
-            sys.stdout.write("\033[3G100.00% ")
-            sys.stdout.flush()
+            self.report_progress(1.0)
 
     def copy_recompress(self, src, path):
         # For BXDIFF50 stuff in OTA images
@@ -257,12 +185,9 @@ class PackageInstaller:
                 table.append(cur_pos)
                 inbuf = istream.read(CHUNK_SIZE)
                 copied += len(inbuf)
-                prog = copied / size * 100
                 if self.ucache:
                     bps = self.ucache.bytes_read / (time.time() - st)
-                sys.stdout.write(f"\033[3G{prog:6.2f}% ({ssize(bps)}/s)")
-                sys.stdout.flush()
-                self.printed_progress = True
+                self.report_progress(copied / size, bps)
                 while 1:
                     csize = lzfse.compression_encode_buffer(outbuf, len(outbuf), inbuf, len(inbuf), scratch, COMPRESSION_LZFSE)
                     if csize == 0:
@@ -303,8 +228,7 @@ class PackageInstaller:
         else:
             raise Exception("No checksum available")
 
-        sys.stdout.write("\033[3G100.00% ")
-        sys.stdout.flush()
+        self.report_progress(1.0)
 
     def extract_file(self, src, dest, optional=False):
         src = self.path(src)
@@ -322,8 +246,6 @@ class PackageInstaller:
             if not optional:
                 raise
             logging.info(f"    (SKIPPED)")
-        if self.verbose:
-            self.flush_progress()
 
     def extract_tree(self, src, dest):
         src = self.path(src)
@@ -332,8 +254,6 @@ class PackageInstaller:
         logging.info(f"  {src}* -> {dest}")
 
         infolist = self.pkg.infolist()
-        if self.verbose:
-            self.flush_progress()
 
         for info in infolist:
             name = info.filename
@@ -354,25 +274,3 @@ class PackageInstaller:
             else:
                 self._extract_file(name, destpath)
 
-            if self.verbose:
-                self.flush_progress()
-c_fsctl = None
-def fsctl_apfs_bootable(path, cmd):
-    global c_fsctl
-    if c_fsctl is None:
-        sysdll = CDLL("libSystem.B.dylib", use_errno=True)
-        func = sysdll.fsctl
-        func.restype = c_int
-        func.argtypes = (c_char_p, c_ulong, POINTER(c_int), c_uint)
-        c_fsctl = func
-    c_cmd = c_int(cmd)
-    APFSIOC_VOL_BOOTABLE = 0xc0044a57 # _IOWR('J', 'W', int32_t)
-    err = c_fsctl(path.encode(), APFSIOC_VOL_BOOTABLE, byref(c_cmd), 0)
-    if err == -1:
-        raise Exception(f'fsctl call failed, errno: {get_errno()}')
-    return c_cmd.value
-
-def fsctl_is_bootable(path):
-    return fsctl_apfs_bootable(path, 0) == 1
-def fsctl_set_bootable(path, val):
-    fsctl_apfs_bootable(path, 1 if val else -1)
