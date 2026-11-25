@@ -1,7 +1,19 @@
-# SPDX-License-Identifier: MIT
-import plistlib, subprocess, sys, logging
+# SPDX-License-Identifier: GPL-2.0-or-later
+import plistlib, subprocess, logging
 from dataclasses import dataclass
-from util import *
+
+from .exceptions import *
+from .util import *
+
+# Minimum free space to leave when resizing, to allow for OS upgrades
+MIN_FREE_OS = psize("38GB")
+# Minimum free space to leave for non-OS containers
+MIN_FREE = psize("1GB")
+# Extra margin required before a partition is offered for resizing
+MIN_FREE_MARGIN = psize("500MB")
+
+# 2.5GB stub + 5GB OS + 0.5GB EFI = 8GB, round up to 10GB
+MIN_INSTALL_FREE = psize("10GB")
 
 @dataclass
 class Partition:
@@ -17,10 +29,37 @@ class Partition:
     container: object = None
     os: object = None
 
+    def min_free_space(self, nolimits):
+        if self.os and any(os.version for os in self.os) and not nolimits:
+            return MIN_FREE_OS
+        else:
+            return MIN_FREE
+
+    def can_resize(self, nolimits):
+        if self.type != "Apple_APFS":
+            e = f"{self.name} is not an APFS partition."
+            logging.debug(e)
+            raise PartitionNotAPFSError(e)
+
+        if self.container is None:
+            e = f"{self.name} contains no valid APFS containers."
+            logging.debug(e)
+            raise APFSNoContainersError(e)
+
+        free = self.container["CapacityFree"]
+        min_free = self.min_free_space(nolimits) + MIN_FREE_MARGIN
+
+        if free <= min_free:
+            e = f"{self.name} has insufficient free space (has {free}, requires {min_free})"
+            logging.debug(e)
+            raise PartitionNoFreeSpaceError(e)
+
+        return True
+
 class DiskUtil:
     FREE_THRESHOLD = 16 * 1024 * 1024
-    def __init__(self):
-        self.verbose = "-v" in sys.argv
+    def __init__(self, verbose=False):
+        self.verbose = verbose
 
     def action(self, *args, verbose=False):
         if verbose == 2:
@@ -197,7 +236,8 @@ class DiskUtil:
         info = self.get("info", "-plist", target)
         return info["MountPoint"]
 
-    def remount_rw(self, target):
+    @staticmethod
+    def remount_rw(target):
         logging.info(f"DiskUtil.remount_rw({target})")
         subprocess.run(["mount", "-u", "-w", target], check=True)
 

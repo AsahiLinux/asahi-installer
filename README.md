@@ -47,8 +47,9 @@ as those will be consumed by the installer and used for its branding. These incl
 ## License
 Copyright The Asahi Linux Contributors
 
-The Asahi Linux installer is distributed under the MIT license. See LICENSE for the
-license text.
+Up to and including version 0.9.3, the Asahi Installer was available under the terms
+of the MIT licence. All code checked in thereafter is available under the terms of
+the GNU General Public License version 2 or later.
 
 This installer vendors [python-asn1](https://github.com/andrivet/python-asn1), which
-is distributed under the same license.
+is distributed under the MIT licence.
