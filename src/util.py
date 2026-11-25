@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-import re, logging, sys, os, stat, shutil, struct, subprocess, zlib, time, hashlib, lzma
+import re, logging, sys, os, stat, shutil, struct, subprocess, threading, zlib, time, hashlib, lzma
 from ctypes import *
 
 if sys.platform == 'darwin':
@@ -232,15 +232,49 @@ class PackageInstaller:
         istream = PBZX(bxstream, size)
         self.stream_compress(istream, size, path, sha1=sha1)
 
-    def copy_compress(self, src, path):
+    def copy_compress(self, src, path, aea_key=None, dec_size=0):
         info = self.pkg.getinfo(src)
         size = info.file_size
         istream = self.pkg.open(src)
-        self.stream_compress(istream, size, path, crc=info.CRC)
+        self.stream_compress(istream, size, path, crc=info.CRC, aea_key=aea_key, dec_size=dec_size)
 
-    def stream_compress(self, istream, size, path, crc=None, sha1=None):
+    def null_filter(self, stream, size, chunk_size):
+        done = 0
+        while done < size:
+            data = stream.read(chunk_size)
+            done += len(data)
+            yield data
+
+    def feed_aea(self, stream, size, chunk_size, aea):
+        done = 0
+        while done < size:
+            data = stream.read(chunk_size)
+            done += len(data)
+            aea.stdin.write(data)
+        aea.stdin.close()
+    def aea_filter(self, stream, size, chunk_size, aea_key, dec_size):
+        aea = subprocess.Popen(
+            ["aea", "decrypt", "-key-value", "base64:" + aea_key],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE)
+        th = threading.Thread(target=self.feed_aea, args=(stream, size, chunk_size, aea), daemon=True)
+        th.start()
+        done = 0
+        while done < dec_size:
+            data = aea.stdout.read(chunk_size)
+            yield data
+        aea.wait()
+        th.join()
+
+    def stream_compress(self, istream, size, path, crc=None, sha1=None, aea_key=None, dec_size=0):
         with open(path, 'wb'):
             pass
+        if aea_key is None:
+            istream = self.null_filter(istream, size, CHUNK_SIZE)
+        else:
+            istream = self.aea_filter(istream, size, CHUNK_SIZE, aea_key, dec_size)
+            size = dec_size
+            crc = None
         num_chunks = (size + CHUNK_SIZE - 1) // CHUNK_SIZE
         cur_pos = (num_chunks + 1) * 4
         table = []
@@ -255,7 +289,7 @@ class PackageInstaller:
             res_fork.write(b'\0' * cur_pos)
             for i in range(num_chunks):
                 table.append(cur_pos)
-                inbuf = istream.read(CHUNK_SIZE)
+                inbuf = next(istream)
                 copied += len(inbuf)
                 prog = copied / size * 100
                 if self.ucache:
@@ -300,8 +334,6 @@ class PackageInstaller:
                     calc_crc = zlib.crc32(data, calc_crc)
             if crc != calc_crc:
                 raise Exception('Internal error: failed to compress file: crc mismatch')
-        else:
-            raise Exception("No checksum available")
 
         sys.stdout.write("\033[3G100.00% ")
         sys.stdout.flush()

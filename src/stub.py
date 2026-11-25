@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: MIT
-import os, os.path, plistlib, shutil, sys, stat, subprocess, urlcache, zipfile, logging, json, tempfile
+import base64, hashlib, hmac, os, os.path, plistlib, shutil, sys, stat, struct
+import subprocess, urlcache, zipfile, logging, json, tempfile
+from urllib import request
 import osenum
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes, aead
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from asahi_firmware.wifi import WiFiFWCollection
 from asahi_firmware.bluetooth import BluetoothFWCollection
 from asahi_firmware.multitouch import MultitouchFWCollection
@@ -8,6 +14,25 @@ from asahi_firmware.kernel import KernelFWCollection
 from asahi_firmware.isp import ISPFWCollection
 from asahi_firmware.als import AlsFWCollection, FACTORY_DIR
 from util import *
+
+HPKE_VERSION = b"HPKE-v1"
+HPKE_SUITE_ID = b"HPKE\x00\x10\x00\x01\x00\x02"
+KEM_SUITE_ID = b"KEM\x00\x10"
+
+def hkdf_expand(prk, info, length):
+    t = b""
+    okm = b""
+    i = 0
+    while len(okm) < length:
+        i += 1
+        t = hmac.new(prk, t + info + bytes([i]), hashlib.sha256).digest()
+        okm += t
+    return okm[:length]
+
+# https://en.wikipedia.org/wiki/HKDF
+def hkdf(key, salt, info, length):
+    prk = hmac.new(salt, key, hashlib.sha256).digest()
+    return hkdf_expand(prk, info, length)
 
 class StubInstaller(PackageInstaller):
     def __init__(self, sysinfo, dutil, osinfo):
@@ -245,6 +270,54 @@ class StubInstaller(PackageInstaller):
         manifest["BuildIdentities"] = [identity]
         return identity
 
+    def process_aea_header(self, path):
+        istream = self.pkg.open(path)
+        hdr = istream.read(64 * 1024)
+        meta_len = struct.unpack('<I', hdr[8:12])[0]
+        meta = {}
+        i = 0
+        while i < meta_len:
+            ent_len = struct.unpack('<I', hdr[i + 12:i + 16])[0]
+            k, v = hdr[i + 16:i + 12 + ent_len].split(b'\0', 1)
+            i += ent_len
+            meta[k] = v
+        req = request.Request(meta[b"com.apple.wkms.fcs-key-url"].decode())
+        with request.urlopen(req) as fd:
+            priv_pem = fd.read()
+        skr = serialization.load_pem_private_key(priv_pem, None)
+        fcs_resp = json.loads(meta[b'com.apple.wkms.fcs-response'])
+        enc = base64.b64decode(fcs_resp["enc-request"])
+        pke = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256R1(), enc)
+        pkr = skr.public_key()
+
+        dh = skr.exchange(ec.ECDH(), pke)
+        kemc = enc + pkr.public_bytes(encoding=Encoding.X962, format=PublicFormat.UncompressedPoint)
+        eae_prk = hmac.new(b"", HPKE_VERSION + KEM_SUITE_ID + b"eae_prk" + dh, hashlib.sha256).digest()
+        shared_secret = hkdf_expand(eae_prk, b'\x00\x20' + HPKE_VERSION + KEM_SUITE_ID + b"shared_secret" + kemc, 32)
+
+        psk_id_hash = hmac.new(b"", HPKE_VERSION + HPKE_SUITE_ID + b"psk_id_hash", hashlib.sha256).digest()
+        info_hash = hmac.new(b"", HPKE_VERSION + HPKE_SUITE_ID + b"info_hash", hashlib.sha256).digest()
+        ksc = b'\x00' + psk_id_hash + info_hash
+        secret = hmac.new(shared_secret, HPKE_VERSION + HPKE_SUITE_ID + b"secret", hashlib.sha256).digest()
+        key = hkdf_expand(secret, b'\x00\x20' + HPKE_VERSION + HPKE_SUITE_ID + b"key" + ksc, 32)
+        base_nonce = hkdf_expand(secret, b'\x00\x0c' + HPKE_VERSION + HPKE_SUITE_ID + b"base_nonce" + ksc, 12)
+        ct = base64.b64decode(fcs_resp["wrapped-key"])
+        key = aead.AESGCM(key).decrypt(base_nonce, ct, b"")
+
+        salt = hdr[12 + meta_len:44 + meta_len]
+        info = b"AEA_AMK\x01\x00\x00\x00"
+        main_key = hkdf(key, salt, info, 32)
+        roothdr_key = hkdf(main_key, bytes([0] * 32), b"AEA_RHEK", 80)
+
+        aes_key = roothdr_key[32:64]
+        aes_iv = roothdr_key[64:80]
+        roothdr = hdr[76 + meta_len:76 + meta_len + 48]
+        aes = Cipher(algorithms.AES(aes_key), modes.CTR(aes_iv)).decryptor()
+        rh_dec = aes.update(roothdr) + aes.finalize()
+
+        dec_len = struct.unpack('<Q', rh_dec[:8])[0]
+        return base64.b64encode(key).decode(), dec_len
+
     def install_files(self, cur_os):
         logging.info("StubInstaller.install_files()")
         logging.info(f"VGID: {self.osi.vgid}")
@@ -301,7 +374,7 @@ class StubInstaller(PackageInstaller):
 
         bless2 = self.bootcaches["bless2"]
 
-        restore_bundle = os.path.join(self.pb_vgid, bless2["RestoreBundlePath"])
+        restore_bundle = os.path.join(self.pb_vgid, bless2.get("RestoreBundlePath", "./Restore"))
         os.makedirs(restore_bundle, exist_ok=True)
         restore_manifest = os.path.join(restore_bundle, "BuildManifest.plist")
         with open(restore_manifest, "wb") as fd:
@@ -342,7 +415,7 @@ class StubInstaller(PackageInstaller):
 
         # This is a workaround for some screwiness in the macOS <12.0 bootability
         # code, which ends up putting the apticket in the wrong volume...
-        sys_restore_bundle = os.path.join(self.osi.system, bless2["RestoreBundlePath"])
+        sys_restore_bundle = os.path.join(self.osi.system, bless2.get("RestoreBundlePath", "./Restore"))
         if os.path.lexists(sys_restore_bundle):
             os.unlink(sys_restore_bundle)
         os.symlink(restore_bundle, sys_restore_bundle)
@@ -361,8 +434,15 @@ class StubInstaller(PackageInstaller):
             self.copy_recompress("AssetData/payloadv2/basesystem_patches/arm64eBaseSystem.dmg",
                                  os.path.join(basesystem_path, "arm64eBaseSystem.dmg"))
         else:
-            self.copy_compress(identity["Manifest"]["BaseSystem"]["Info"]["Path"],
-                               os.path.join(basesystem_path, "arm64eBaseSystem.dmg"))
+            manifest = identity["Manifest"]
+            path = manifest["BaseSystem"]["Info"]["Path"]
+            aea_key = None
+            dec_size = 0
+            if identity["Info"].get("ContentEncoding") == "aea":
+                aea_key, dec_size = self.process_aea_header(path)
+            self.copy_compress(path,
+                               os.path.join(basesystem_path, "arm64eBaseSystem.dmg"),
+                               aea_key=aea_key, dec_size=dec_size)
         self.flush_progress()
 
         p_progress("Wrapping up...")

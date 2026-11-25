@@ -15,6 +15,18 @@ LIBFFI_BASE_URI="https://ghcr.io/v2/homebrew/core/libffi/blobs"
 LIBFFI_TARGET_OS="macOS 26"
 LIBFFI_PKG="libffi-$LIBFFI_VER-macos.tar.gz"
 
+PYCRYPTO_URI="https://files.pythonhosted.org/packages/e5/56/d194340cc4a57535e82e1bee9e89667ac4b7c13b5d3f59686deae3094dd5/cryptography-50.0.2-cp311-abi3-macosx_11_0_arm64.whl"
+PYCRYPTO_PKG="cryptography-50.0.2-cp311-abi3-macosx_11_0_arm64.whl"
+
+TYPING_EXTS_URI="https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl"
+TYPING_EXTS_PKG="typing_extensions-4.16.0-py3-none-any.whl"
+
+CFFI_URI="https://files.pythonhosted.org/packages/4a/d2/a6c0296814556c68ee32009d9c2ad4f85f2707cdecfd7727951ec228005d/cffi-2.0.0-cp313-cp313-macosx_11_0_arm64.whl"
+CFFI_PKG="cffi-2.0.0-cp313-cp313-macosx_11_0_arm64.whl"
+
+PYCPARSER_URI="https://files.pythonhosted.org/packages/a0/e3/59cd50310fc9b59512193629e1984c1f95e5c8ae6e5d8c69532ccc65a7fe/pycparser-2.23-py3-none-any.whl"
+PYCPARSER_PKG="pycparser-2.23-py3-none-any.whl"
+
 M1N1="$PWD/m1n1"
 ARTWORK="$PWD/artwork"
 AFW="$PWD/asahi_firmware"
@@ -81,6 +93,30 @@ else
         "$LIBFFI_BASE_URI/sha256:$digest"
 fi
 
+if [ -e "$PYCRYPTO_PKG" ]; then
+    echo "Using existing $PYCRYPTO_PKG"
+else
+    curl -L -o "$PYCRYPTO_PKG" "$PYCRYPTO_URI"
+fi
+
+if [ -e "$TYPING_EXTS_PKG" ]; then
+    echo "Using existing $TYPING_EXTS_PKG"
+else
+    curl -L -o "$TYPING_EXTS_PKG" "$TYPING_EXTS_URI"
+fi
+
+if [ -e "$CFFI_PKG" ]; then
+    echo "Using existing $CFFI_PKG"
+else
+    curl -L -o "$CFFI_PKG" "$CFFI_URI"
+fi
+
+if [ -e "$PYCPARSER_PKG" ]; then
+    echo "Using existing $PYCPARSER_PKG"
+else
+    curl -L -o "$PYCPARSER_PKG" "$PYCPARSER_URI"
+fi
+
 if [ -r "$M1N1_STAGE1" ]; then
     echo "Using '$M1N1_STAGE1' as m1n1 stage1"
 elif [ ! -r "$M1N1/Makefile" ]; then
@@ -144,7 +180,7 @@ rm -rf include share
 cd lib
 rm -rf -- tdb* tk* Tk* libtk* *tcl*
 cd python3.*
-rm -rf test ensurepip idlelib
+rm -rf test idlelib
 cd lib-dynload
 rm -f _test* _tkinter*
     
@@ -157,6 +193,10 @@ cp "$certs" "$PACKAGE/Frameworks/Python.framework/Versions/Current/etc/openssl/c
 echo "Packaging installer..."
 
 cd "$PACKAGE"
+
+for p in "$PYCRYPTO_PKG" "$TYPING_EXTS_PKG" "$CFFI_PKG" "$PYCPARSER_PKG"; do
+    cp "$DL/$p" .
+done
 
 echo "$VER" > version.tag
 
