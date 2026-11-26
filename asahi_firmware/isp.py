@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-2.0-or-later
 import struct, os, logging
 from collections import namedtuple
 from .core import FWFile

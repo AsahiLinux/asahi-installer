@@ -1,17 +1,20 @@
-# SPDX-License-Identifier: MIT
-import os, os.path, plistlib, shutil, sys, stat, subprocess, urlcache, zipfile, logging, json, tempfile
-import osenum
-from asahi_firmware.wifi import WiFiFWCollection
-from asahi_firmware.bluetooth import BluetoothFWCollection
-from asahi_firmware.multitouch import MultitouchFWCollection
-from asahi_firmware.kernel import KernelFWCollection
-from asahi_firmware.isp import ISPFWCollection
-from asahi_firmware.als import AlsFWCollection, FACTORY_DIR
-from util import *
+# SPDX-License-Identifier: GPL-2.0-or-later
+import os, os.path, plistlib, shutil, sys, stat, subprocess, zipfile, logging, json, tempfile
+
+from . import osenum
+from . import urlcache
+
+from .asahi_firmware.wifi import WiFiFWCollection
+from .asahi_firmware.bluetooth import BluetoothFWCollection
+from .asahi_firmware.multitouch import MultitouchFWCollection
+from .asahi_firmware.kernel import KernelFWCollection
+from .asahi_firmware.isp import ISPFWCollection
+from .asahi_firmware.als import AlsFWCollection, FACTORY_DIR
+from .util import *
 
 class StubInstaller(PackageInstaller):
-    def __init__(self, sysinfo, dutil, osinfo):
-        super().__init__()
+    def __init__(self, sysinfo, dutil, osinfo, progress_cb=None):
+        super().__init__(progress_cb)
         self.dutil = dutil
         self.sysinfo = sysinfo
         self.osinfo = osinfo
@@ -38,15 +41,13 @@ class StubInstaller(PackageInstaller):
             logging.info(f"IPSW URL: {url}")
 
         if url.startswith("http"):
-            p_progress("Downloading macOS OS package info...")
-            self.ucache = urlcache.URLCache(url)
+            user_log.info("Downloading macOS OS package info...")
+            self.ucache = urlcache.URLCache(url, self.progress_cb)
             self.pkg = zipfile.ZipFile(self.ucache)
         else:
-            p_progress("Loading macOS OS package info...")
+            user_log.info("Loading macOS OS package info...")
             self.pkg = zipfile.ZipFile(open(url, "rb"))
-        self.flush_progress()
         logging.info(f"OS package opened")
-        print()
 
     def prepare_volume(self, part):
         logging.info(f"StubInstaller.prepare_volume({part.name=!r})")
@@ -56,7 +57,7 @@ class StubInstaller(PackageInstaller):
 
         ctref = self.part.container["ContainerReference"]
 
-        p_progress("Preparing target volumes...")
+        user_log.info("Preparing target volumes...")
 
         for volume in self.part.container["Volumes"]:
             roles = tuple(volume["Roles"])
@@ -103,7 +104,7 @@ class StubInstaller(PackageInstaller):
 
         logging.info(f"StubInstaller.check_volume({self.part.name=!r})")
 
-        p_progress("Checking volumes...")
+        user_log.info("Checking volumes...")
         os = self.osinfo.collect_part(self.part)
 
         if len(os) != 1:
@@ -217,7 +218,6 @@ class StubInstaller(PackageInstaller):
 
         manifest = plistlib.load(self.open("BuildManifest.plist"))
         self.bootcaches = plistlib.load(self.open("usr/standalone/bootcaches.plist"))
-        self.flush_progress()
 
         if self.is_ota:
             self.variant = "macOS Customer Software Update"
@@ -250,7 +250,7 @@ class StubInstaller(PackageInstaller):
         logging.info(f"VGID: {self.osi.vgid}")
         logging.info(f"OS info: {self.osi}")
 
-        p_progress("Beginning stub OS install...")
+        user_log.info("Beginning stub OS install...")
         identity = self.load_identity()
         sysver = plistlib.load(self.open("SystemVersion.plist"))
 
@@ -266,7 +266,7 @@ class StubInstaller(PackageInstaller):
             }
         })
 
-        p_progress("Setting up System volume...")
+        user_log.info("Setting up System volume...")
         logging.info("Setting up System volume")
 
         self.extract("usr/standalone/bootcaches.plist", self.osi.system)
@@ -276,7 +276,6 @@ class StubInstaller(PackageInstaller):
         os.makedirs(cs, exist_ok=True)
         sysver["ProductUserVisibleVersion"] += " (stub)"
         self.extract("PlatformSupport.plist", cs)
-        self.flush_progress()
 
         # Make the icon work
         try:
@@ -285,16 +284,16 @@ class StubInstaller(PackageInstaller):
                            "0000000000000000040000000000000000000000000000000000000000000000",
                            self.osi.system], check=True)
         except:
-            p_error("Failed to apply extended attributes, logo will not work.")
+            user_log.error("Failed to apply extended attributes, logo will not work.")
 
-        fsctl_set_bootable(self.osi.system, True)
+        self.osi.set_volbootable(True)
 
-        p_progress("Setting up Data volume...")
+        user_log.info("Setting up Data volume...")
         logging.info("Setting up Data volume")
 
         os.makedirs(os.path.join(self.osi.data, "private/var/db/dslocal"), exist_ok=True)
 
-        p_progress("Setting up Preboot volume...")
+        user_log.info("Setting up Preboot volume...")
         logging.info("Setting up Preboot volume")
 
         os.makedirs(self.pb_vgid, exist_ok=True)
@@ -336,7 +335,6 @@ class StubInstaller(PackageInstaller):
                 self.copy_idata.append((os.path.join(restore_bundle, name), name))
             copied.add(path)
 
-        self.flush_progress()
 
         self.copy_admin_users(cur_os)
 
@@ -347,7 +345,7 @@ class StubInstaller(PackageInstaller):
             os.unlink(sys_restore_bundle)
         os.symlink(restore_bundle, sys_restore_bundle)
 
-        p_progress("Setting up Recovery volume...")
+        user_log.info("Setting up Recovery volume...")
         logging.info("Setting up Recovery volume")
 
         rec_vgid = os.path.join(self.osi.recovery, self.osi.vgid)
@@ -363,9 +361,8 @@ class StubInstaller(PackageInstaller):
         else:
             self.copy_compress(identity["Manifest"]["BaseSystem"]["Info"]["Path"],
                                os.path.join(basesystem_path, "arm64eBaseSystem.dmg"))
-        self.flush_progress()
 
-        p_progress("Wrapping up...")
+        user_log.info("Wrapping up...")
 
         logging.info("Writing SystemVersion.plist")
         with open(self.sv_path, "wb") as fd:
@@ -376,11 +373,11 @@ class StubInstaller(PackageInstaller):
             os.remove(self.sv_dis_path)
 
         logging.info("Copying Finish Installation.app")
-        shutil.copytree("step2/Finish Installation.app",
+        shutil.copytree(os.path.join(CORE_DIR, "step2/Finish Installation.app"),
                         os.path.join(self.osi.system, "Finish Installation.app"))
 
         logging.info("Writing step2.sh")
-        step2_sh = open("step2/step2.sh").read()
+        step2_sh = open(os.path.join(CORE_DIR, "step2/step2.sh")).read()
         step2_sh = step2_sh.replace("##DISTRO##", DISTRO)
         step2_sh = step2_sh.replace("##VGID##", self.osi.vgid)
         step2_sh = step2_sh.replace("##PREBOOT##", self.osi.preboot_vgid)
@@ -389,18 +386,15 @@ class StubInstaller(PackageInstaller):
         os.chmod(self.step2_sh, 0o755)
 
         logging.info("Copying .IAPhysicalMedia")
-        shutil.copy("step2/IAPhysicalMedia.plist", self.iapm_path)
+        shutil.copy(os.path.join(CORE_DIR, "step2/IAPhysicalMedia.plist"), self.iapm_path)
 
         if os.path.exists(self.iapm_dis_path):
             os.remove(self.iapm_dis_path)
-
-        print()
-        p_success("Stub OS installation complete.")
+        user_log.log(SUCCESS, "Stub OS installation complete.")
         logging.info("Stub OS installed")
-        print()
 
     def collect_firmware(self, pkg):
-        p_progress("Collecting firmware...")
+        user_log.info("Collecting firmware...")
         logging.info("StubInstaller.collect_firmware()")
 
         logging.info("Collecting FUD firmware")
@@ -484,7 +478,7 @@ class StubInstaller(PackageInstaller):
         subprocess.run(["hdiutil", "detach", "-quiet", "recovery"])
 
     def collect_installer_data(self, path, merge_stub_info=False):
-        p_progress("Collecting installer data...")
+        user_log.info("Collecting installer data...")
         logging.info(f"Copying installer data to {path}")
 
         for src, name in self.copy_idata:

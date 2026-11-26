@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: GPL-2.0-or-later
 import xml.etree.ElementTree as ET
 import plistlib, base64, struct, os, logging
 from .img4 import img4p_extract
