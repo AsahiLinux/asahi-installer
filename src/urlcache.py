@@ -80,7 +80,10 @@ class URLCache:
     def get_size(self):
         for i in range(10):
             con = self.get_con()
-            con.request("HEAD", self.url.path, headers={"Connection":" keep-alive"})
+            path = self.url.path
+            if self.url.query:
+                path += f"?{self.url.query}"
+            con.request("HEAD", path, headers={"Connection":" keep-alive"})
             res = con.getresponse()
             res.read()
             loc = res.getheader("Location", None)
@@ -94,8 +97,13 @@ class URLCache:
 
     def get_partial(self, off, size, bypass_cache=False):
         path = self.url.path
-        if bypass_cache:
-            path += f"?{random.random()}"
+        if self.url.query:
+            path += f"?{self.url.query}"
+            if bypass_cache:
+                path += f"&{random.random()}"
+        else:
+            if bypass_cache:
+                path += f"?{random.random()}"
 
         res = None
         try:
